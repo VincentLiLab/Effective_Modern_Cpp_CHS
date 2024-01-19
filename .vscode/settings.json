@@ -1,6 +1,9 @@
 {
     "editor.tabSize": 2,
     "editor.rulers": [
-        100
-    ]
+        50,100,101
+    ],
+    "markdown.extension.bold.indicator": "**",
+    "markdown.extension.italic.indicator": "_",
+    "markdown.preview.fontFamily": "Consolas, 'Courier New', monospace"
 }
