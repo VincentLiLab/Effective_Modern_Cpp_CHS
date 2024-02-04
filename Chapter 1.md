@@ -61,7 +61,9 @@ _Item_ 覆盖了你需要知道的所有。
 ```  
 _T_ 被推导为 _int_，而 _ParamType_ 被推导为 _const int&_。
 
-会很自然地期待 _T_ 和所传递给函数的实参的类型得是一致的，即为：_T_ 是 _expr_ 的类型。上面的例子就是这样的场景：_x_ 是 _int_，_T_ 被推导为了 _int_，但并不总是会这样。_T_ 不仅依赖于 _expr_ 的类型，还依赖于 _ParamType_ 的格式。共有三种场景：  
+会很自然地期待 _T_ 和所传递给函数的实参的类型得是一致的，即为：_T_ 是 _expr_ 的类型。上面的例子就是这样的场  
+景：_x_ 是 _int_，_T_ 被推导为了 _int_，但并不总是会这样。_T_ 不仅依赖于 _expr_ 的类型，还依赖于 _ParamType_ 的格式。共  
+有三种场景：  
  
 * _ParamType_ 是一个指针类型或者引用类型，但不是 _universal reference_，_universal reference_ 会在 [_Item 24_](./Chapter%205.md#item-24-区分通用引用和右值引用) 中进  
   行描述。现在你只需要知道是 _universal reference_ 是存在的，而且和左值引用或右值引用是不相同的。
@@ -79,7 +81,8 @@ _T_ 被推导为 _int_，而 _ParamType_ 被推导为 _const int&_。
 
 ### 场景 1：_ParamType_ 是指针类型或者引用类型，但不是 _universal reference_
 
-最简单的场景是当 _ParamType_ 是引用类型或者指针类型，但不是 _universal reference_ 时。在这个场景中，类型推导是像下面这样工作的：  
+最简单的场景是当 _ParamType_ 是引用类型或者指针类型，但不是 _universal reference_ 时。在这个场景中，类型推  
+导是像下面这样工作的：  
 * 如果 _expr_ 的类型是引用，忽略引用部分。
 * 通过 _expr_ 的类型和 _ParamType_ 进行模式匹配去确定 _T_。
 
@@ -195,7 +198,8 @@ _T&_ 的模板上时是安全的：因为对象的 _constness_ 成为了 _T_ 的
   template<typename T>
   void f(T param);            // param is now passed by value
 ```  
-这意味着 _param_ 会被做为传入实参的副本，做为一个完全新的对象。_param_ 将会是新对象的事实推动了根据 _exp_ 推导出 _T_ 的规则：  
+这意味着 _param_ 会被做为传入实参的副本，做为一个完全新的对象。_param_ 将会是新对象的事实推动了根据 _exp_  
+推导出 _T_ 的规则：  
 * 和以前一样，如果 _expr_ 的类型是引用，忽略引用部分。
 * 在忽略了 _expr_ 的 _reference-ness_ 后，如果 _expr_ 是 _const_ 或者 _volatile_ 的话，也进行忽略。_volatile_ 对象是不  
 常见的，_volatile_ 通常用于设备驱动实现中。更多的细节看 [_Item 40_](./Chapter%207.md#item-40-并发使用-_std::atomic_-特殊内存使用-_volatile_)。  
@@ -279,7 +283,8 @@ _param_ 中。因此，_ptr_ 本身是 _pass-by-value_ 的。与 _by-value_ 的�
   f(name);                    // name is array, but T deduced as const char*
 ```
 
-但是现在来一个曲线球。尽管函数不能声明形参为真正的数组，但是可以声明形参为数组引用。所以如果我们更改模板 _f_ 为按引用来接收它的实参，  
+但是现在来一个曲线球。尽管函数不能声明形参为真正的数组，但是可以声明形参为数组引用。所以如果我们更改  
+模板 _f_ 为按引用来接收它的实参，  
 ```C++
   template<typename T>
   void f(T& param);           // template with by-reference parameter
@@ -288,10 +293,9 @@ _param_ 中。因此，_ptr_ 本身是 _pass-by-value_ 的。与 _by-value_ 的�
 ```C++
   f(name);                    // pass array to f
 ```  
-_T_ 是实实在在的数组类型，这个类型包含着数组的大小，所以在这个例子中，_T_ 被推导为了 _const char [13]_，
-那么 
- _f_ 的形参的类型就是 _const char (&)[13]_ 了，就是数组的引用。是的，这种语法看起来是有毒的，但了解这个将使你  
- 在那些关心此事的少数人中获得巨大的加分。
+_T_ 是实实在在的数组类型，这个类型包含着数组的大小，所以在这个例子中，_T_ 被推导为了 _const char [13]_，那么 _f_  
+的形参的类型就是 _const char (&)[13]_ 了，就是数组的引用。是的，这种语法看起来是有毒的，但了解这个将使你  
+在那些关心此事的少数人中获得巨大的加分。
 
 有趣地是，声明数组引用的能力可以创建一个可以推导出数组所包含的元素数量的模板：  
 ```C++
