@@ -7,5 +7,6 @@
     "markdown.extension.italic.indicator": "_",
     "markdown.styles": [
         "config/config.css"
-    ]
+    ],
+    "markdown.extension.completion.enabled": true
 }

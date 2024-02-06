@@ -10,6 +10,8 @@
   - [Item 2 理解 _auto_ 的类型推导](#item-2-理解-auto-的类型推导)
     - [需要记住的规则](#需要记住的规则-1)
     - [译者总结](#译者总结-1)
+  - [Item 3 理解 _decltype_](#item-3-理解-decltype)
+    - [需要记住的规则](#需要记住的规则-2)
 
 # Chapter 1 类型推导
 
@@ -37,7 +39,7 @@ _C++98_ 只有一组类型推导规则：函数模板所对应的类型推导。
 则是 _modern C++_ 中最吸引人的特性之一。如果你对 _C++98_ 的模板的类型推导感到满意，那么你也准备好了对  
 _C++11_ 的 _auto_ 的类型推导感到满意。坏消息是当模板的类型推导规则被应用到 "auto" 上时要比被应用到模板上  
 时难理解一点。因此，真正地理解模板的类型推导是非常重要的，因为 _auto_ 是在模板的类型推导之上构建的。本  
-_Item_ 覆盖了你需要知道的所有。 
+[_Item 1_](./Chapter%201.md#item-1-理解模板的类型推导) 覆盖了你需要知道的所有。 
 
 如果你愿意忽略一些伪代码，我们可以考虑一个像下面那样的函数模板：  
 ```C++
@@ -204,7 +206,7 @@ _T&_ 的模板上时是安全的：因为对象的 _constness_ 成为了 _T_ 的
 推导出 _T_ 的规则：  
 * 和以前一样，如果 _expr_ 的类型是引用，忽略引用部分。
 * 在忽略了 _expr_ 的 _reference-ness_ 后，如果 _expr_ 是 _const_ 或者 _volatile_ 的话，也进行忽略。_volatile_ 对象是不  
-常见的，_volatile_ 通常用于设备驱动实现中。更多的细节看 [_Item 40_](./Chapter%207.md#item-40-并发使用-_std::atomic_-特殊内存使用-_volatile_)。  
+常见的，_volatile_ 通常用于设备驱动实现中。更多的细节看 [_Item 40_](./Chapter%207.md#item-40-并发使用-std::atomic-特殊内存使用-volatile)。  
 
 因此：  
 ```C++
@@ -219,10 +221,10 @@ _T&_ 的模板上时是安全的：因为对象的 _constness_ 成为了 _T_ 的
   f(rx);                      // T's and param's types are still both int
 ```  
 
-注意即使 _cx_ 和 _rx_ 都是 _const_ 的，但是 **_param_** 也不是 **_const_** 的。这是合理的。_param_ 是一个完全和 _cx_ 和 _rx_ 无关的  
-对象，它是 _cx_ 或 _rx_ 的副本。_cx_ 和 _rx_ 不能被更改的事实并不能说明 _param_ 是否可以被更改。这也是为什么当推导  
-_param_ 的类型时，_expr_ 的 _constness_ 和 _volatileness_ 会被忽略的原因，因为 _expr_ 不能被更改并不意味着它的副本也  
-不能被更改。
+注意：即使 _cx_ 和 _rx_ 都是 _const_ 的，但是 **_param_** 也不是 **_const_** 的。这是合理的。_param_ 是一个完全和 _cx_ 和 _rx_ 无关  
+的对象，它是 _cx_ 或 _rx_ 的副本。_cx_ 和 _rx_ 不能被更改的事实并不能说明 _param_ 是否可以被更改。这也是为什么当推  
+导 _param_ 的类型时，_expr_ 的 _constness_ 和 _volatileness_ 会被忽略的原因，因为 _expr_ 不能被更改并不意味着它的副  
+本也不能被更改。
 
 _const_ 和 _volatile_ 只有对于 _by-value_ 的形参才能被忽略，记住这个是非常重要的。正如我们刚才已经看到的，对于  
 _references-to-const_ 或 _pointers-to-const_ 形参，_expr_ 的 _constness_ 则会在类型推导期间一直保留。但是考虑这种  
@@ -304,14 +306,14 @@ _T_ 是实实在在的数组类型，这个类型包含着数组的大小，所�
   // return size of an array as a compile-time constant. (The
   // array parameter has no name, because we care only about
   // the number of elements it contains.)
-  template<typename T, std::size_t N>                        // see info
-  constexpr std::size_t arraySize(T (&)[N]) noexcept         // below on
-  {                                                          // constexpr
-      return N;                                              // and
-  }                                                          // noexcept
+  template<typename T, std::size_t N>                       // see info
+  constexpr std::size_t arraySize(T (&)[N]) noexcept        // below on
+  {                                                         // constexpr
+    return N;                                               // and
+  }                                                         // noexcept
 ```
 
-正如 [_Item 15_](./Chapter%203.md#item-15-只要有可能-就使用-_constexpr_) 所解释的，声明这个函数为 _constexpr_ 是为了让它的结果在编译期间就有效。这样就使得可以声明一  
+正如 [_Item 15_](./Chapter%203.md#item-15-只要有可能就使用-constexpr) 所解释的，声明这个函数为 _constexpr_ 是为了让它的结果在编译期间就有效。这样就使得可以声明一  
 个数组，它的大小和另一个数组是相同的，另一个数组的大小是由花 _braced initializer_ 所计算的：  
 ```C++
   int keyVals[] = { 1, 3, 7, 9, 11, 22, 35 };     // keyVals has
@@ -327,7 +329,7 @@ _T_ 是实实在在的数组类型，这个类型包含着数组的大小，所�
                                                   // size is 7
 ```
 
-至于 _arraySize_ 被声明为 _noexcept_，是为了帮助编译生成更好的代码。更多的细节，请查看 [_Item 14_](./Chapter%203.md#item-14-如果函数不会引发异常的话-就声明函数为-_noexcept_)。
+至于 _arraySize_ 被声明为 _noexcept_，是为了帮助编译生成更好的代码。更多的细节，请查看 [_Item 14_](./Chapter%203.md#item-14-如果函数不会引发异常的话-就声明函数为-noexcept)。
 
 ### 函数实参
 
@@ -496,7 +498,7 @@ int x4{ 27 };
 
 共有 _4_ 种语法，但是只有一个结果：一个有着 _27_ 的 _int_。
 
-正如 [_Item 5_](./Chapter%202.md#item-5-首选-_auto_-而不是显式类型声明) 所解释的，使用 _auto_ 来代替固有的类型来进行变量声明是有优势的，所以在上面的变量声明最好使用  
+正如 [_Item 5_](./Chapter%202.md#item-5-首选-auto-而不是显式类型声明) 所解释的，使用 _auto_ 来代替固有的类型来进行变量声明是有优势的，所以在上面的变量声明最好使用  
 _auto_ 来代替 _int_。直接的文本替换生成了以下代码：  
 ```C++
   auto x1 = 27;
@@ -544,7 +546,7 @@ _braced initializer_ 来初始化时，所推导出的类型是 _std::initialier
 
   f({ 11, 23, 9 }); // error! can't deduce type for T
 ```  
-然而，如果你在模板中为一些未知的 _T_ 指定了 _param_ 是 _std::initialier_list&lt;T&gt;_的话，模板的类型推导将会推导出  
+然而，如果你在模板中为一些未知的 _T_ 指定了 _param_ 是 _std::initialier_list&lt;T&gt;_ 的话，模板的类型推导将会推导出  
 _T_ 是什么：  
 ```C++
   template<typename T>
@@ -561,17 +563,17 @@ _std::initialier_list_，但是模板的类型推导则不会。
 _auto_ 声明变量，并且是使用 _braced initializer_ 进行的初始化的话，那么所推导出的类型将是 _std::initialier_list_。如  
 果你接受了 _uniform initializer_ 的哲学体系的话，也就是使用 _{}_ 将初始化值括起来的话，那么你要特别注意这个规  
 则。在 _C++11_ 编程中的一个经典错误是当你想要声明其他东西时，却不小心地声明了 _std::initialier_list_ 类型的变  
-量。这个陷阱使得一些开发者只有在必要时才会在 _initializer_ 上加上 _{}_。什么时候才是必要会在 [_Item 7_](./Chapter%203.md#item-7-创建对象时-区分-_{}_-和-_()_) 中进行讨  
+量。这个陷阱使得一些开发者只有在必要时才会在 _initializer_ 上加上 _{}_。什么时候才是必要会在 [_Item 7_](./Chapter%203.md#item-7-创建对象时-区分-{}-和-()) 中进行讨  
 论。
 
 对于 _C++11_ 来说，这是一个完整的故事，而对于 _C++14_，故事还在继续。_C++14_ 允许 _auto_ 去指明一个函数的返  
 回值类型应该被推导，然后 _C++14_ 的 _lambdas_ 可以在形参的声明中使用 _auto_ 。然而，这些 _auto_ 的用法利用的是  
-模板的类型推导，而不是 _auto_ 的类型推导。所以返回值类型为 _auto_ 的函数返回 _braced initializer_ 是不能通过编译  
+模板的类型推导，而不是 _auto_ 的类型推导。所以，返回类型为 _auto_ 的函数返回 _braced initializer_ 是不能通过编译  
 的：  
 ```C++
   auto createInitList()
   {
-      return { 1, 2, 3 };     // error: can't deduce type
+    return { 1, 2, 3 };       // error: can't deduce type
   }                           // for { 1, 2, 3 }
 ```
 > 译者注：脑残规则，后续不修复的话，更是智障。
@@ -615,3 +617,238 @@ _auto_ 声明变量，并且是使用 _braced initializer_ 进行的初始化的
                               // and ParamType is 'const int&', so auto is 'const int'
                               // and rx's type is const int&
 ```
+
+## Item 3 理解 _decltype_
+
+_decltype_ 是一个古怪的产物。给定一个名字或表达式，它会告诉你这个名字或表达式的类型。一般地情况下，它所  
+告诉你的正是你所期待的。然而，偶尔 _decltype_ 所提供的结果会让你抓头，会让你转向参考手册或在线 _Q&A_ 网站  
+去寻找启示。
+
+我们从一般的例子开始，就是从没有惊喜的例子开始。与在模板的类型推导和 _auto_ 的类型推导期间所发生的事情  
+对比，见 [_Item 1_](./Chapter%201.md#item-1-理解模板的类型推导) 和 [_Item 2_](./Chapter%201.md#item-2-理解-auto-的类型推导)，_decltype_ 一般会返回一所给定的名字或表达式的类型：  
+```C++
+  const int i = 0;                                // decltype(i) is const int
+
+  bool f(const Widget& w);                        // decltype(w) is const Widget&
+                                                  // decltype(f) is bool(const Widget&)
+  struct Point {
+    int x, y;                                     // decltype(Point::x) is int
+  };                                              // decltype(Point::y) is int
+
+  Widget w;                                       // decltype(w) is Widget
+  if (f(w)) …                                     // decltype(f(w)) is bool
+
+  template<typename T>                            // simplified version of std::vector
+  class vector {
+  public:
+    …
+    T& operator[](std::size_t index);
+    …
+  };
+
+  vector<int> v;                                  // decltype(v) is vector<int>
+  …
+  if (v[0] == 0) …                                // decltype(v[0]) is int&
+```  
+看？没有惊喜。
+
+在 _C++11_ 中，_decltype_ 的主要用法可能是用来声明函数的返回类型依赖于它的形参类型的函数模板。例如：假定  
+我们想要写一个这样的函数，这个函数持有一个支持通过 _[]_ 和索引值来进行索引的容器，并会在返回索引操作结  
+果前进行用户验证。函数的返回类型应该和索引操作所返回的类型是一样的。 
+
+类型 _T_ 的对象的容器的 _operator[]_ 一般返回的是 _T&_。例如，_std::deque_ 就是这种场景，_std::vector_ 的大部分场景也  
+是这样。然而，对于 _std::vector&lt;bool&gt;_ 来说，_operator[]_ 返回的不是 _bool&_。相反地是，返回的是一个全新的对  
+象。这种情景的原因和方式会在 [_Item 6_](./Chapter%202.md#item-6-auto) 中进行探讨，现在重要的是容器的 _operator[]_ 所返回的类型是依赖于这个  
+容器本身的。
+```C++
+  template<typename Container, typename Index>    // works, but
+  auto authAndAccess(Container& c, Index i)       // requires
+  -> decltype(c[i])                               // refinement
+  {
+    authenticateUser();
+    return c[i];
+  }
+```
+
+函数名字之前的 _auto_ 是和类型推导无关的。更准确地说，这表明 _C++11_ 的 _trailing return type_ 语法正在被使用，  
+即为：函数的返回类型将会在形参列表 _-&gt;_ 后进行声明。_trailing return type_ 是有优势的，函数的形参可以被用到  
+返回类型的规范中。例如，在 _authAndAccess_ 中，我们使用 _c_ 和 _i_ 来指明返回类型。如果我们按照传统的方式将返  
+回类型放在函数之前的话，那么 _c_ 和 _i_ 将是无效的，因为还没有声明它们。
+
+使用这个声明，_authAndAccess_ 返回传入的容器的 _operator[]_ 所返回的类型，完全符合我们的预期。
+
+_C++11_ 允许 _single-statement_ 的 _lambdas_ 的返回类型被推导，而 _C++14_ 扩展到了全部的 _lambdas_ 和函数中，包  
+括 _multiple-statements_ 的 _lambdas_ 和函数。在 _authAndAccess_ 的场景中，这意味着在 _C++14_ 中，我们可以忽略  
+_trailing return type_，而只留下前置的 _auto_。使用这种声明的格式，_auto_ 意味着类型推导将会发生。特别是意味着  
+编译器将会根据函数的实现来产生函数的返回类型：  
+```C++
+  template<typename Container, typename Index>              // C++14;
+  auto authAndAccess(Container& c, Index i)                 // not quite
+  {                                                         // correct
+    authenticateUser();
+    return c[i];                                            // return type deduced from c[i]  
+  }
+```  
+[_Item 2_](./Chapter%201.md#item-2-理解-auto-的类型推导) 解释了：对于使用了 _auto_ 返回类型规范的函数，译器会利用模板的类型推导。在这个场景中是有问题的。  
+正如我们已经讨论过的，对于大多数容器来说，_operator[]_ 返回的是 _T&_，而且 [_Item 1_](./Chapter%201.md#item-1-理解模板的类型推导) 解释了：在模板的类型推导  
+期间，初始化表达式 _reference-ness_ 是被忽略的。思考这个客户的含义：  
+```C++
+  std::deque<int> d;
+  …
+  authAndAccess(d, 5) = 10;   // authenticate user, return d[5],
+                              // then assign 10 to it;
+                              // this won't compile!
+```
+此处，_d[5]_ 返回 _int&_，_authAndAccess_ 的 _auto_ 返回类型是会剥离掉引用的，因此产生的返回类型是 _int_。做为函数的返回值的 _int_ 是一个右值，而上面的代码试图分配 _10_ 到一个右值 _int_ 上。这在 _C++_ 中是被禁止的，所以代码不会通过编译。
+
+为了让 _authAndAccess_ 按照我们想的那样去工作，对于它的返回类型，我们需要用 _decltype_ 的类型推导，即为： _authAndAccess_ 应该返回和表达式 _c[i]_ 相同的类型。_Ｃ++_ 的维护者预想到了在一些类型是被推测的场景中会需要  
+使用 _decltype_ 的类型推导规则，所以通过 _decltype(auto)_ 来让这些变成可能。最初看来是矛盾的 _decltype_ 和 _auto_  
+实际上却是非常合理的：_auto_ 指明了类型会被推导，而 _decltype_ 则说明了 _decltype_ 的规则应该在推导期间被使  
+用。因此我们可以像下面这样写 _authAndAccess_：  
+```C++
+  template<typename Container, typename Index>    // C++14; works,
+  decltype(auto)                                  // but still
+  authAndAccess(Container& c, Index i)            // requires
+  {                                               // refinement
+    authenticateUser();
+    return c[i];
+  }
+```  
+现在 _authAndAccess_ 将会真正地返回 _c[i]_ 所返回的。特别是，对于 _c[i]_ 是返回 _T&_ 的常见场景， 
+_authAndAccess_ 也  
+将会返回 _T&_，而在 _c[i]_ 是返回对象的不常见场景中，_authAndAccess_ 也将会返回一个对象。
+
+_decltype(auto)_ 的用法不限于只用在函数的返回类型上。当你想要应用 _decltype_ 的类型推导规则到初始化表达式  
+时，声明变量也是方便的:  
+```C++
+  Widget w;
+
+  const Widget& cw = w;
+  
+  auto myWidget1 = cw;                  // auto type deduction:
+                                        // myWidget1's type is Widget
+
+  decltype(auto) myWidget2 = cw;        // decltype type deduction:
+                                        // myWidget2's type is
+                                        // const Widget&
+```
+
+但是两件事正在困扰你，我知道。一件事是我提到的但是还没有描述的 _authAndAccess_ 的改进。现在我们一起来  
+解决它。
+
+再看一下 _C++14_ 版本的 _authAndAccess_ 声明。
+```C++
+  template<typename Container, typename Index>
+  decltype(auto) authAndAccess(Container& c, Index i);
+```
+
+容器是通过 _lvalue-reference-to-non-const_ 而传入的，因为返回的是容器的元素的引用，所以允许客户去修改这个  
+容器。但是这也意味着不能传递右值类型的容器到这个函数中。右值不能绑定左值引用，除非是 _lvalue-references-  
+to-const_，这里并不是这种场景。
+
+诚然，传递右值类型的容器到 _authAndAccess_ 是一个边缘场景。做为临时对象的右值容器一般是在  _authAndAccess_  
+调用语句结束后所销毁的，这意味着这个容器中的元素的引用在创建它的语句结束后是悬空的，而 _authAndAccess_  
+一般也会返回这个引用。尽管如此，传递一个临时对象到 _authAndAccess_ 中仍然是合理的。客户可能只是想要临  
+时容器中的一个元素的拷贝而已，例如：  
+```C++
+  std::deque<std::string> makeStringDeque();      // factory function
+  
+                                                  // make copy of 5th element of deque returned
+                                                  // from makeStringDeque
+  auto s = authAndAccess(makeStringDeque(), 5);
+```  
+支持这样的用法意味着我们需要去修改 _authAndAccess_ 的声明以去接受右值和左值。重载将会起作用，一个重载  
+声明左值引用类型的形参，另一个声明右值引用类型的形参，但是我们就有了两个函数需要维护。避免重载的方法  
+是让 _authAndAccess_ 利用可以同时绑定左值和右值的引用类型的形参，[_Item 24_](./Chapter%205.md#item-24-区分通用引用和右值引用) 解释了那正是 _univeral references_  
+的作用。因此 _authAndAccess_ 可以声明为下面这样：  
+```C+++
+  template<typename Container, typename Index>    // c is now a
+  decltype(auto) authAndAccess(Container&& c,     // universal
+                              Index i);           // reference
+``` 
+
+在这个模板中，我们不知道我们正在操作的容器的类型，这也意味着我们同样地忽略了容器所使用的索引对象的类  
+型。
+对于未知类型的对象使用 _pass-by-value_ 通常是冒有一些风险的：不必要拷贝的性能损耗、对象切割的行为问  
+题，见 [_Item 40_](./Chapter%208.md#item-41-对于移动代价小且总是进行拷贝的可拷贝形参-考虑-pass-by-value) 和同事嘲笑的刺痛，但是在容器索引的场景中，遵循索引值所对应的标准库的例子看起来仍然是合  
+理的，比如：_std::string_、_std::vector_ 和 _std::deque_ 的 _operator[]_，所以对此我们仍然 _pass-by-value_。
+
+然而，我们需要去更新模板的实现，使其符合 [_Item 25_](./Chapter%205.md#item-25-std::move-用于右值引用-std::forward-用于-univeral-reference) 的警告，将 _std::forward_ 应用到 _univeral references_ 上：  
+```C++
+  template<typename Container, typename Index>        // final
+  decltype(auto)                                      // C++14
+  authAndAccess(Container&& c, Index i)               // version
+  {
+    authenticateUser();
+    return std::forward<Container>(c)[i];
+  }
+```
+
+这个应该做了我们想要做的所有事了，但是需要 _C++14_ 的编译器。如果你没有的话，你需要使用 _C++11_ 的模板  
+版本。除了你必须要自己指定返回类型以外，它和 _C++14_ 是相同的：  
+```C++
+  template<typename Container, typename Index>    // final
+  auto                                            // C++11
+  authAndAccess(Container&& c, Index i)           // version
+  -> decltype(std::forward<Container>(c)[i])
+  {
+    authenticateUser();
+    return std::forward<Container>(c)[i];
+  }
+```
+
+ 另一个可能困扰你的问题在本 [_Item_](./Chapter%201.md#item-3-理解-decltype) 开始的时候就提到了，那就是 _decltype_ **几乎**总是产生你所期待的类型，**很少**有  
+ 惊喜。说实话，除非你是一个重度库实现者，否则你不太可能遇到这些规则的例外。
+
+ 为了**全面**理解 _decltype_ 的行为，你必须熟悉少量的特殊场景。这些特殊场景的大部分都很少见，以至于没必要在  
+ 书中像这样进行讨论，但是看一个让我们深入了解 _decltype_ 和它的用法的场景。
+
+应用 _decltype_ 到名字上会得到这个名字的声明的类型。名字是左值表达式，但是不会影响 _decltype_ 的行为。然而  
+对于比名字还要复杂的左值表达式，_decltype_ 是确保所报告的类型总是左值引用的。也就是说：如果非名字的左值  
+表达式有类型 _T_ 的话，_decltype_ 所报告的类型是为 _T&_ 的。这很少会有影响，因为大部分左值表达式的类型内部就  
+是包含有左值引用 _qualifier_ 的。例如，返回左值的函数返回的总是左值引用。
+
+然而，这样的行为有一个值得我们注意的影响。在：  
+```C++
+  int x = 0;
+```  
+_x_ 是变量的名字，所以 _decltype(x)_ 是 _int_。但是使用 _parentheses_ 将名字 _x_ 括起来，也就是 _(x)_，产生的是比名字还  
+要复杂的表达式。做为名字的 _x_ 是左值，而 _C++_ 把 _(x)_ 也是定义为左值的。因此，_decltype((x))_ 是 _int&_。将名字用  
+_parentheses_ 括起来可以改变 _decltype_ 所报告的类型。
+
+在 _C++_ 中，这不过是稍微稀奇点。但是结合 _C++14_ 对于 _decltype(auto)_ 的支持，这意味着在你写的 _return_ 语句  
+上的一点看起来是微不足道的改变就可以影响函数的所推导出的类型：  
+```C++
+  decltype(auto) f1()
+  {
+    int x = 0;
+    …
+    return x;                 // decltype(x) is int, so f1 returns int
+  }
+
+  decltype(auto) f2()
+  {
+    int x = 0;
+    …
+    return (x);               // decltype((x)) is int&, so f2 returns int&
+  }
+```  
+注意：不仅 _f2_ 有着和 _f1_ 不同的返回类型，而且还返回了一个指向局部变量的引用。这样的代码让你坐上了未定义   
+行为的快车，一辆你确定不想上车的快车。  
+> 译者注：脑残规则，后续不修复的话，更是智障。
+
+最重要的教训是：当使用 _decltype(auto)_ 时，要非常小心。正在推导其类型的表达式中的看起来是微不足道的细节  
+就可以影响 _decltype(auto)_ 所报告的类型。为了确保正在被推导的类型是你所期待的类型，使用  [_Item 4_](./Chapter%201.md#item-4-理解如何去可视化推导出的类型) 所描述的技  
+术。
+
+与此同时，不要忽视大局。_decltype_ 单独使用和结合 _auto_ 一起使用确实偶尔可能会产生类型推导的惊喜，但那不  
+是常见的场景。一般情况下，_decltype_ 是会产生你所期待的类型的。当 _decltype_ 被应用到名字上时，尤其如此，因  
+为在那种场景下，_decltype_ 就是做听起来的那样：报告名字的类型的类型。
+
+### 需要记住的规则
+
+* _decltype_ 几乎总是能在不做修改的情况下就产生变量或表达式的类型。
+* 对于非名字的类型 _T_ 的左值表达式，_decltype_ 总是报告类型为 _T&_。
+* _C++14_ 支持 _decltype(auto)_，像 _auto_ 一样，_decltype(auto)_ 是根据它的表达式来进行类型推导的，但是使用  
+的是 _decltype_ 的规则。
+
