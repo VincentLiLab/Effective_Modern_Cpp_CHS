@@ -12,6 +12,10 @@
     - [译者总结](#译者总结-1)
   - [Item 3 理解 _decltype_](#item-3-理解-decltype)
     - [需要记住的规则](#需要记住的规则-2)
+  - [Item 4 了解如何查看所推导的类型](#item-4-了解如何查看所推导的类型)
+    - [_IDE_ 编辑器](#ide-编辑器)
+    - [编译器诊断](#编译器诊断)
+    - [运行时输出](#运行时输出)
 
 # Chapter 1 类型推导
 
@@ -357,7 +361,7 @@ _T_ 是实实在在的数组类型，这个类型包含着数组的大小，所�
 所以就是这样了：模板的类型推导所对应的 _auto-related_ 规则。在开始的时候，我就说过模板的类型推导是非常直  
 观的，对于大部分来说是的。当推导 _univeral references_ 所对应的类型时，给予左值的特殊对待把水搅浑了点，而  
 数组和函数所对应的 _decay-to-pointer_ 规则把水搅得更浑了点。有时候你想要只是抓住你的编译器，让它告诉你正  
-在推导的类型。当发生这样的情况时，转到 [_Item 4_](./Chapter%201.md#item-4-理解如何去可视化推导出的类型)。
+在推导的类型。当发生这样的情况时，转到 [_Item 4_](./Chapter%201.md#item-4-了解如何查看所推导的类型)。
 
 ### 需要记住的规则
 
@@ -699,9 +703,12 @@ _trailing return type_，而只留下前置的 _auto_。使用这种声明的格
                               // then assign 10 to it;
                               // this won't compile!
 ```
-此处，_d[5]_ 返回 _int&_，_authAndAccess_ 的 _auto_ 返回类型是会剥离掉引用的，因此产生的返回类型是 _int_。做为函数的返回值的 _int_ 是一个右值，而上面的代码试图分配 _10_ 到一个右值 _int_ 上。这在 _C++_ 中是被禁止的，所以代码不会通过编译。
+此处，_d[5]_ 返回 _int&_，_authAndAccess_ 的 _auto_ 返回类型是会剥离掉引用的，因此产生的返回类型是 _int_。做为函数  
+的返回值的 _int_ 是一个右值，而上面的代码试图分配 _10_ 到一个右值 _int_ 上。这在 _C++_ 中是被禁止的，所以代码不  
+会通过编译。
 
-为了让 _authAndAccess_ 按照我们想的那样去工作，对于它的返回类型，我们需要用 _decltype_ 的类型推导，即为： _authAndAccess_ 应该返回和表达式 _c[i]_ 相同的类型。_Ｃ++_ 的维护者预想到了在一些类型是被推测的场景中会需要  
+为了让 _authAndAccess_ 按照我们想的那样去工作，对于它的返回类型，我们需要用 _decltype_ 的类型推导，即为：  
+_authAndAccess_ 应该返回和表达式 _c[i]_ 相同的类型。_Ｃ++_ 的维护者预想到了在一些类型是被推测的场景中会需要  
 使用 _decltype_ 的类型推导规则，所以通过 _decltype(auto)_ 来让这些变成可能。最初看来是矛盾的 _decltype_ 和 _auto_  
 实际上却是非常合理的：_auto_ 指明了类型会被推导，而 _decltype_ 则说明了 _decltype_ 的规则应该在推导期间被使  
 用。因此我们可以像下面这样写 _authAndAccess_：  
@@ -838,7 +845,7 @@ _parentheses_ 括起来可以改变 _decltype_ 所报告的类型。
 > 译者注：脑残规则，后续不修复的话，更是智障。
 
 最重要的教训是：当使用 _decltype(auto)_ 时，要非常小心。正在推导其类型的表达式中的看起来是微不足道的细节  
-就可以影响 _decltype(auto)_ 所报告的类型。为了确保正在被推导的类型是你所期待的类型，使用  [_Item 4_](./Chapter%201.md#item-4-理解如何去可视化推导出的类型) 所描述的技  
+就可以影响 _decltype(auto)_ 所报告的类型。为了确保正在被推导的类型是你所期待的类型，使用  [_Item 4_](./Chapter%201.md#item-4-了解如何查看所推导的类型) 所描述的技  
 术。
 
 与此同时，不要忽视大局。_decltype_ 单独使用和结合 _auto_ 一起使用确实偶尔可能会产生类型推导的惊喜，但那不  
@@ -851,4 +858,99 @@ _parentheses_ 括起来可以改变 _decltype_ 所报告的类型。
 * 对于非名字的类型 _T_ 的左值表达式，_decltype_ 总是报告类型为 _T&_。
 * _C++14_ 支持 _decltype(auto)_，像 _auto_ 一样，_decltype(auto)_ 是根据它的表达式来进行类型推导的，但是使用  
 的是 _decltype_ 的规则。
+
+## Item 4 了解如何查看所推导的类型
+
+查看类型推导结果的工具选择是取决于软件开发过程的阶段的。我们将会探讨三种需要获取类型推导信息的可能  
+性：当你编辑代码时、当编译代码时和当运行代码时。
+
+### _IDE_ 编辑器
+
+当你将鼠标放在程序实体上时，_IDEs_ 的代码编辑器通常会显示程序实体的类型，比如：变量、形参和函数等。例  
+如这样的代码：  
+```C ++
+  const int theAnswer = 42;
+  
+  auto x = theAnswer;
+  auto y = &theAnswer;
+```  
+_IDE_ 编辑器可能会显示 x 的推导出的类型是 _int_，_y_ 则是 _const int*_。
+
+为了可以这样，你的代码或多或少是要处于可编译状态，因为是运行在 _IDE_ 内部的 _C++_ 编译器或至少是它的前端  
+才能使得 _IDE_ 可以提供这种信息。如果编译器不能充分理解你的代码以去解析它并执行类型推导的话，那么是不  
+能显示它所推导的类型的。
+
+对于像 _int_ 这样的简单的类型，来自于 _IDE_ 的信息通常是好的。然而，正如我们很快要看到的，当涉及到更复杂的  
+类型时，_IDE_ 所显示的信息可能就不是特别有帮助的了。
+
+### 编译器诊断
+
+一个可以让编译器显示它推导出的类型的高效方法是按照产生编译问题的方式来使用这个类型。报告出的问题几乎  
+肯定会提到那个导致问题出现的类型。
+
+例如，假如我们想要看到前面例子中的 _x_ 和 _y_ 的推导出的类型。我们首先声明一个我们没有定义的类模板。最好这样做：  
+```C++
+  template<typename T>        // declaration only for TD;
+  class TD;                   // TD == "Type Displayer
+```  
+尝试实例化这个模板会得到一个错误信息，因为没有模板定义可以实例化。为了看到 _x_ 和 _y_ 的类型，试着使用它们的类型来实例化 _TD_：  
+```C++
+  TD<decltype(x)> xType;      // elicit errors containing
+  TD<decltype(y)> yType;      // x's and y's types
+
+```
+
+我使用 _variableNameType_ 格式的变量名，因为它们倾向于产生一些错误信息，而这些错误能帮助你发现你正在查  
+找的信息。对于上面的代码，我的一个编译器发出的诊断信息部分如下，我已经高亮了我们想要的类型信息：
+```C++
+  error: aggregate 'TD<int> xType' has incomplete type and
+      cannot be defined
+  error: aggregate 'TD<const int *> yType' has incomplete type
+      and cannot be defined
+
+```  
+另一个不同的编译提供了相同的信息，但是使用了不同的格式：
+```C++
+  error: 'xType' uses undefined class 'TD<int>'
+  error: 'yType' uses undefined class 'TD<const int *>'
+
+```
+
+抛开格式差异不谈，当使用这个技术时，所有的我已经测试过的编译器都会发出和类型信息有关的错误信息。
+
+### 运行时输出
+
+在运行之前，使用 _printf_ 来显示类型信息的方法是不可以被使用的，但是 _printf_ 提供了对格式化输出的全部控制，当然不代表我建议你使用 _printf_。
+
+使用 _printf_ 来显示类型信息的方法直到运行时才可以使用，不代表我建议你使用 _printf_，但是 _printf_ 提供了对格式  
+化输出的全部控制。存在的挑战是创建一个适合显示你所关注的类型的文本表示。你正在想“不要流汗，_typeid_ 和  
+_type_info::name_ 可以来拯救。”在我们继续探究去看 _x_ 和 _y_ 的推导的类型时，你可能觉得我们可以写成这样：  
+```C++
+  std::cout << typeid(x).name() << '\n';          // display types for
+  std::cout << typeid(y).name() << '\n';          // x and y
+```
+
+这个方法依赖于这样的事实：那就是在像 _x_ 或 _y_ 这样的对象上调用 _typeid_ 会产生 _std::type_info_ 类型的对象，而  
+_std::type_info_ 有一个成员函数 _name_，它可以生成一个类型的名字的 _C-style_ 字符串，即为：一个 _const char*_。
+
+调用 _std::type_info::name_ 不能保证所返回的内容都是明显的，但是实现会尽力提供帮助。帮助的级别各不相同。 
+例如，_GUN_ 和 _clang_ 编译器报告 _x_ 的类型是 _i_，而 _y_ 的类型是 _PKi_。在这些编译器的输出中，_i_ 意味着 _int_，而 _PK_  
+意味着 _pointer to const_，一旦你学会了这个，这些结果也就合理了，这两个编译器都支持一个工具 _c++filt_，这个  
+工具可以解析这些无逻辑的类型。_Microsoft_ 的编译器更清晰的输出：_x_ 是 _int_，而 _y_ 是 _int const *_。
+
+因为对于 _x_ 和 _y_ 的类型来说结果是正确的，所以你可能会倾向于认为类型报告的问题已经解决了，但是先不要草  
+率，考虑一个更复杂的例子：  
+```C++
+  template<typename T>                  // template function to
+  void f(const T& param);               // be called
+
+  std::vector<Widget> createVec();      // factory function
+  
+  const auto vw = createVec();          // init vw w/factory return
+  if (!vw.empty()) {
+    f(&vw[0]);                          // call f
+    …
+  } 
+```  
+这个代码涉及到了一个用户定义类型 _Widget_、一个 _STL_ 容器 _std::vector_和一个 _auto_ 变量 _vw_，这更能代表你可能想要看到你的编译器推导出类型的情景。例如，能知道所推导出的模板类型形参 _T_ 和 _f_ 的函数形参 _param_ 的类型就好了。
 

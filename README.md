@@ -1,7 +1,7 @@
 本项目是  _**Scott Meyers**_ 所写的 **_Effective Modern C++_** 的中文简体翻译。  
 >This is a Chinese translation of the **_Effective Modern C++_** written by _**Scott Meyers**_.  
 
-当然，这个翻译对于一些读者来说是不完美的和不标准的，因为存在着很多主管理解。我会持续改进的，如果大家  
+当然，这个翻译对于一些读者来说是不完美的和不标准的，因为存在着很多主观理解。我会持续改进的，如果大家  
 有什么建议的话，请给我发邮件，这是我的邮箱 <ljqvincent@163.com>。  
 >Of course, the translation is not perfect and not standard for some people, because there is some >subjective  
 >understandings. I will continue to improve it, so email me <ljqvincent@163.com> if you have any >suggestions.
