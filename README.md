@@ -8,8 +8,10 @@
 
 下面是我不知道如何解决的问题，如果大家知道怎么解决的话，请给我发邮件。  
 * 如何让 _Markdown_ 中的 _Preview_ 中的每一行都一样长。
+* 同一个 _md_ 中有相同标题时，如何进行设置。
 >The following is some issues that i don't know how to fix. Please email me if anybody knows how to >fix the issues. 
 >* How to make each line the same length in the Preview of Mardown.
+>* When there are same headlines in the same md, how to set up.
 
 翻译惯例
 * case 场景

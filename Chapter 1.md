@@ -1,6 +1,6 @@
 - [Chapter 1 类型推导](#chapter-1-类型推导)
   - [Item 1 理解模板的类型推导](#item-1-理解模板的类型推导)
-    - [场景 1：_ParamType_ 是指针类型或者引用类型，但不是 _universal reference_](#场景-1paramtype-是指针类型或者引用类型但不是-universal-reference)
+    - [场景 1：_ParamType_ 是指针类型或者引用类型，但不是 _univeral reference_](#场景-1paramtype-是指针类型或者引用类型但不是-univeral-reference)
     - [场景 2：_ParamType_ 是 _univeral reference_](#场景-2paramtype-是-univeral-reference)
     - [场景 3：_ParamType_ 既不是指针类型也不是引用类型](#场景-3paramtype-既不是指针类型也不是引用类型)
     - [数组实参](#数组实参)
@@ -16,6 +16,7 @@
     - [_IDE_ 编辑器](#ide-编辑器)
     - [编译器诊断](#编译器诊断)
     - [运行时输出](#运行时输出)
+    - [需要记住的规则](#需要记住的规则-3)
 
 # Chapter 1 类型推导
 
@@ -28,7 +29,7 @@ _C++98_ 只有一组类型推导规则：函数模板所对应的类型推导。
 只有深刻理解了类型推导是如何工作的，才能在 _modern C++_ 中进行高效编程。有很多类型推导的场景：调用函  
 数模板时、大多数 _auto_ 出现的情景中、_decltype_ 表达式中和 _C++14_ 中的 _decltype(auto)_ 中。
 
-这章提供所提供的类型推导的内容是每一个 "C++" 开发者都需要的。这些内容解释了模板的类型推导是如何工作  
+这章提供所提供的类型推导的内容是每一个 _C++_ 开发者都需要的。这些内容解释了模板的类型推导是如何工作  
 的、_auto_ 是如何在模板的类型推导之上构建的，以及 "decltype" 是如何走它自己的路的。本章甚至解释了如何强  
 制编译器使类型推导的结果变得可见，这能够确保编译器正在推导你想让它们去推导的类型。
 
@@ -87,7 +88,7 @@ _T_ 被推导为 _int_，而 _ParamType_ 被推导为 _const int&_。
   f(expr);                    // deduce T and ParamType from expr
 ```
 
-### 场景 1：_ParamType_ 是指针类型或者引用类型，但不是 _universal reference_
+### 场景 1：_ParamType_ 是指针类型或者引用类型，但不是 _univeral reference_
 
 最简单的场景是当 _ParamType_ 是引用类型或者指针类型，但不是 _universal reference_ 时。在这个场景中，类型推  
 导是像下面这样工作的：  
@@ -172,7 +173,7 @@ _T&_ 的模板上时是安全的：因为对象的 _constness_ 成为了 _T_ 的
 * 如果 _expr_ 是一个左值的话，_T_ 和 _ParamType_ 都会被推导为左值引用。这就更不寻常了。首先，这是唯一一种  
 在模板的类型推导中 _T_ 会被推导为引用的情景。其次，尽管 _ParamType_ 是使用右值引用的语法来声明的，但  
 是所推导出的类型却是左值引用。
-* 如果 _expr_ 是一个右值的话，那么 **普通的** 规则就会被应用，即为：[场景 1](./Chapter%201.md#场景-1-_ParamType_-是一个指针类型或者引用类型-但不能是-_univeral-reference_)。
+* 如果 _expr_ 是一个右值的话，那么 **普通的** 规则就会被应用，即为：[场景 1](./Chapter%201.md#场景-1paramtype-是指针类型或者引用类型但不是-univeral-reference)
 
 例如：  
 ```C++
@@ -371,6 +372,7 @@ _T_ 是实实在在的数组类型，这个类型包含着数组的大小，所�
 * 在模板的类型推导期间，数组名或函数名的实参是会退化为指针的，除非它们是被用于初始化引用的。
 
 ### 译者总结  
+
 ```C++
   template<typename T>
   void f(ParamType param);
@@ -597,7 +599,7 @@ _auto_ 声明变量，并且是使用 _braced initializer_ 进行的初始化的
 ```  
 > 译者注：脑残规则，后续不修复的话，更是智障。
 
-### 需要记住的规则  
+### 需要记住的规则
 
 * _auto_ 的类型推导和模板的类型推导一般情况下都是相同的，只是 _auto_ 的类型推导会假设 _braced initializer_ 表  
 示的是 _std::initialier_list_，而模板的类型推导则不会。  
@@ -861,7 +863,7 @@ _parentheses_ 括起来可以改变 _decltype_ 所报告的类型。
 
 ## Item 4 了解如何查看所推导的类型
 
-查看类型推导结果的工具选择是取决于软件开发过程的阶段的。我们将会探讨三种需要获取类型推导信息的可能  
+查看类型推导结果的工具的选择是取决于软件开发过程的阶段的。我们将会探讨三种需要获取类型推导信息的可能  
 性：当你编辑代码时、当编译代码时和当运行代码时。
 
 ### _IDE_ 编辑器
@@ -876,16 +878,16 @@ _parentheses_ 括起来可以改变 _decltype_ 所报告的类型。
 ```  
 _IDE_ 编辑器可能会显示 x 的推导出的类型是 _int_，_y_ 则是 _const int*_。
 
-为了可以这样，你的代码或多或少是要处于可编译状态，因为是运行在 _IDE_ 内部的 _C++_ 编译器或至少是它的前端  
-才能使得 _IDE_ 可以提供这种信息。如果编译器不能充分理解你的代码以去解析它并执行类型推导的话，那么是不  
-能显示它所推导的类型的。
+为了可以这样，你的代码或多或少得处于可编译状态，因为是运行在 _IDE_ 内部的 _C++_ 编译器或至少是它的前端才  
+能使得 _IDE_ 可以提供这种信息。如果编译器不能充分理解你的代码以去解析它并执行类型推导的话，那么是不能  
+显示它所推导的类型的。
 
 对于像 _int_ 这样的简单的类型，来自于 _IDE_ 的信息通常是好的。然而，正如我们很快要看到的，当涉及到更复杂的  
-类型时，_IDE_ 所显示的信息可能就不是特别有帮助的了。
+类型时，_IDE_ 所显示的信息可能就不是特别有帮助了。
 
 ### 编译器诊断
 
-一个可以让编译器显示它推导出的类型的高效方法是按照产生编译问题的方式来使用这个类型。报告出的问题几乎  
+一个可以让编译器显示它所推导的类型的高效方法是按照产生编译问题的方式来使用这个类型。报告出的问题几乎  
 肯定会提到那个导致问题出现的类型。
 
 例如，假如我们想要看到前面例子中的 _x_ 和 _y_ 的推导出的类型。我们首先声明一个我们没有定义的类模板。最好这样做：  
@@ -893,11 +895,11 @@ _IDE_ 编辑器可能会显示 x 的推导出的类型是 _int_，_y_ 则是 _co
   template<typename T>        // declaration only for TD;
   class TD;                   // TD == "Type Displayer
 ```  
-尝试实例化这个模板会得到一个错误信息，因为没有模板定义可以实例化。为了看到 _x_ 和 _y_ 的类型，试着使用它们的类型来实例化 _TD_：  
+尝试实例化这个模板会得到一个错误信息，因为没有模板定义可以实例化。为了看到 _x_ 和 _y_ 的类型，试着使用它  
+们的类型来实例化 _TD_：  
 ```C++
   TD<decltype(x)> xType;      // elicit errors containing
   TD<decltype(y)> yType;      // x's and y's types
-
 ```
 
 我使用 _variableNameType_ 格式的变量名，因为它们倾向于产生一些错误信息，而这些错误能帮助你发现你正在查  
@@ -907,24 +909,20 @@ _IDE_ 编辑器可能会显示 x 的推导出的类型是 _int_，_y_ 则是 _co
       cannot be defined
   error: aggregate 'TD<const int *> yType' has incomplete type
       and cannot be defined
-
 ```  
 另一个不同的编译提供了相同的信息，但是使用了不同的格式：
 ```C++
   error: 'xType' uses undefined class 'TD<int>'
   error: 'yType' uses undefined class 'TD<const int *>'
-
 ```
 
-抛开格式差异不谈，当使用这个技术时，所有的我已经测试过的编译器都会发出和类型信息有关的错误信息。
+抛开格式差异不谈，当使用这个技术时，所有的我已经测试过的编译器都会发出类型信息有关的错误信息。
 
 ### 运行时输出
 
-在运行之前，使用 _printf_ 来显示类型信息的方法是不可以被使用的，但是 _printf_ 提供了对格式化输出的全部控制，当然不代表我建议你使用 _printf_。
-
 使用 _printf_ 来显示类型信息的方法直到运行时才可以使用，不代表我建议你使用 _printf_，但是 _printf_ 提供了对格式  
-化输出的全部控制。存在的挑战是创建一个适合显示你所关注的类型的文本表示。你正在想“不要流汗，_typeid_ 和  
-_type_info::name_ 可以来拯救。”在我们继续探究去看 _x_ 和 _y_ 的推导的类型时，你可能觉得我们可以写成这样：  
+化输出的全部控制。存在的挑战是创建一个适合显示你所关注的类型的文本表示。你正在想“不要流汗，可以使用   
+_typeid_ 和 _type_info::name_。”我们继续探究 _x_ 和 _y_ 的推导的类型，你可能认为我们可以写成这样：  
 ```C++
   std::cout << typeid(x).name() << '\n';          // display types for
   std::cout << typeid(y).name() << '\n';          // x and y
@@ -933,13 +931,13 @@ _type_info::name_ 可以来拯救。”在我们继续探究去看 _x_ 和 _y_ �
 这个方法依赖于这样的事实：那就是在像 _x_ 或 _y_ 这样的对象上调用 _typeid_ 会产生 _std::type_info_ 类型的对象，而  
 _std::type_info_ 有一个成员函数 _name_，它可以生成一个类型的名字的 _C-style_ 字符串，即为：一个 _const char*_。
 
-调用 _std::type_info::name_ 不能保证所返回的内容都是明显的，但是实现会尽力提供帮助。帮助的级别各不相同。 
-例如，_GUN_ 和 _clang_ 编译器报告 _x_ 的类型是 _i_，而 _y_ 的类型是 _PKi_。在这些编译器的输出中，_i_ 意味着 _int_，而 _PK_  
-意味着 _pointer to const_，一旦你学会了这个，这些结果也就合理了，这两个编译器都支持一个工具 _c++filt_，这个  
-工具可以解析这些无逻辑的类型。_Microsoft_ 的编译器更清晰的输出：_x_ 是 _int_，而 _y_ 是 _int const *_。
+调用 _std::type_info::name_ 并不能保证所返回的内容都是明显的，但是会尽力提供帮助。帮助的级别各不相同。例  
+如，_GUN_ 编译器和 _Clang_ 编译器所报告的 _x_ 的类型是 _i_，而 _y_ 的类型是 _PKi_。在这些编译器的输出中，_i_ 意味着是  
+_int_，而 _PK_ 意味着是 _pointer to const_，一旦你学会了这个，这些结果也就合理了，这两个编译器都支持一个工具  
+_c++filt_，这个工具可以解析这些无逻辑的类型。_Microsoft_ 的编译器有更清晰的输出：_x_ 是 _int_，而 _y_ 是 _int const *_。
 
-因为对于 _x_ 和 _y_ 的类型来说结果是正确的，所以你可能会倾向于认为类型报告的问题已经解决了，但是先不要草  
-率，考虑一个更复杂的例子：  
+因为对于 _x_ 和 _y_ 的类型来说，结果是正确的，所以你可能会倾向于认为类型报告的问题已经解决了，但是先不要  
+草率，考虑一个更复杂的例子：  
 ```C++
   template<typename T>                  // template function to
   void f(const T& param);               // be called
@@ -952,5 +950,124 @@ _std::type_info_ 有一个成员函数 _name_，它可以生成一个类型的�
     …
   } 
 ```  
-这个代码涉及到了一个用户定义类型 _Widget_、一个 _STL_ 容器 _std::vector_和一个 _auto_ 变量 _vw_，这更能代表你可能想要看到你的编译器推导出类型的情景。例如，能知道所推导出的模板类型形参 _T_ 和 _f_ 的函数形参 _param_ 的类型就好了。
+这个代码涉及到了一个用户定义类型 _Widget_、一个 _STL_ 容器 _std::vector_ 和一个 _auto_ 变量 _vw_，这更能代表你可能  
+想要看到你的编译器推导出类型的情景。例如，能知道所推导出的模板类型形参 _T_ 和 _f_ 的函数形参 _param_ 的类型  
+就好了。
 
+在这个问题上使用 _typeid_ 是直观的。仅仅需要添加一些代码到 _f_ 中，就可以显示你想要看到的类型：  
+```C++
+template<typename T>
+void f(const T& param)
+{
+  using std::cout;
+  cout << "T =     " << typeid(T).name() << '\n';     
+  
+  cout << "T = " << typeid(T).name() << '\n';               // show T
+
+  cout << "param = " << typeid(param).name() << '\n';       // show
+  …                                                         // param's
+}                                                           // type
+```  
+_GUN_ 编译器和 _Clang_ 编译器所生成的可执行文件会产生这样的输出：  
+```C++
+  T = PK6Widget
+  param = PK6Widget
+```  
+我们已经知道了，对于这些编译器来说，_PK_ 意味着 **_pointer-to-const_** ，所以唯一神秘的只有 _6_ 了。它只是后面的  
+类型名 _Widget_ 的字符数量。所以这些编译器告诉我们的是 _T_ 和 _param_ 的类型都是为 _const Widget*_。
+
+_Microsoft_ 的编译器也这样：  
+```C++
+  T = class Widget const *
+  param = class Widget const *
+```  
+
+三个独立的编译器都产生了相同信息，应该能认为这些信息是准确的了吧。但是仔细看下。在模板 _f_ 中，_param_ 的  
+类型是 _const T&_。如果是这样的话，_T_ 和 _param_ 有着相同的类型难道不奇怪吗？例如，如果 _T_ 是 _int_ 的话，那么  
+_param_ 应该是 _const int&_，不应该是相同的。
+
+不幸地是，_std::type_info::name_ 的结果是不可靠的。例如，在这个场景中，三个编译器所报告的 _param_ 的类型都  
+是不正确的。此外，它们是被要求出错的，因为 _std::type_info::name_ 的规范要求这些类型是按照 _by-value_ 的形式  
+传递给模板函数的。参考 [_Item 1_](./Chapter%201.md#item-1-理解模板的类型推导)，如果这些类型是引用的话，那么它们的 _reference-ness_ 是会被忽略的，如果忽略  
+后还有 _const_ 或 _volatile_ 的话，那么它们的 _constness_ 或 _volatileness_ 也是会被忽略的。这也是为什么 _param_ 的类  
+型实际上是 _const Widget * const &_ 但却会被报告为 _const Widget *_ 的原因。它们的 _reference-ness_ 首先会被忽略， 
+然后所生成的指针的 _constness_ 也会被忽略。
+
+同样不幸地是，_IDE_ 所显示的类型信息也是不可靠的，或者至少是不能可靠地被使用的。对于相同的实例，一个我  
+知道的 _IDE_ 编辑器报告的类型是下面这样的，这不是我乱写的：  
+```C++
+  const
+  std::_Simple_types<std::_Wrap_alloc<std::_Vec_base_types<Widget,
+  std::allocator<Widget> >::_Alloc>::value_type>::value_type *
+```  
+这个 _IDE_ 编辑器显示的 _param_ 的类型为： 
+```C++
+  const std::_Simple_types<...>::value_type *const &
+```  
+比起 _T_ 的类型来说，这没有那么令人不安，但是其中的 _..._ 是令人困惑的，直到你明白了其中的 _..._ 是 _IDE_ 编辑器在  
+说“我正在忽略 _T_ 的类型那部分呢。”幸运的话，你的开发环境可以更好地处理这样的代码。
+
+如果你更倾向于依赖库而不是幸运的话，那么你会很想知道：_std::type_info::name_ 和 _IDEs_ 为什么会失败呢？而通  
+常被写为 _Boost.TypeIndex_ 的 _Boost TypeIndex library_ 又为什么会成功呢？这个库不是标准 _C++_ 的一部分，但 _IEDs_  
+和像 _TD_ 这样的模板也不是标准 _C++_ 的一部分。此外， [boost.com](https://www.boost.org/) 上的 _Boost libraries_ 是跨平台的、开源的，并  
+且可以在一个许可证下使用，即使是最偏执的公司的法律团队也能接受这个许可证，这意味着使用 _Boost libraries_  
+的代码几乎可以像依赖于标准库的那些代码一样可移植。
+
+下面是我们的函数 _f_ 如何使用 _Boost.TypeIndex_ 来生成准确的类型信息：  
+```C++
+  #include <boost/type_index.hpp>
+
+  template<typename T>
+  void f(const T& param)
+  {
+    using std::cout;
+    using boost::typeindex::type_id_with_cvr;
+    
+    // show T
+    cout << "T = "
+      << type_id_with_cvr<T>().pretty_name()
+      << '\n';
+    
+    // show param's type
+    cout << "param = "
+      << type_id_with_cvr<decltype(param)>().pretty_name()
+      << '\n';
+    …
+}
+```
+
+它的工作方式是：函数模板 _boost::typeindex::type_id_with_cvr_ 接受一个类型实参，而这个类型就是我们想要的信  
+息，并且这个函数模板是不会将 _const_、_volatile_ 和 _reference qualifiers_ 进行忽略的 ，所以这个函数模板名中包含有  
+**_with_cvr_**。结果就是 _boost::typeindex::type_id_with_cvr_ 的 _pretty_name_ 成员函数会产生一个包含有类型的人性化表  
+示的 _std::string_。
+
+有了这个 _f_ 的实现，再一次考虑那个当 _typeid_ 被使用时产生了 _param_ 的错误类型信息的调用：  
+```C++
+  std::vector<Widget> createVec();      // factory function
+
+  const auto vw = createVec();          // init vw w/factory return
+  
+  if (!vw.empty()) {
+    f(&vw[0]);                          // call f
+    …
+  }
+```  
+在 _GUN_ 编译器和 _Clang_ 编译器下，_Boost TypeIndex_ 会产生下面这样的输出，它是准确的：  
+```C++
+  T = Widget const*
+  param = Widget const* const&
+```  
+_Microsoft_ 的编译器所产生的结果本质上也是相同的：  
+```C++
+  T = class Widget const *
+  param = class Widget const * const &
+```  
+
+这样的近似一致性是好的，但是更重要的是记住 _IDE_ 编辑器、编译器错误信息和像 _Boost.TypeIndex_ 这样的库都只  
+是工具，可以使用这些工具来帮助你搞清楚编译器正在推导的类型是什么。这些都是有用的，但说到底，还是要理  
+解 _Item 1-3_ 中的类型推导信息，这是无可替代的。
+
+### 需要记住的规则
+
+* 所推导的类型通常可以通过使用 _IDE_ 编辑器、编译器错误信息和 _Boost TypeIndex library_ 来进行查看。
+* 一些工具的结果可能是无用的和不准确的，所以理解 _C++_ 的类型推导规则仍然是必要的。
