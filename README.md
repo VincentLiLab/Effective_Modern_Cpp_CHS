@@ -15,14 +15,18 @@
 
 翻译惯例
 * case 场景
-* situation 情景
+* situation 情景 情况
 * example 例子
 * scenario 情况
 * for example 例如
 * eg 比如
-* braced initializer 花括号初始化表达式
-* initializer 表达式
+* _braced initializer_ 花括号初始化表达式
+* _initializer_ 表达式
 * specification 规范
+* general 通用的 普遍的
+* _undefined behavior_
+* _iterator_
+* suppose 假设 假如 假定
   
 译者注  
 * 在 _C++_ 中，基本类型是：_int_ 类型、_bool_ 类型和 _unsigned_ 等，复合类型是：引用类型、指针类型、数组类型  
