@@ -81,7 +81,6 @@ _T_ 被推导为 _int_，而 _ParamType_ 被推导为 _const int&_。
 
 因此我们有三种类型推导的情况来检查。每个都基于我们的模板的通用格式，然后调用它：  
 ```C++
-
   template<typename T>
   void f(ParamType param);
   
@@ -106,7 +105,7 @@ _T_ 被推导为 _int_，而 _ParamType_ 被推导为 _const int&_。
   const int cx = x;           // cx is a const int
   const int& rx = x;          // rx is a reference to x as a const int 
 ```  
-_param_ 对应的推导的类型和各种调用中的 "T" 是像下面的的这样：  
+_param_ 对应的推导的类型和各种调用中的 _T_ 是像下面的的这样：  
 ```C++
   f(x);                       // T is int, param's type is int&
   
@@ -118,9 +117,9 @@ _param_ 对应的推导的类型和各种调用中的 "T" 是像下面的的这�
 ```
 
 在第二个和第三个调用中，因为 _cx_ 和 _rx_ 是 _const_ 类型的，所以 _T_ 会被推导为 _const int_，因此产生了 _const int&_ 的  
-形参类型。这对于调用者是重要的。当传递一个 _const_ 类型的对象到引用类型的形参上时，是希望这个对象是保持  
-不变的，即为：希望形参的类型是 _const&_ 的。这也是为什么传递一个 _const_ 类型的对象到一个持有形参的类型为  
-_T&_ 的模板上时是安全的：因为对象的 _constness_ 成为了 _T_ 的一部分。
+形参类型。这对于调用者是重要的。当传递一个 _const_ 类型的对象到引用类型的形参上时，希望的是这个对象是保  
+持不变的，即为：希望形参的类型是 _const&_ 的。这也是为什么传递一个 _const_ 类型的对象到一个持有形参的类型  
+为 _T&_ 的模板上时是安全的：因为对象的 _constness_ 成为了 _T_ 的一部分。
 
 在第三个例子中，尽管 _rx_ 的类型是引用，但是 _T_ 还是被推导为了 _non-reference_。这是因为 _rx_ 的 _reference-ness_ 在  
 类型推导期间被忽略了。
@@ -233,7 +232,7 @@ _T&_ 的模板上时是安全的：因为对象的 _constness_ 成为了 _T_ 的
 
 _const_ 和 _volatile_ 只有对于 _by-value_ 的形参才能被忽略，记住这个是非常重要的。正如我们刚才已经看到的，对于  
 _references-to-const_ 或 _pointers-to-const_ 形参，_expr_ 的 _constness_ 则会在类型推导期间一直保留。但是考虑这种  
-场景，_expr_ 是指向 _const_ 对象的 _const_ 指针，并且 _expr_ 会被传递给 _by-value 的 _param_：  
+场景，_expr_ 是指向 _const_ 对象的 _const_ 指针，并且 _expr_ 会被传递给 _by-value_ 的 _param_：  
 ```C++
   template<typename T>
   void f(T param);            // param is still passed by value
@@ -381,7 +380,7 @@ _T_ 是实实在在的数组类型，这个类型包含着数组的大小，所�
 ```
 * 当 _ParamType_ 是指针类型或者引用类型，但不能是 _universal reference_ 时，是根据实参的类型和 _ParamType_  
 的特征来推导 _T_ 的。
-* 当 _ParamType_ 既不是指针类型也不是引用类型时，剥离了 _constness_ 和 "volatile-ness" 的实参的类型就是 _T_。
+* 当 _ParamType_ 既不是指针类型也不是引用类型时，剥离了 _constness_ 和 _volatile-ness_ 的实参的类型就是 _T_。
 
 ## Item 2 理解 _auto_ 的类型推导
 
