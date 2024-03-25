@@ -232,7 +232,7 @@ _param_ 对应的推导的类型和各种调用中的 _T_ 是像下面的的这�
 
 _const_ 和 _volatile_ 只有对于 _by-value_ 的形参才能被忽略，记住这个是非常重要的。正如我们刚才已经看到的，对于  
 _references-to-const_ 或 _pointers-to-const_ 形参，_expr_ 的 _constness_ 则会在类型推导期间一直保留。但是考虑这种  
-场景，_expr_ 是指向 _const_ 对象的 _const_ 指针，并且 _expr_ 会被传递给 _by-value_ 的 _param_：  
+场景：_expr_ 是指向 _const_ 对象的 _const_ 指针，并且 _expr_ 会被传递给 _by-value_ 的 _param_：  
 ```C++
   template<typename T>
   void f(T param);            // param is still passed by value
@@ -245,11 +245,11 @@ _references-to-const_ 或 _pointers-to-const_ 形参，_expr_ 的 _constness_ �
 
 这里的 * 右边的 _const_ 声明了 _ptr_ 是 _const_ 的：_ptr_ 不能再指向一个其他的地址了，也不能指向
 _null_ 了。而 * 左边的  
-_const_ 说明了 _ptr_ 所指向的字符串是 _const_ 的，因此是不能被更改的。当 _ptr_ 被传递给 _f_ 时，组成指针的位被复制到  
-_param_ 中。因此，_ptr_ 本身是 _pass-by-value_ 的。与 _by-value_ 的形参所对应的类型推导规则一样，_ptr_ 的 _constness_  
-会被忽略，而所推导出的 _param_ 的类型是 _const char*_ 的，即为：一个指向 _const_ 字符串的可更改指针。_ptr_ 所指  
-向的字符串的 _constness_ 在类型推导期间是被保留的，但是 _ptr_ 的 _constness_ 在拷贝 _ptr_ 去创建一个新的指针 _param_  
-时是被忽略的。
+_const_ 则说明了 _ptr_ 所指向的字符串是 _const_ 的，因此是不能被更改的。当 _ptr_ 被传递给 _f_ 时，这个指针会按位复制  
+给 _param_ 。因此，_ptr_ 本身是 _pass-by-value_ 的。与 _by-value_ 的形参所对应的类型推导规则一样，_ptr_ 的 _constness_  
+会被忽略掉，所推导出的 _param_ 的类型就是 _const char*_ 了，即为：一个指向 _const_ 字符串的可更改指针。_ptr_ 所  
+指向的字符串的 _constness_ 在类型推导期间是被保留的，而 _ptr_ 的 _constness_ 在拷贝 _ptr_ 去创建一个新的指针 _param_   
+时是被忽略掉的。
 
 ### 数组实参
 
@@ -442,7 +442,7 @@ _type specifier_ 是 _const auto&_。为了推导上面例子中的 _x_、_cx_ �
 
 正如我说过的，除了有一个例外以外，我们马上就要讨论它，_auto_ 的类型推导和模板的类型推导都是相同的。
 
-根据通用函数模板中的 _param_ 所对应的 _type specifier_ 也就是 "ParamType" 的特征，[_Item 1_](./Chapter%201.md#item-1-理解模板的类型推导) 将模板的类型推导分为  
+根据通用函数模板中的 _param_ 所对应的 _type specifier_ 也就是 _ParamType_ 的特征，[_Item 1_](./Chapter%201.md#item-1-理解模板的类型推导) 将模板的类型推导分为  
 了三个场景。在使用 _auto_ 的变量声明中，_type specifier_ 代替了 _ParamType_，所以也对应有三种场景：  
 * 场景 1：_type specifier_ 是指针类型或引用类型，但不是 _universal reference_。
 * 场景 2：_type specifier_ 是 _universal reference_。
@@ -549,7 +549,7 @@ _braced initializer_ 来初始化时，所推导出的类型是 _std::initialier
   void f(T param);            // declaration equivalent to
                               // x's declaration
 
-  f({ 11, 23, 9 }); // error! can't deduce type for T
+  f({ 11, 23, 9 });           // error! can't deduce type for T
 ```  
 然而，如果你在模板中为一些未知的 _T_ 指定了 _param_ 是 _std::initialier_list&lt;T&gt;_ 的话，模板的类型推导将会推导出  
 _T_ 是什么：  
@@ -617,9 +617,9 @@ _auto_ 声明变量，并且是使用 _braced initializer_ 进行的初始化的
   int x = 27;
   const int cx = x;
 
-  auto &rx = cx;              // auto == T, ParamType == T&, rx == param, cx == argument                        
-                              // 'auto &rx = cx' is mapped with 'f(cx)'. T is 'const int' 
-                              // and ParamType is 'const int&', so auto is 'const int'
+  auto &rx = cx;              // auto == T, type specifier == T&, rx == param, cx == argument                        
+                              // 'auto &rx = cx' is mapped with 'f(cx)'. T is const int 
+                              // and ParamType is 'const int&', so auto is const int
                               // and rx's type is const int&
 ```
 
@@ -687,11 +687,11 @@ _C++11_ 允许 _single-statement_ 的 _lambdas_ 的返回类型被推导，而 _
 _trailing return type_，而只留下前置的 _auto_。使用这种声明的格式，_auto_ 意味着类型推导将会发生。特别是意味着  
 编译器将会根据函数的实现来产生函数的返回类型：  
 ```C++
-  template<typename Container, typename Index>              // C++14;
-  auto authAndAccess(Container& c, Index i)                 // not quite
-  {                                                         // correct
+  template<typename Container, typename Index>    // C++14;
+  auto authAndAccess(Container& c, Index i)       // not quite
+  {                                               // correct
     authenticateUser();
-    return c[i];                                            // return type deduced from c[i]  
+    return c[i];                                  // return type deduced from c[i]  
   }
 ```  
 [_Item 2_](./Chapter%201.md#item-2-理解-auto-的类型推导) 解释了：对于使用了 _auto_ 返回类型规范的函数，译器会利用模板的类型推导。在这个场景中是有问题的。  
