@@ -29,6 +29,9 @@
 *  _braced initializer_ 花括号初始化表达式
 * _initializer_ 表达式
 * container 容器
+* assignment 赋值
+* braces {}
+* parentheses ()
 * _lamba expression_ 
 * _iterator_
 * _undefined behavior_
@@ -46,7 +49,12 @@
 * _trailing return type_
 * _container_
 * _proxy_
-
+* _alias declartion_ 
+* _braced initialization_
+* _uncopyable_
+* _narrowing conversions_
+* _legacy_
+* _numeric_ 
 > 比如 container 可以翻译为容器，也可以使用 _container_，尽量使用了 _container_
 
 译者注  

@@ -1,10 +1,10 @@
-- [Chapter 2 auto](#chapter-2-auto)
+- [Chapter 2 _auto_](#chapter-2-auto)
   - [Item 5 首选 _auto_ 而不是显式类型声明](#item-5-首选-auto-而不是显式类型声明)
     - [需要记住的规则](#需要记住的规则)
   - [Item 6 当 _auto_ 推导出的类型是 _undesired_ 时，使用 _the explicitly typed initializer idiom_](#item-6-当-auto-推导出的类型是-undesired-时使用-the-explicitly-typed-initializer-idiom)
     - [需要记住的规则：](#需要记住的规则-1)
 
-# Chapter 2 auto
+# Chapter 2 _auto_
 
 在概念上，_auto_ 是非常简单的，但是实际上它要比看起来隐晦的多。使用 _auto_  可以少写一些代码，当然使用 _auto_  
 也可以避免手动声明类型所带来的正确性问题和效率问题_。此外，一些 _auto_ 的类型推导结果虽然是完全地遵守规  
@@ -88,7 +88,7 @@ _std::function_ 对象。是的，我们可以使用 _std::function_ 对象，�
 _std::function_ 是一个 _C++11_ 标准库的模板，它推广了函数指针的概念。函数指针只可以指向函数，而 _std::function_  
 对象可以引用任意可调用的对象，也就是任意可以像函数那样被调用的东西。就像是当你创建一个函数指针时，你  
 必须要指明函数的类型也就是函数的 _signature_ 一样，当你创建一个 _std::function_ 对象时，你也必须要指明函数的  
-类型。这可以通过 _std::function_ 的模板形参来完成。例如，去声明一个被命名为 _func_ 的 _std::function_ 对象，它可以  
+类型。这可以通过 _std::function_ 的模板形参来完成。例如：去声明一个被命名为 _func_ 的 _std::function_ 对象，它可以  
 引用任意可调用对象，就像它有这样的 _signature_ 一样：  
 ```C++
   bool(const std::unique_ptr<Widget>&,  // C++11 signature for
@@ -132,7 +132,7 @@ _auto_ 的优势不止可以避免未初始化的变量和冗长的变量声明�
 ```  
 _v.size()_ 的官方的返回类型是 _std::vector<int>::size_type_，但是很少有开发者会注意到它。_std::vector<int>::size_type_ 被指定为是  
 _unsigned integral_ 类型，所以很多开发者认为使用 _unsigned_ 也足够了，所以就写成了上面那样。这可以有一些有  
-趣的后果。例如，在 _32-bit_ _Windows_ 上，_unsigned_ 和 _std::vector<int>::size_type_ 是相同的大小，但是在 _64-bit_ _Windows_  
+趣的后果。例如：在 _32-bit_ _Windows_ 上，_unsigned_ 和 _std::vector<int>::size_type_ 是相同的大小，但是在 _64-bit_ _Windows_  
 上，_unsigned_ 是 _32bits_ 而 _std::vector<int>::size_type_ 则是  _64bits_。这意味着在 _32-bit_ _Windows_ 上可以正确工作的代码可  
 能在 _64-bit_ _Windows_ 下就表现的是不正确的，然后当你将程序从 _32bits_ 移植到 _64bits_ 时，谁会想花时间在这种问  
 题上呢？
@@ -196,13 +196,13 @@ _Ruby_，它们其中的变量很少会被显式声明类型。软件开发社�
 
 使用 _auto_ 减弱了通过快速看一眼源代码就能知道一个对象的类型的能力，一些开发者会对这种情况感到焦虑。但  
 是，_IDE_ 显示对象的类型的能力常常可以缓解这种焦虑，即使是考虑到了 [_Item 4_](./Chapter%201.md#item-4-了解如何查看所推导的类型) 中提到的 _IDE_ 类型显示问题。对  
-于一个对象的类型的抽象理解和它的实际类型是一样有用的。例如，通常知道一个对象是 _container_、_counter_ 或智  
+于一个对象的类型的抽象理解和它的实际类型是一样有用的。例如：通常知道一个对象是 _container_、_counter_ 或智  
 能指针就足够了，而无需知道这个对象是什么类型的 _container_、_counter_ 或智能指针。假如再选一个好的变量名  
 的话，这样抽象类型的信息应该几乎总是在眼前了。
 
 事实上，显式类型声明通常会在正确性上或效率性上或两者上加大引入细小错误的机会。此外，如果 _auto_ 变量所  
 对应的初始化表达式发生了改变的话，那么 _auto_ 变量所对应的类型也会自动地发生改变，这意味着通过使用 _auto_  
-一些重构也更方便了。例如，一个函数最初被声明是返回 _int_，但是你后来又决定返回 _long_ 了，那么如果调用这个  
+一些重构也更方便了。例如：一个函数最初被声明是返回 _int_，但是你后来又决定返回 _long_ 了，那么如果调用这个  
 函数的结果是被保存在了 _auto_ 变量的话，那么调用代码会在你下次编译的时候自动进行更新。而如果调用这个函  
 数的结果是被保存在了被显式声明为 _int_ 的变量中的话，那么你需要找到所有的调用点来进行修改。
 
@@ -215,7 +215,7 @@ _Ruby_，它们其中的变量很少会被显式声明类型。软件开发社�
 ## Item 6 当 _auto_ 推导出的类型是 _undesired_ 时，使用 _the explicitly typed initializer idiom_
 
  [_Item 5_](./Chapter%202.md#item-5-首选-auto-而不是显式类型声明) 解释了使用 _auto_ 比起使用显式指明类型有着大量的技术优势，但是 _auto_ 的类型声明有时候会在你想去 **_东_**  
- 时却去了 **_西_**。例如，我有一个函数，它持有 _Widget_ 并返回 _std::vector<bool>_，其中的每一个 _bool_ 都表示 _Widget_ 是否提  
+ 时却去了 **_西_**。例如：我有一个函数，它持有 _Widget_ 并返回 _std::vector<bool>_，其中的每一个 _bool_ 都表示 _Widget_ 是否提  
  供有一种特性：  
  ```C++
   std::vector<bool> features(const Widget& w);
@@ -289,15 +289,15 @@ _highPriority_ 是多少完全依赖于 _std::vector<bool>::reference_ 是如何
  ```  
  _std::vector<bool>::reference_ 是一个 _proxy class_ 的例子，_proxy class_ 存在的目的是模拟和增加一些类型的行为。_proxy class_  
  可用于多种目的。_std::vector<bool>::reference_ 的存在提供了一种错觉，那就是 _std::vector<bool>_ 的 _operator[]_ 返回的是 _bit_ 的引  
- 用，又例如，_Standard Library_ 的智能指针类型就是 _proxy class_，智能指针是将资源管理嫁接到原始指针上的，见  
+ 用，又例如：_Standard Library_ 的智能指针类型就是 _proxy class_，智能指针是将资源管理嫁接到原始指针上的，见  
  [_Chapter 4_](./Chapter%204.md#-Chapter-4-智能指针)。_proxy classes_ 的使用历史久远。事实上，设计模式 **_Proxy_** 是软件设计模式中最长久的成员。
 
-一些 _proxy classes_ 是被设计为客户可见的。例如，_std::shared_ptr_ 和 _std::unique_ptr_ 就是。还有一些 _proxy classes_  
+一些 _proxy classes_ 是被设计为客户可见的。例如：_std::shared_ptr_ 和 _std::unique_ptr_ 就是。还有一些 _proxy classes_  
 是被设计为客户隐藏的，或多或少是的。_std::vector<bool>::reference_ 就是这样 **_invisble_** _proxies_ 的典型例子，_std::bitset_ 和  
 _std::bitset::reference_ 也是这种场景。
 
 _proxy class_ 阵营中还有一些 _C++_ 库中的类，它们使用了被称为 **_expression templates_** 的技术。这样的库最初是被  
-开发来提高 _mumeric code_ 的效率的。给定一个类 _Matrix_ 和 _Matrix_ 对象 _m1_、_m2_、_m3_ 和 _m4_，例如，有一个表达  
+开发来提高 _mumeric code_ 的效率的。给定一个类 _Matrix_ 和 _Matrix_ 对象 _m1_、_m2_、_m3_ 和 _m4_，例如：有一个表达  
 式：  
 ```C++
   Matrix sum = m1 + m2 + m3 + m4;
@@ -363,7 +363,7 @@ _std::vector<bool>::reference_ 类型的对象转换为了所支持的 _bool_，
   auto sum = static_cast<Matrix>(m1 + m2 + m3 + m4);
 ```  
 这种用法并不只限于在这种会产生 _proxy class_ 类型的 _initializers_ 的场景中使用。当你想要故意创建一个和是初始  
-化表达式所生成的类型是不同的类型的变量时，这种用法也是有用的。例如，假定你有一个计算容差值的函数：  
+化表达式所生成的类型是不同的类型的变量时，这种用法也是有用的。例如：假定你有一个计算容差值的函数：  
 ```C++
   double calcEpsilon();       // return tolerance value
 ```  
