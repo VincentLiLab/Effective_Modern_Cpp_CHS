@@ -30,6 +30,8 @@
 * _initializer_ 表达式
 * container 容器
 * assignment 赋值
+* _conversion_ 转换
+* null pointer 空指针
 * braces {}
 * parentheses ()
 * _lamba expression_ 
@@ -55,7 +57,10 @@
 * _narrowing conversions_
 * _legacy_
 * _numeric_ 
-> 比如 container 可以翻译为容器，也可以使用 _container_，尽量使用了 _container_
+* _integral_
+* _mutex_
+* _null_
+> 比如 container 可以翻译为容器，也可以使用 _container_，大部分都使用的是 _container_。
 
 译者注  
 * 在 _C++_ 中，基本类型是：_int_ 类型、_bool_ 类型和 _unsigned_ 等，复合类型是：引用类型、指针类型、数组类型  

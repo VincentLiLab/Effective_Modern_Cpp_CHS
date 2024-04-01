@@ -1,6 +1,8 @@
 - [Chapter 3 _Moving to Modern C++_](#chapter-3-moving-to-modern-c)
   - [Item 7 创建对象时区分 _()_ 和 _{}_](#item-7-创建对象时区分--和-)
-    - [需要记住的规则：](#需要记住的规则)
+    - [需要记住的规则](#需要记住的规则)
+  - [Item 8 首选 _nullptr_ 而不是 _0_ 和 _NULL_](#item-8-首选-nullptr-而不是-0-和-null)
+    - [需要记住的规则](#需要记住的规则-1)
 
 # Chapter 3 _Moving to Modern C++_
 
@@ -344,7 +346,7 @@ _doSomeWork_ 使用了 _{}_ 的话，那么 _std::vector_ 就是有 _2_ 个元�
 这是标准库函数 _std::make_unique_ 和 _std::make_shared_ 面对的问题，见 [_Item 21_](./Chapter%204.md#item-21-首选-std::make-unique-和-std::make-shared-而不是直接使用-new)。这些函数通过内部使用 _()_ 和记录  
 这个决定做为接口的一部分来解决这个问题。
 
-### 需要记住的规则：
+### 需要记住的规则
 
 * _braced initialization_ 是最广泛的可使用的初始化语法，它可以禁止 _narrowing conversions_ 并且对 _C++_ 的  
 _most vexing parse_ 所免疫。
@@ -354,5 +356,158 @@ _most vexing parse_ 所免疫。
 
 * 在选择使用 _()_ 和 _{}_ 时可能产生显著差异的一个例子是使用两个实参来创建 _std::vector&lt;numeric type&gt;_ 时。
 
-
 * 当在模板中创建对象时，在 _()_ 和 _{}_ 之间进行选择是具有挑战性的。
+
+## Item 8 首选 _nullptr_ 而不是 _0_ 和 _NULL_
+
+是这样的：字面上的 _0_ 是 _int_，而不是一个指针。如果 _C++_ 是在只有指针被使用的环境下看到了 _0_ 的话，那么是
+会勉强将 _0_ 解释为空指针的，但这是一个次选方案。_C++_ 的主要方针是 _0_ 是 _int_，而不是指针。
+
+实际上，对于 _NULL_ 也是这样的。在 _NULL_ 的场景中是存在有一些细节上的不确定性的，这是因为实现允许 _NULL_  
+是 _integral_ 类型而不是 _int_ 类型的，比如：_long_。这是不常见的，但是不重要，因为问题不在于 _NULL_ 的实际类型  
+是什么，而是 _0_ 和 _NULL_ 都不是指针类型。
+
+在 _C++98_ 中，一个可能的影响是：重载指针类型和 _integral_ 类型时可能会导致惊喜。传递 _0_ 或 _NULL_ 到这些重载  
+函数时，永远不会调用到指针的重载函数：
+```C++
+  void f(int);                // three overloads of f
+  void f(bool);
+  void f(void*);
+  
+  f(0);                       // calls f(int), not f(void*)
+  f(NULL);                    // might not compile, but typically calls
+                              // f(int). Never calls f(void*)
+```
+_f(NULL)_ 的行为的不确定性反映出了在执行 _NULL_ 的类型时所给予的余地。如果 _NULL_ 被定义为是 _0L_ 的话，比如： 
+_0_ 是 _long_，那么这个调用是具有二义性的，因为从 _long_ 到 _int_、从 _long_ 到 _bool_ 以及从 _0L_ 到 _void*_ 的 _conversion_  
+都被认为是一样地好的。关于这个调用的有意思的地方是在于这个调用 _表面上的_ 含义和 _实际上的_ 含义是不一致  
+的：使用 _NULL_ 来调用 _f_ 时是空指针，而使用 _integer_ 来调用 _f_ 则不是空指针。这种违反直觉的行为产生了 _C++98_  
+程序员要避免重载指针类型和 _integral_ 类型的这样的准则。这个准则在 _C++11_ 中仍然有效，因为尽管有本 _Item_ 的  
+建议，但是有一些开发者仍然会继续 _0_ 和 _NULL_，虽然 _nullptr_ 是更好的选择。
+
+_nullptr_ 的优势是它不是 _integral_ 类型。老实说，它也不是指针类型，但是你可以认为它是所有类型的指针。它的  
+实际类型是 _std::nullptr_t_，在一个完美的循环定义下，_std::nullptr_t_ 是被定义为 _nullptr_ 的类型的。_std::nullptr_t_ 可  
+以隐式地被转换为原始指针类型，表现得就好像是它是所有类型的指针一样。
+
+使用 _nullptr_ 调用重载函数 _f_ 会调用 _void*_ 重载函数，即为：指针重载函数，因为 _nullptr_ 不可以被做为 _integral_：
+```C++
+  f(nullptr);                 // calls f(void*) overload
+```  
+因此，使用 _nullptr_ 来代替 _0_ 或 _NULL_ 可以避免重载决议的惊喜，但这不是唯一的优势。它还可以提高代码的清晰性，特别是当涉及到 _auto_ 变量时。例如：假如你在代码中遇到了下面这种情况：  
+```C++
+  auto result = findRecord( /* arguments */ );
+  
+  if (result == 0) {
+    …
+  }
+```  
+如果你碰巧不知道或者不容易发现 _findRecord_ 返回的是什么的话，那么就不清楚 _result_ 是指针类型还是 _integral_ 类型了。毕竟，这个 _result_ 所比较的 _0_ 可以是指针类型，也可以是 _integral_ 类型。另一方面，如果你看到的是下面这样的代码的话：  
+```C++
+  auto result = findRecord( /* arguments */ );
+  
+  if (result == nullptr) {
+    …
+  }
+```  
+那么就没有二义性了：_result_ 必须是指针类型。
+
+当使用模板时，_nullptr_ 尤其地闪亮。假定你有一些函数，这些函数只有在合适的 _mutex_ 被锁定时才会被调用。每一个函数都持有不同类型的指针：
+```C++
+  int f1(std::shared_ptr<Widget> spw);            // call these only when
+  double f2(std::unique_ptr<Widget> upw);         // the appropriate
+  bool f3(Widget* pw);                            // mutex is locked
+```  
+想要传递空指针的调用代码看起来像是下面这样：
+```C++
+  std::mutex f1m, f2m, f3m;             // mutexes for f1, f2, and f3
+  
+  using MuxGuard =                      // C++11 typedef; see Item 9
+  std::lock_guard<std::mutex>;
+  …
+  
+  {
+    MuxGuard g(f1m);                    // lock mutex for f1
+    auto result = f1(0);                // pass 0 as null ptr to f1
+  }                                     // unlock mutex
+  
+  …
+  
+  {
+    MuxGuard g(f2m);                    // lock mutex for f2
+    auto result = f2(NULL);             // pass NULL as null ptr to f2
+  }                                     // unlock mutex
+  
+  …
+  
+  {
+    MuxGuard g(f3m);                    // lock mutex for f3
+    auto result = f3(nullptr);          // pass nullptr as null ptr to f3
+  }
+```  
+在这个代码中的前两个调用中没有使用 _nullptr_ 是糟糕的，但是代码是可以工作的。这是重要的。在所调用的代码  
+中的所重复的 _pattern_：锁定 _mutex_、调用函数、解锁 _mutex_，是更糟糕的。这样的复用代码是要去设计模板去避
+免的事情之一，所以让我们模板化这个 _pattern_：  
+```C++
+  template<typename FuncType,
+            typename MuxType,
+            typename PtrType>
+  auto lockAndCall(FuncType func,
+                    MuxType& mutex,
+                    PtrType ptr) -> decltype(func(ptr))
+  {
+    MuxGuard g(mutex);
+    return func(ptr);
+  }
+```  
+如果这个函数的返回类型 _auto … -> decltype(func(ptr)_ 让你挠头的话，那么帮你的头个忙，请转到 [_Item 3_](./Chapter%201.md#item-3-理解-decltype)，其中解  
+释了这是发生了什么。在 _C++14_ 中，这个返回的类型可以被简化为 _declare(auto)_：  
+```C++
+  template<typename FuncType,
+            typename MuxType,
+            typename PtrType>
+  decltype(auto) lockAndCall(FuncType func,       // C++14
+                              MuxType& mutex,
+                              PtrType ptr)
+  {
+    MuxGuard g(mutex);
+    return func(ptr);
+  }
+```  
+
+对于给定的 _lockAndCall_ 模板，另一个版本，调用者可以像下面这样写代码：
+```C++
+  auto result1 = lockAndCall(f1, f1m, 0);         // error!
+  
+  …
+  
+  auto result2 = lockAndCall(f2, f2m, NULL);      // error!  
+  
+  …
+
+  auto result3 = lockAndCall(f3, f3m, nullptr);   // fine
+```  
+好吧，可以这样写，但是正如注释所说明的，三个调用中的两个都会编译失败。第一个调用中的问题是：当将 _0_  
+被传递给 _lockAndCall_ 时，会使用模板的类型推导来弄清楚它的类型是什么。_0_ 的类型现在、过去和未来都是 _int_，  
+所以 _int_ 是 _lockAndCall_ 调用的实例化的形参 _ptr_ 的类型。不幸地是，这意味着在 _lockAndCall_ 中的 _func_ 调用中所  
+传递的是 _int_ ，这和 _f1_ 所期待的 _std::shared_ptr&lt;Widget&gt;_ 形参是不兼容的。在 _lockAndCall_ 调用中的所传递的 _0_  
+原本想要表示的是空指针，但是实际上所传递却是 _run-of-the-mill_ _int_。尝试将 _int_ 做为 _std::shared_ptr&lt;Widget&gt;_  
+来传递到 _f1_ 是类型错误的。使用 _0_ 来调用 _lockAndCall_ 是会失败的，因为在模板中，_int_ 是被传递给 _func_ 函数的， 
+而 _func_ 函数所需要的却是 _std::shared_ptr&lt;Widget&gt;_。
+
+对于涉及到 _NULL_ 的调用的分析本质上也是一样的。当 _NULL_ 被传递给 _lockAndCall_ 时，对于形参 _ptr_ 来说，所推  
+导出的是 _integral_ 类型，而当 _int_ 类型或 _int-like_ 类型的 _ptr_ 被传递给 _f2_ 时，会发生类型错误，这是因为 _f2_ 期待的  
+是 _std::unique_ptr&lt;Widget&gt;_。
+
+相比之下，涉及到 _nullptr_ 的调用就不会有这种问题。当 _nullptr_ 被传递给 _lockAndCall_ 时，_ptr_ 的类型是被推导为  
+_std::nullptr_t_ 的。当 _ptr_ 被传递给 _f3_ 时，会有从 _std::nullptr_t_ 到  _Widget*_ 的隐式转换，因为 _std::nullptr_t_ 可以隐式  
+转为所有指针类型。
+
+模板的类型推导会推导出 _0_ 和 _NULL_ 所对应的 **_错误_** 的类型，即为：它们的真实类型，而不是表示为空指针的备选  
+方案，当你想要引用一个空指针时，这是你使用 _nullptr_ 来代替 _0_ 和 _NULL_ 的最有说服力的理由。使用 _nullptr_ 不会  
+给模板带来特殊的挑战。结合 _nullptr_ 不会遭遇 _0_ 和 _NULL_ 容易遭遇的重载决议问题的事实，结论就无懈可击了。当你想要引用空指针时，使用 _nullptr_，而不是 _0_ 或 _NULL_。
+
+### 需要记住的规则
+
+* 首选 _nullptr_ 而不是 _0_ 和 _NULL_。
+
+* 避免重载 _integral_ 类型和指针类型
