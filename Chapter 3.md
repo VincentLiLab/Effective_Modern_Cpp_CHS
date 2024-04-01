@@ -389,11 +389,12 @@ _nullptr_ 的优势是它不是 _integral_ 类型。老实说，它也不是指�
 实际类型是 _std::nullptr_t_，在一个完美的循环定义下，_std::nullptr_t_ 是被定义为 _nullptr_ 的类型的。_std::nullptr_t_ 可  
 以隐式地被转换为原始指针类型，表现得就好像是它是所有类型的指针一样。
 
-使用 _nullptr_ 调用重载函数 _f_ 会调用 _void*_ 重载函数，即为：指针重载函数，因为 _nullptr_ 不可以被做为 _integral_：
+使用 _nullptr_ 调用重载函数 _f_ 会调用 _void*_ 重载函数，即为：指针重载函数，因为 _nullptr_ 不可以被做为 _integral_ 的：
 ```C++
   f(nullptr);                 // calls f(void*) overload
 ```  
-因此，使用 _nullptr_ 来代替 _0_ 或 _NULL_ 可以避免重载决议的惊喜，但这不是唯一的优势。它还可以提高代码的清晰性，特别是当涉及到 _auto_ 变量时。例如：假如你在代码中遇到了下面这种情况：  
+因此，使用 _nullptr_ 来代替 _0_ 或 _NULL_ 可以避免重载决议的惊喜，但这不是唯一的优势。它还可以提高代码的清晰  
+性，特别是当涉及到 _auto_ 变量时。例如：假如你在代码中遇到了下面这种情况：  
 ```C++
   auto result = findRecord( /* arguments */ );
   
@@ -401,7 +402,9 @@ _nullptr_ 的优势是它不是 _integral_ 类型。老实说，它也不是指�
     …
   }
 ```  
-如果你碰巧不知道或者不容易发现 _findRecord_ 返回的是什么的话，那么就不清楚 _result_ 是指针类型还是 _integral_ 类型了。毕竟，这个 _result_ 所比较的 _0_ 可以是指针类型，也可以是 _integral_ 类型。另一方面，如果你看到的是下面这样的代码的话：  
+如果你碰巧不知道或者不容易发现 _findRecord_ 返回的是什么的话，那么就不清楚 _result_ 是指针类型还是 _integral_ 类  
+型了。毕竟，这个 _result_ 所比较的 _0_ 可以是指针类型，也可以是 _integral_ 类型。另一方面，如果你看到的是下面这  
+样的代码的话：  
 ```C++
   auto result = findRecord( /* arguments */ );
   
@@ -411,7 +414,8 @@ _nullptr_ 的优势是它不是 _integral_ 类型。老实说，它也不是指�
 ```  
 那么就没有二义性了：_result_ 必须是指针类型。
 
-当使用模板时，_nullptr_ 尤其地闪亮。假定你有一些函数，这些函数只有在合适的 _mutex_ 被锁定时才会被调用。每一个函数都持有不同类型的指针：
+当使用模板时，_nullptr_ 尤其地闪亮。假定你有一些函数，这些函数只有在合适的 _mutex_ 被锁定时才会被调用。每  
+一个函数都持有不同类型的指针：
 ```C++
   int f1(std::shared_ptr<Widget> spw);            // call these only when
   double f2(std::unique_ptr<Widget> upw);         // the appropriate
@@ -504,7 +508,8 @@ _std::nullptr_t_ 的。当 _ptr_ 被传递给 _f3_ 时，会有从 _std::nullptr
 
 模板的类型推导会推导出 _0_ 和 _NULL_ 所对应的 **_错误_** 的类型，即为：它们的真实类型，而不是表示为空指针的备选  
 方案，当你想要引用一个空指针时，这是你使用 _nullptr_ 来代替 _0_ 和 _NULL_ 的最有说服力的理由。使用 _nullptr_ 不会  
-给模板带来特殊的挑战。结合 _nullptr_ 不会遭遇 _0_ 和 _NULL_ 容易遭遇的重载决议问题的事实，结论就无懈可击了。当你想要引用空指针时，使用 _nullptr_，而不是 _0_ 或 _NULL_。
+给模板带来特殊的挑战。再结合 _nullptr_ 不会遭遇 _0_ 和 _NULL_ 容易遭遇的重载决议问题的事实的话，那么结论就无  
+懈可击了。当你想要引用空指针时，使用 _nullptr_，而不是 _0_ 或 _NULL_。
 
 ### 需要记住的规则
 
