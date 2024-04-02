@@ -663,7 +663,7 @@ _decltype_ 是一个古怪的产物。给定一个名字或表达式，它会告
 
 类型 _T_ 的对象的容器的 _operator[]_ 一般返回的是 _T&_。例如：_std::deque_ 就是这种场景，_std::vector_ 的大部分场景也  
 是这样。然而，对于 _std::vector&lt;bool&gt;_ 来说，_operator[]_ 返回的不是 _bool&_。相反地是，返回的是一个全新的对  
-象。这种情景的原因和方式会在 [_Item 6_](./Chapter%202.md#item-6-auto) 中进行探讨，现在重要的是容器的 _operator[]_ 所返回的类型是依赖于这个  
+象。这种情景的原因和方式会在 [_Item 6_](./Chapter%202.md#item-6-当-auto-推导出的类型是-undesired-时使用-the-explicitly-typed-initializer-idiom) 中进行探讨，现在重要的是容器的 _operator[]_ 所返回的类型是依赖于这个  
 容器本身的。
 ```C++
   template<typename Container, typename Index>    // works, but

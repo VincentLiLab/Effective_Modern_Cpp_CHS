@@ -289,8 +289,8 @@ _highPriority_ 是多少完全依赖于 _std::vector<bool>::reference_ 是如何
  ```  
  _std::vector<bool>::reference_ 是一个 _proxy class_ 的例子，_proxy class_ 存在的目的是模拟和增加一些类型的行为。_proxy class_  
  可用于多种目的。_std::vector<bool>::reference_ 的存在提供了一种错觉，那就是 _std::vector<bool>_ 的 _operator[]_ 返回的是 _bit_ 的引  
- 用，又例如：_Standard Library_ 的智能指针类型就是 _proxy class_，智能指针是将资源管理嫁接到原始指针上的，见  
- [_Chapter 4_](./Chapter%204.md#-Chapter-4-智能指针)。_proxy classes_ 的使用历史久远。事实上，设计模式 **_Proxy_** 是软件设计模式中最长久的成员。
+ 用，例如：标准库的智能指针类型就是 _proxy class_，智能指针是将资源管理嫁接到原始指针上的，见 [_Chapter 4_](./Chapter%204.md#-Chapter-4-智能指针)。  
+ _proxy classes_ 的使用历史久远。事实上，设计模式 **_Proxy_** 是软件设计模式中最长久的成员。
 
 一些 _proxy classes_ 是被设计为客户可见的。例如：_std::shared_ptr_ 和 _std::unique_ptr_ 就是。还有一些 _proxy classes_  
 是被设计为客户隐藏的，或多或少是的。_std::vector<bool>::reference_ 就是这样 **_invisble_** _proxies_ 的典型例子，_std::bitset_ 和  

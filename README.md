@@ -32,6 +32,7 @@
 * assignment 赋值
 * _conversion_ 转换
 * null pointer 空指针
+* transformation 转换
 * braces {}
 * parentheses ()
 * _lamba expression_ 
@@ -59,7 +60,12 @@
 * _numeric_ 
 * _integral_
 * _mutex_
-* _null_
+* _alias declarations
+* _allocator_
+* _dependent type_
+* _type traits_
+* _tutorial_
+* _Standardization Committee_
 > 比如 container 可以翻译为容器，也可以使用 _container_，大部分都使用的是 _container_。
 
 译者注  

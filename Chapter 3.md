@@ -3,6 +3,8 @@
     - [需要记住的规则](#需要记住的规则)
   - [Item 8 首选 _nullptr_ 而不是 _0_ 和 _NULL_](#item-8-首选-nullptr-而不是-0-和-null)
     - [需要记住的规则](#需要记住的规则-1)
+  - [首选 _alias declarations_ 而不是 _typedefs_](#首选-alias-declarations-而不是-typedefs)
+    - [需要记住的规则](#需要记住的规则-2)
 
 # Chapter 3 _Moving to Modern C++_
 
@@ -515,4 +517,182 @@ _std::nullptr_t_ 的。当 _ptr_ 被传递给 _f3_ 时，会有从 _std::nullptr
 
 * 首选 _nullptr_ 而不是 _0_ 和 _NULL_。
 
-* 避免重载 _integral_ 类型和指针类型
+* 避免重载 _integral_ 类型和指针类型。
+
+## 首选 _alias declarations_ 而不是 _typedefs_
+
+我相信我们都同意使用 _STL_ 的 _containers_ 是一个好注意，我也希望 [_Item 18_](./Chapter%204.md#item-18-对于-exclusive-ownership-的资源管理使用-std::unique_ptr) 可以说服你使用 _std::unique_ptr_ 是一个  
+好主意。而且我认为我们都不喜欢写像 _std::unique_ptr&lt;std::unordered_map&lt;std::string, std::string&gt;&gt;_ 这样的代码多  
+过于一次。仅是想想这个就会增加 _carpal tunnel syndrome_ 的风险。
+
+避免这样的医学悲剧是简单的。引入了 _typedef_：
+```C++
+  typedef
+    std::unique_ptr<std::unordered_map<std::string, std::string>>
+    UPtrMapSS;
+```  
+但是，_typedefs_ 太 _C++98_ 了。_typedefs_ 可以在 _C++11_ 中工作，但是 _C++11_ 也提供了 _alias declarations_：
+```C++
+  using UPtrMapSS =
+    std::unique_ptr<std::unordered_map<std::string, std::string>>;
+```
+
+鉴于 _typedef_ 和 _alias declaration_ 实际上做的是相同的事情，所以就有理由怀疑是否有足够的技术理由来让我们喜  
+欢其中的一个。
+
+是存在的，但是在我说之前，我想说下：当处理涉及到函数指针的类型时，很多人发现 _alias declaration_ 是容易理  
+解的：
+```C++
+  // FP is a synonym for a pointer to a function taking an int and
+  // a const std::string& and returning nothing
+  typedef void (*FP)(int, const std::string&);    // typedef
+
+  // same meaning as above
+  using FP = void (*)(int, const std::string&);   // alias
+                                                  // declaration
+```  
+当然，这两种形式都不是那么容易理解的，因为很少有人愿意花时间来处理函数指针类型的同义词，所以这不是选  
+择 _alias declarations_ 而不是 _typedefs_ 的最有说服力的理由。
+
+
+但是，最有说服力的理由是存在的，那就是模板。特别是 _alias declarations_ 是可以被模板化的，我们将模板化的  
+_alias declarations_ 称之为 _alias templates_，而 _typedefs_ 是不可以被模板化的。这为 _C++11_ 的程序员提供了一个直  
+接的机制来表达那些在 _C++98_ 中必须通过嵌套在模板化的 _structs_ 中的 _typedefs_ 才能拼凑出来的东西。例如：考  
+虑一个使用了定制 _allocator_ _MyAlloc_ 的 _linked list_ 的同义词的定义。使用 _alias template_ 时，这就是小菜一碟：
+```C
+  template<typename T>                            // MyAllocList<T>
+  using MyAllocList = std::list<T, MyAlloc<T>>;   // is synonym for
+                                                  // std::list<T,
+                                                  // MyAlloc<T>>
+
+  MyAllocList<Widget> lw;                         // client code
+```  
+而使用 _typedef_ 时，你几乎必须从头开始创建蛋糕：
+```C++
+  template<typename T>                            // MyAllocList<T>::type
+  struct MyAllocList {                            // is synonym for
+    typedef std::list<T, MyAlloc<T>> type;        // std::list<T,
+  };                                              // MyAlloc<T>>
+  
+  MyAllocList<Widget>::type lw;                   // client code
+```  
+这会更糟。如果你想要在模板类中使用 _typedef_ 来创建一个持有模板形参所指定的类型的对象的 _linked list_ 的话，  
+那么你必须在 _typedef_ 前加上 _typename_：
+```C++
+  template<typename T>
+  class Widget {                                  // Widget<T> contains
+  private:                                        // a MyAllocList<T>
+    typename MyAllocList<T>::type list;           // as a data member
+    …
+  };
+```  
+此处，_MyAllocList&lt;T&gt;::type_ 引用了一个依赖于模板类型形参 _T_ 的类型。因此它是一个 _dependent type_。_C++_ 的众  
+多的 **_可爱的_** 规则的其中一个便是必须在 _dependent types_ 的名字前加上 _typename_。
+
+如果 _MyAllocList_ 是被定义来做为 _alias template_ 的话，那么就不需要 _typename_ 了，繁琐的后缀_::type_ 也不需要  
+了：
+```C++
+  template<typename T>
+  using MyAllocList = std::list<T, MyAlloc<T>>;   // as before
+  
+  template<typename T>
+  class Widget {
+  private:
+    MyAllocList<T> list;                          // no "typename",
+    …                                             // no "::type"
+  };
+```
+
+对于你来说，_MyAllocList&lt;T&gt;_ 它使用了 _alias template_ 看起来可能和 _MyAllocList&lt;T&gt;::type_ 它使用了嵌套的 _typedef_  
+一样都是依赖于模板形参 _T_ 的，但是你不是编译器。当编译器处理 _Widget_ 模板和遇到 _MyAllocList&lt;T&gt;_ 也就是遇  
+到 _alias template_ 时，编译器知道 _MyAllocList&lt;T&gt;_ 是一个类型的名字，因为它是一个 _alias template_，所以它必然  
+命名了一个类型。因此 _MyAllocList&lt;T&gt; 是一个 _non-dependent type_，所以 _typename spcifier_ 就既不被需要也不  
+被允许了。
+
+另一方面，当编译器在 _Widget_ 模板中看到 _MyAllocList&lt;T&gt;::type_ 也就是使用了嵌套
+的 _typedef_ 时，编译器不能确  
+定 _MyAllocList&lt;T&gt;::type_ 命名了一个类型，因为还可能存在编译器所看不到的 _MyAllocList_ 的 _specialization_，在其  
+中 _MyAllocList&lt;T&gt;::type_ 引用的不是一个类型。这听起来是疯狂的，但是对于这个可能性不要怪编译器。人们真能  
+写出这样的代码。  
+
+例如，一些被误导的灵魂可能已经写了像下面这样的代码：  
+```C++
+  class Wine { … };
+
+  template<>                            // MyAllocList specialization
+  class MyAllocList<Wine> {             // for when T is Wine
+  private:
+    enum class WineType                 // see Item 10 for info on
+    { White, Red, Rose };               // "enum class"
+
+    WineType type;                      // in this class, type is
+    …                                   // a data member!
+  };
+```  
+正如你看到的，_MyAllocList&lt;Wine&gt;::type_ 没有引用类型。如果 _Widget_ 是 _Wine_ 所实例化的话，那么 _Widget_ 模板  
+中的 _MyAllocList&lt;Wine&gt;::type_ 引用的就是数据成员，而不是一个类型。在 _Widget_ 模板中的 _MyAllocList&lt;T&gt;::type_  
+是否引用类型是老老实实地依赖于 _T_ 是什么的，这也是为什么编译器坚持要在类型前面加上 _typename_ 来声明它是  
+类型。
+
+如果你做过任意模板元编程 _TMP_ 的话，那么你几乎肯定遇到过这样的需求：获取模板类型形参，然后根据它来创  
+建修改过的类型。例如：给定一个类型 _T_，你可能想要剥离 _T_ 所包含的 _const-ualifiers_ 或 _reference-qualifiers_，比  
+如：你可能想要将 _const std::string&_ 转换为 _std::string_。或者想要在类型前添加 _const_ 或将其转换为左值引用，比  
+如：将 _Widget_ 转换为 _const Widget_ 或 _Widget&_。如果你没有接触过一点 _TMP_，那就太糟糕了，因为如果你想要  
+成为一位真正地高效率的 _C++_ 编程者的话，那么你需要至少熟悉 _C++_ 的这部分的基础。你可以去看 [_Item 23_](./Chapter%205.md#item-21-理解-std::move-和-std::forward) 和  
+[_Item 25_](./Chapter%205.md#item-25-熟悉重载-univeral-references-的替代方法) 中的 _TMP_ 的实战例子，包括我刚才提到的那几种类型转换。
+
+_C++_ 给了你工具可以按照 _type traits_ 的形式来执行那几种类型转换，它们是在头文件 _&lt;type_trsits&gt;_ 中的一些模  
+板。在这个头文件中有很多 _type traits_，它们都提供了预期的接口，但不是都执行的是类型转换。给定一个类型  
+_T_，你想要对它应用转换，其结果类型就是 _std::transformation&lt;T&gt;::type_ 了。例如：  
+```C++
+  std::remove_const<T>::type            // yields T from const T
+  std::remove_reference<T>::type        // yields T from T& and T&&
+  std::add_lvalue_reference<T>::type    // yields T& from T
+```  
+注释只是总结了这些转换做了什么，不要太咬文嚼字。我知道在项目上使用它们之前，你会查询精确的规格说明文  
+档。
+
+总之，此处我的目的不是给你 _type traits_ 的 _tutorial_。而是要注意这些转换的应用都需要在每次使用时写 _::type_。如  
+果你想要在模板中应用这些转换到类型形参上的话，在实际的代码中几乎总是这样使用，
+那么在每次使用时你也  
+必须都加上 _typename_。这两个语法减速带存在的原因是 _C++11_ 的 _type traits_ 是用通过嵌套在模板化的 _structs_ 中  
+的 _typedefs_ 来实现的。是的，是使用我一直试图说服你的比 _alias templates_ 要差的类型同义词技术来实现的！
+
+这是有历史原因的，但是我们不谈论这个历史原因，因为非常傻，我保证，因为 _Standardization Committee_ 后来  
+意识到了 _alias templates_ 是更好的方式，并在 _C++14_ 中为 _C++11_ 的类型转换提供了相应的模板。_aliases_ 有通用  
+的形式：对每一个 _C++11_ 的转换 _std::transformation<T>::type_ 都有所对应的被命名为 _std::transformation_t_ 的 _C++14_  
+的 _alias template_。例子会说明我的意思： 
+```C++
+  std::remove_const<T>::type            // C++11: const T → T
+  std::remove_const_t<T>                // C++14 equivalent
+  
+  std::remove_reference<T>::type        // C++11: T&/T&& → T
+  std::remove_reference_t<T>            // C++14 equivalent
+  
+  std::add_lvalue_reference<T>::type    // C++11: T → T&
+  std::add_lvalue_reference_t<T>        // C++14 equivalent
+```
+
+_C++11_ 所对应的方法在 _C++14_ 中仍然有效，但是我不知道你为什么还要使用它们。即使你不能使用 _C++14_，自  
+己写 _alias template_ 也是非常简单的。只需要 _C++11_ 的语言特性，甚至孩子们也可以模仿这种模式，对吧？如果  
+你有 _C++14_ 标准的电子版副本的话，仍然是简单的，因为只需要一些复制粘贴。在此处，我帮你开始吧：  
+```C++
+  template <class T>
+  using remove_const_t = typename remove_const<T>::type;
+  
+  template <class T>
+  using remove_reference_t = typename remove_reference<T>::type;
+  
+  template <class T>
+  using add_lvalue_reference_t =
+    typename add_lvalue_reference<T>::type;
+```  
+看到了吧，非常简单。
+
+### 需要记住的规则
+
+* _typedef_ 不支持模板化，而 _alias declarations_ 支持。
+
+* _alias templates_ 可以避免 _::type_ 后缀，并且在模板中引用 _typedefs_ 时常常需要加上 _typename_ 前缀。
+
+* _C++14_ 为 _C++11_ 的 _type traits_ 转换都提供了所对应的 _alias temmplates_。
