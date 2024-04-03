@@ -72,6 +72,9 @@
 * _unscoped enums_
 * _namespace_
 * _strongly typed_
+* _copy constructor_
+* _copy assignment operator_
+* _deleted functions_
 > 比如 container 可以翻译为容器，也可以使用 _container_，大部分都使用的是 _container_。
 
 译者注  

@@ -757,7 +757,7 @@ to-const_，这里并不是这种场景。
 诚然，传递右值类型的容器到 _authAndAccess_ 是一个边缘场景。做为临时对象的右值容器一般是在  _authAndAccess_  
 调用语句结束后所销毁的，这意味着这个容器中的元素的引用在创建它的语句结束后是悬空的，而 _authAndAccess_  
 一般也会返回这个引用。尽管如此，传递一个临时对象到 _authAndAccess_ 中仍然是合理的。客户可能只是想要临  
-时容器中的一个元素的拷贝而已，例如：  
+时容器中的一个元素的副本而已，例如：  
 ```C++
   std::deque<std::string> makeStringDeque();      // factory function
   

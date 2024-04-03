@@ -7,6 +7,7 @@
     - [需要记住的规则](#需要记住的规则-2)
   - [Item 10 首选 _scoped enums_ 而不是 _unscoped enums_](#item-10-首选-scoped-enums-而不是-unscoped-enums)
     - [需要记住的规则](#需要记住的规则-3)
+  - [Item 10 首选 _deleted functions_ 而不是 _private undefined functions_](#item-10-首选-deleted-functions-而不是-private-undefined-functions)
 
 # Chapter 3 _Moving to Modern C++_
 
@@ -972,11 +973,109 @@ _std::get_ 是一个模板，你提供的值是模板实参，注意是 _&lt;&gt
 
 ### 需要记住的规则
 
-* _C++98-style_ 的 _enums_ 现在被称为 _unscoped enums_。    
-* _scoped enums_ 的 _enumerators_ 只在 _enum_ 内可见。只有使用 _cast_ 才能将 _scoped enums_ 所对应的 _enumerators_ 转换  
-为其他的类型。
+* _C++98-style_ 的 _enums_ 现在被称为 _unscoped enums_。
+* _scoped enums_ 的 _enumerators_ 只在 _enum_ 内可见。使用 _cast_ 才能将 _scoped enums_ 所对应的 _enumerators_ 转  
+换为其他的类型。
 * _scoped enums_ 和 _unscoped enums_ 都支持指定 _underlying type_。_scoped enum_ 所对应的 _underlying type_ 默认  
 是 _int_。_unscoped enum_ 所对应的 _underlying type_ 没有默认类型。
 * _scoped enums_ 可以前置声明。_unscoped enums_ 只有当指明了 _underlying type_ 才可以进行前置声明。
 
+## Item 10 首选 _deleted functions_ 而不是 _private undefined functions_
+
+如果你是提供代码给到其他开发者，并且你想要阻止他们调用一个特定的函数的话，那么你一般的方法是不声明这  
+个函数。没有函数声明，就没有函数调用。这很简单。但是，有时候 _C++_ 会为你声明一些函数，而如果你想要阻  
+止客户调用这些函数的话，就不是那么简单了。
+
+只有对 **_特殊的成员函数_** 才会出现这个情况，这些函数只有当它们被需要的时候，_C++_ 才会自动地生成。
+[_Item 17_](./Chapter%203.md#item-17-理解特殊成员函数的生成)  
+详细地讨论了这些函数，但是现在，我们仅仅关心 _copy constructor_ 和 _copy assignment operator_。本节主要致力  
+于已经被 _C++11_ 中的更好的实践所取代的 _C++98_ 中的常见的实践，在 _C++98_ 中如果你想要禁止成员函数的话，  
+那么几乎总是 _copy constructor_ 和 _copy assignment operator_。
+
+_C++98_ 阻止使用这些函数的方法是声明这些函数为 _private_ 且不进行实现。例如：_C++_ 标准库的 _iostreams_ 的基类  
+是类模板 _basic_ios_。_istream_ 和 _ostream_ 都是继承自可能是直接继承自 _basic_ios_ 的。拷贝 _istream_ 和 _ostream_ 是不  
+想要的，因为真的不知道这些操作应该怎么做。例如：一个 _istream_ 表示的是输入值的 _stream_，其中有的已经读  
+取过了，而有的稍后可能会读取。如果要拷贝一个 _istreams_ 的话，那么需要拷贝已经读取过的和稍后会读取的全  
+部的值吗？处理这个问题的最简单的方法就是让它们不存在。这正是禁止拷贝 _streams_ 这件事要做的。
+
+为了让 _istream_ 和 _ostream_ 是不可拷贝的，_C++98_ 中的 _basic_ios_ 被指定为下面这样：
+```C++
+  template <class charT, class traits = char_traits<charT> >
+  class basic_ios : public ios_base {
+  public:
+    …
+  private:
+    basic_ios(const basic_ios& );                 // not defined
+    basic_ios& operator=(const basic_ios&);       // not defined
+  };
+```
+
+声明这些函数为 _private_ 可以阻止客户调用到他们。而故意不去定义他们则意味着：如果仍然有代码调用这些函数  
+的话，即为：类的成员函数或者友元函数，那么会因为没有函数定义而链接出错。
+
+在 _C++11_ 中，有更好的方法去实现这个：使用 _= delete_ 去标记 _copy constructor_ 和 _copy assignment operator_ 为  
+_deleted functions_。下面是 _C++11 中 _basic_ios_：  
+```C++
+  template <class charT, class traits = char_traits<charT> >
+  class basic_ios : public ios_base {
+  public:
+    …
+    basic_ios(const basic_ios& ) = delete;
+    basic_ios& operator=(const basic_ios&) = delete;
+    …
+  };
+```
+
+删除函数和声明函数为 _private_ 的区别似乎更多是时尚问题，而非其他，但其实比你想的要更多。_deleted functions_  
+不能以任何方式被使用，成员函数和友元函数中的代码尝试去拷贝 _basic_ios_ 时也会编译失败。这是相对于 _C++98_   
+行为的提升，在 _C++98_ 中直到链接时才能诊断出错误。
+
+按照惯例，_deleted functions_ 是应该被声明为 _public_ 而不是 _private_ 的。这是有原因的。因为当客户尝试去使用一  
+个 _deleted private function_ 时，一些编译器只会抱怨函数是 _private_ 的，即使函数的可访问性并不真正影响它是否  
+可以使用。当修改 _legacy_ 代码使用 _deleted member functions_ 去代替 _private-and-not-defined member functions_  
+时，尤其要注意这点，因为声明为 _public_ 一般会得到更好的错误信息。  
+
+_deleted functions_ 的一个重要优势是任何函数都可以被删除，而只有成员函数是可以为 _private_。例如：假定我们有  
+一个持有 _integer_ 并且返回它是否为幸运数字的函数：
+```C++
+  bool isLucky(int number);
+```
+
+_C++_ 的 _C_ 的遗产意味着几乎任何可以被模糊地视为数字类型的数据都可以被隐式转换为 _int_ ，但是一些可以编译的调用可能是不合理的：
+```C++
+  if (isLucky('a')) …         // is 'a' a lucky number?
+
+  if (isLucky(true)) …        // is "true"?
+  
+  if (isLucky(3.5)) …         // should we truncate to 3
+                              // before checking for luckiness?
+```
+
+如果幸运数字必须是 _integers_ 的话，那么我们想要阻止这样的调用被编译。
+
+一种可以完成的方法是去创建我们想要过滤的类型所对应的 _deleted_ 的重载函数：
+```C++
+  bool isLucky(int number);             // original function
+  
+  bool isLucky(char) = delete;          // reject chars
+  
+  bool isLucky(bool) = delete;          // reject bools
+  
+  bool isLucky(double) = delete;        // reject doubles and
+                                        // floats
+```  
+_double_ 重载函数的注释说 _doubles_ 和 _floats_ 都是会被拒绝的，这可能会让你惊讶，但是的惊讶很快会消失，因为你  
+想起了：对于 _float_ 转换为 _int_ 还是 _double_ 的选择，_C++_ 首选的会是 _double_。因此使用 _float_ 调用 _isLucky_ 调用会  
+是 _double_ 重载函数，而不是 _int_ 重载函数。是的，它会尝试去调用。相关的重载函数被删除的事实将会阻止这个  
+调用被编译。
+
+即使 _deleted functions_ 不能被使用，但仍然是你程序的一部分。因此，在重载决议期间它们仍然会被考虑到的。这  
+也是在使用了上面的 _deleted functions_ 后不想要的 _isLucky_ 调用会被拒绝的原因：
+```C++
+  if (isLucky('a')) …         // error! call to deleted function
+  
+  if (isLucky(true)) …        // error!
+  
+  if (isLucky(3.5f)) …        // error!
+```
 
