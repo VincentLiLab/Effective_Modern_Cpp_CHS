@@ -26,13 +26,15 @@
 * suppose 假设 假如 假定
 *  eligibl 适合
 *  copy 副本
-*  _braced initializer_ 花括号初始化表达式
-* _initializer_ 表达式
+* scope 作用域
 * container 容器
 * assignment 赋值
 * _conversion_ 转换
 * null pointer 空指针
 * transformation 转换
+*  _braced initializer_ 花括号初始化表达式
+* _initializer_ 表达式
+* _enums_ 枚举
 * braces {}
 * parentheses ()
 * _lamba expression_ 
@@ -60,12 +62,16 @@
 * _numeric_ 
 * _integral_
 * _mutex_
-* _alias declarations
+* _alias declarations_
 * _allocator_
 * _dependent type_
 * _type traits_
 * _tutorial_
 * _Standardization Committee_
+* _scoped enums_
+* _unscoped enums_
+* _namespace_
+* _strongly typed_
 > 比如 container 可以翻译为容器，也可以使用 _container_，大部分都使用的是 _container_。
 
 译者注  

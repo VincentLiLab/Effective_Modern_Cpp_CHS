@@ -3,8 +3,10 @@
     - [需要记住的规则](#需要记住的规则)
   - [Item 8 首选 _nullptr_ 而不是 _0_ 和 _NULL_](#item-8-首选-nullptr-而不是-0-和-null)
     - [需要记住的规则](#需要记住的规则-1)
-  - [首选 _alias declarations_ 而不是 _typedefs_](#首选-alias-declarations-而不是-typedefs)
+  - [Item 9 首选 _alias declarations_ 而不是 _typedefs_](#item-9-首选-alias-declarations-而不是-typedefs)
     - [需要记住的规则](#需要记住的规则-2)
+  - [Item 10 首选 _scoped enums_ 而不是 _unscoped enums_](#item-10-首选-scoped-enums-而不是-unscoped-enums)
+    - [需要记住的规则](#需要记住的规则-3)
 
 # Chapter 3 _Moving to Modern C++_
 
@@ -350,14 +352,12 @@ _doSomeWork_ 使用了 _{}_ 的话，那么 _std::vector_ 就是有 _2_ 个元�
 
 ### 需要记住的规则
 
-* _braced initialization_ 是最广泛的可使用的初始化语法，它可以禁止 _narrowing conversions_ 并且对 _C++_ 的  
-_most vexing parse_ 所免疫。
-
-* 在构造函数重载决议期间，如果可能，_braced initializer_ 会和 _std::initializer_list_ 形参匹配，即使其他的构造函  
+* braced initialization_ 是最广泛的可使用的初始化语法，它可以禁止 _narrowing conversions_ 并且对对 _C++_ 的  
+_most vexing parse_ 所免疫。  
+* 在构造函数重载决议期间，如果可能，_braced initializer_ 会和 _std::initializer_list_ 形参匹配，即
+使其他的构造函  
 数提供了看起来是更好的匹配。
-
 * 在选择使用 _()_ 和 _{}_ 时可能产生显著差异的一个例子是使用两个实参来创建 _std::vector&lt;numeric type&gt;_ 时。
-
 * 当在模板中创建对象时，在 _()_ 和 _{}_ 之间进行选择是具有挑战性的。
 
 ## Item 8 首选 _nullptr_ 而不是 _0_ 和 _NULL_
@@ -516,10 +516,9 @@ _std::nullptr_t_ 的。当 _ptr_ 被传递给 _f3_ 时，会有从 _std::nullptr
 ### 需要记住的规则
 
 * 首选 _nullptr_ 而不是 _0_ 和 _NULL_。
-
 * 避免重载 _integral_ 类型和指针类型。
 
-## 首选 _alias declarations_ 而不是 _typedefs_
+## Item 9 首选 _alias declarations_ 而不是 _typedefs_
 
 我相信我们都同意使用 _STL_ 的 _containers_ 是一个好注意，我也希望 [_Item 18_](./Chapter%204.md#item-18-对于-exclusive-ownership-的资源管理使用-std::unique_ptr) 可以说服你使用 _std::unique_ptr_ 是一个  
 好主意。而且我认为我们都不喜欢写像 _std::unique_ptr&lt;std::unordered_map&lt;std::string, std::string&gt;&gt;_ 这样的代码多  
@@ -692,7 +691,292 @@ _C++11_ 所对应的方法在 _C++14_ 中仍然有效，但是我不知道你为
 ### 需要记住的规则
 
 * _typedef_ 不支持模板化，而 _alias declarations_ 支持。
-
 * _alias templates_ 可以避免 _::type_ 后缀，并且在模板中引用 _typedefs_ 时常常需要加上 _typename_ 前缀。
-
 * _C++14_ 为 _C++11_ 的 _type traits_ 转换都提供了所对应的 _alias temmplates_。
+
+## Item 10 首选 _scoped enums_ 而不是 _unscoped enums_
+
+一般而言，在 _{}_ 内声明一个名称会将这个名称的可见性限制在 _{}_ 所定义的作用域内。对于使用了 _C++98-style_ 的  
+_enums_ 所声明的 _enumerators_ 来说却不是这样。这些 _enumerators_ 的名称是属于那个包含着它所对应的 _enum_ 的  
+作用域的。这意味着在这个作用域内不能有相同的名称：
+```C++
+  enum Color { black, white, red };     // black, white, red are
+                                        // in same scope as Color
+
+  auto white = false;                   // error! white already
+                                        // declared in this scope
+```
+
+这些 _enumerators_ 的名称是被泄露到了那个包含着它所对应的 _enum_ 的作用域的事实产生了这种 _enum_ 所对应的  
+官方术语：_unscoped_。_C++11_ 有所对应的 _scoped enums_，不会发生泄露：
+```C++
+  enum class Color { black, white, red };         // black, white, red
+                                                  // are scoped to Color
+  
+  auto white = false;                             // fine, no other
+                                                  // "white" in scope
+
+  Color c = white;                                // error! no enumerator named
+                                                  // "white" is in this scope
+
+  Color c = Color::white;                         // fine
+
+  auto c = Color::white;                          // also fine (and in accord
+                                                  // with Item 5's advice)
+```
+
+因为 _scoped enums_ 是通过 _enum class_ 来声明的，所以有时候称为 _enum classes_。 
+
+_scoped enums_ 降低了 _namespace_ 的污染，这个就足以选择 _scoped enums_ 而不是 _unscoped enums_ 了，但是还有  
+第二个有说服力的优势：它们的 _enumerators_ 是更 _strongly typed_。_unscoped enums_ 所对应的 _enumerators_ 是可以  
+被隐式转换为 _integral_ 类型的，并是能够进一步被转换为 _floating-point_ 类型的。因此，像下面这样的扭曲语义完  
+全是有效的：  
+```C++
+  enum Color { black, white, red };     // unscoped enum
+
+  std::vector<std::size_t>              // func. returning
+    primeFactors(std::size_t x);        // prime factors of x
+  
+  Color c = red;
+  …
+
+  if (c < 14.5) {                       // compare Color to double (!)
+    auto factors =                      // compute prime factors
+      primeFactors(c);                  // of a Color (!)
+    …
+  }
+```
+
+然而，在 _enum_ 之后加一个简单的 _class_ 将 _unscoped enums_ 转换为 _scoped enums_ 后，就是不同的故事了。不可以
+将 _scoped enums_ 所对应的 _enumerators_ 隐式转换为到其他类型：
+```C++
+  enum class Color { black, white, red };         // enum is now scoped
+
+  Color c = Color::red;                           // as before, but
+  …                                               // with scope qualifier
+
+  if (c < 14.5) {                                 // error! can't compare
+                                                  // Color and double
+    auto factors =                                // error! can't pass Color to
+      primeFactors(c);                            // function expecting std::size_t
+    …
+  }
+```
+
+如果真地想要执行从 _Color_ 到不同的类型的转换，去做你一直做的，去扭曲类型系统来满足你那肆意的欲望：使用  
+_cast_：
+```C++
+  if (static_cast<double>(c) < 14.5) {            // odd code, but
+                                                  // it's valid
+
+    auto factors =                                // suspect, but
+      primeFactors(static_cast<std::size_t>(c));  // it compiles
+    …
+  }
+```
+
+_scoped enums_ 相对于 _unscoped enums_ 似乎还有的第三个优势，因为 _scoped enums_ 是可以进行前置声明的，即  
+为：在没有指明 _enumerators_ 的时候，就可以声明 _scoped enums_：
+```C++
+  enum Color;                 // error!
+
+  enum class Color;           // fine
+```  
+这有点误导人。在 _C++11_ 中，_unscoped enums_ 也是可以进行前置声明的，但是需要一点额外的工作。这点额外  
+的工作源于这样的事实：在 _C++_ 中每个 _enum_ 都有一个编译器所决定的 _underlying type_，是 _integral_ 的。对于像  
+_Color_ 的 _unscoped enums_，  
+```C++
+  enum Color { black, white, red };
+```  
+编译器可能选择 _char_ 来做为 _underlying type_，因为只需要三个值来表示。然而，一些 _enums_ 有一组更大范围的  
+值，比如：  
+```C++
+  enum Status { good = 0,
+                failed = 1,
+                incomplete = 100,
+                corrupt = 200,
+                indeterminate = 0xFFFFFFFF
+              };
+```  
+此处所表示的范围是 _0_ 到 _0xFFFFFFFF_。除了不常见的机器外，这些机器的 _char_ 至少有 _32bit_，编译器都将会选择  
+大于 _char_ 的 _integral_ 类型来表示 _Status_ 值。
+
+为了高效率的使用内存，编译器通常想要为 _enum_ 来选择最小的 _underlying type_，只要能足够表示 
+_enumerator_ 的  
+值的范围就可以了。在一些场景中，编译器优化的是速度而不是大小，在这些场景中，编译器可能不会选择所允许  
+的最小的 _underlying type_，但是仍然想要能够优化大小。为了可以这样做，_C++98_ 就只提供了 _enum_ 定义，就是  
+要列出全部的 _enumerators_，而 _enum_ 声明是被不允许的。这使得编译器可以在每个 _enum_ 被使用之前来为它们来  
+选择一个 _underlying type_ 了。
+
+但是无法前置声明 _enum_ 也有缺点。最明显的大概就是增加了编译依赖。再一次考虑 _Status_ _enum_：
+```C++
+  enum Status { good = 0,
+                failed = 1,
+                incomplete = 100,
+                corrupt = 200,
+                indeterminate = 0xFFFFFFFF
+              };
+```   
+这种类型的 _enum_ 可能会被整个系统所使用，它会被放在一个头文件中，而系统中的每一个部分都包含有这个头  
+文件。如果新的状态值被引入的话：  
+```C
+ enum Status { good = 0,
+                failed = 1,
+                incomplete = 100,
+                corrupt = 200,
+                audited = 500,
+                indeterminate = 0xFFFFFFFF
+              };                   
+```  
+整个系统都必须被重新编译。即使只有一个单独的子系统中的一个单独的函数使用了这个的新的 _enumerator_ 而  
+已。人们都很讨厌这种事情。在 _C++11_ 中可以前置声明 _enum_ 来避免了这样的事情。例如：有一个 _scoped enum_  
+的完美有效的声明和一个函数，这个函数的形参的类型是这个 _scoped enum_：
+```C++
+  enum class Status;                    // forward declaration
+  
+  void continueProcessing(Status s);    // use of fwd-declared enum
+```
+
+如果 _Status_ 的定义被更改了的话，那么包含有这个声明的头文件是不需要被重新编译的。此外，如果 _Status_
+被更  
+改了，比如：增加了 _enumerator_ _audited_，但是 _continueProcessing_ 的行为未被影响的话，比如：它并没有使用到  
+_audited_，那么 _continueProcessing_ 的实现也是不需要被重新编译的。
+
+但是，如果编译器需要在一个 _enum_ 被使用之前就必须得要知道这个 _enum_ 的大小的话，那么为什么 _C++11_ 可以  
+进行前置声明而 _C++98_ 却不可以呢？答案是简单的：_scoped enum_ 所对应的的 _underlying type_ 总是已知的，而对  
+于 _unscoped enum_ 所对应的的 _underlying type_ 则不是，但是你是可以指定的。
+
+_scoped enum_ 所对应的 _underlying type_ 默认是 _int_：  
+```C++
+  enum class Status;          // underlying type is int
+```  
+如果默认类型不适合你的话，那么你可以重写它：
+```C++
+  enum class Status: std::uint32_t;     // underlying type for
+                                        // Status is std::uint32_t
+                                        // (from <cstdint>)
+```  
+
+不管怎样，编译器是知道 _scoped enum_ 中的 _enumerators_ 的大小的。
+
+为了指明 _unscoped enum_ 所对应的的 _underlying type_，需要和 _scoped enum_ 做同样的事情，那么这样就可以进行  
+前置声明了：
+```C++
+  enum Color: std::uint8_t;   // fwd decl for unscoped enum;
+                              // underlying type is
+                              // std::uint8_t
+```  
+
+_underlying type_ 的规格也可以放在 _enum_ 的定义中：
+```C++
+  enum class Status: std::uint32_t { good = 0,
+                                      failed = 1,
+                                      incomplete = 100,
+                                      corrupt = 200,
+                                      audited = 500,
+                                      indeterminate = 0xFFFFFFFF
+                                    };
+```
+
+因为考虑到 _scoped enum_ 可以避免 _namespace_ 的污染而且不容易受到无意间的隐式类型转换的影响，所以当你听  
+到 _unscoped enum_ 还有有用的使用情景时，你可能是会感到惊讶的。这个有用的使用情景就是当引用 _C++11_ 中的  
+_std::tuples_ 的各个域时。例如：假定我们有一个持有名字、邮箱地址和用户在社交网站上的信誉值的 _tuple_：
+```C++
+  using UserInfo =            // type alias; see Item 9
+    std::tuple<std::string,   // name
+                std::string,  // email
+                std::size_t>; // reputation
+```
+
+尽管注释指明了 _tuple_ 的每个域都代表了什么，但是当你在独立源文件中遇到下面这样的代码时，可能也不是非常  
+有帮助的：
+```C++
+  UserInfo uInfo;                       // object of tuple type
+  …
+  
+  auto val = std::get<1>(uInfo);        // get value of field 1
+```  
+做为一个编程者，你有很多需要关注的东西。你真需要记住域 _1_ 对应的是用户的邮箱地址吗？我不这样认为。使  
+用 _unscoped enum_ 来将名称和域号关联起来就可以避免去记住域号代表的是什么：
+```C++
+  enum UserInfoFields { uiName, uiEmail, uiReputation };
+
+  UserInfo uInfo;                                           // as before
+  …
+  
+  auto val = std::get<uiEmail>(uInfo);                      // ah, get value of
+                                                            // email field
+```
+
+从 _UserInfoFields_ 到 _std::size_t_ 的隐式转换可以让上面的代码正确地工作，_std::size_t_ 是 _std::get_ 所需要的类型。
+
+相对应的使用了 _scoped enum_ 的代码要冗长的多：
+```C++
+  enum class UserInfoFields { uiName, uiEmail, uiReputation };
+  
+  UserInfo uInfo;             // as before
+  …
+
+  auto val =
+    std::get<static_cast<std::size_t>(UserInfoFields::uiEmail)>
+      (uInfo);
+```
+可以通过写一个持有 _enumerator_ 并且返回相应的 _std::size_t_ 的值的函数来降低这种冗长，但是会有点棘手。因为  
+_std::get_ 是一个模板，你提供的值是模板实参，注意是 _&lt;&gt;_ 而不是 _()_，所以这个将 _enumerator_ 转换为 _std::size_t_ 的  
+函数必须在 _编译期间_ 就得要生成它的结果。正如  [_Item 15_](./Chapter%203.md#item-15-只要有可能就使用-constexpr) 所解释的，这意味着这个函数必须是 _constexpr_ 函数。
+
+事实上，这个函数应该是 _constexpr_ 的函数模板，因为它应该能和各种 _enum_ 一起工作。如果我们做了这个泛化的  
+话，那么我们也应该泛化它的返回类型。我们应该要返回的是这个 _enum_ 的 _underlying type_ 而不是 _std::size_t_。关  
+于 _type traits_ 见 [_Item 9_](./Chapter%203.md#item-9-首选-alias-declarations-而不是-typedefs)。最后，我们声明它为 _noexcept_，见 [_Item 14_](./Chapter%203.md#item-14-如果发出异常的话就声明函数为-noexcept)，因为我们知道它永远不会产生异常。我们构  
+建一个函数模板 _toUType_，它持有一个任意的 _enumerator_ 并且按照编译期间常量的形式返回其值：
+```C++
+  template<typename E>
+  constexpr typename std::underlying_type<E>::type
+    toUType(E enumerator) noexcept
+  {
+    return
+      static_cast<typename
+        std::underlying_type<E>::type>(enumerator);
+  }
+```
+
+在 _C++14_ 中，使用更简洁的 _std::underlying_type_t_ 来代替 _typename std::underlying_type<E>::type_ 可以使 _toUType_ 更  
+简化，见 [_Item 9_](./Chapter%203.md#item-9-首选-alias-declarations-而不是-typedefs)：
+```C++
+  template<typename E>                                      // C++14
+  constexpr std::underlying_type_t<E>
+    toUType(E enumerator) noexcept
+  {
+    return static_cast<std::underlying_type_t<E>>(enumerator);
+  }
+```
+
+在 _C++14_ 中，更简洁的 _auto_ 返回类型也是有效的，见 [_Item 3_](./Chapter%201.md#item-3-理解-decltype)：
+```C++
+  template<typename E>                                      // C++14
+  constexpr auto
+    toUType(E enumerator) noexcept
+  {
+    return static_cast<std::underlying_type_t<E>>(enumerator);
+  }
+  ```
+
+不管如何写，反正 _toUType_ 允许我们像下面这样访问 _tuple_ 的域：
+```C++
+  auto val = std::get<toUType(UserInfoFields::uiEmail)>(uInfo);
+```
+
+这仍然比使用 _unscoped enum_ 的方式写的要多，但是可以避免 _namespace_ 的污染和避免涉及到 _enumerators_ 时的  
+不经意间的转换。在很多的场景下，你都会同意：为了避免使用一种源自数字通信的艺术状态仅为 _2400-baud_ 调  
+制解调器时期的 _enum_ 的技术的陷阱，多打几个字符是一个合理的代价。
+
+### 需要记住的规则
+
+* _C++98-style_ 的 _enums_ 现在被称为 _unscoped enums_。    
+* _scoped enums_ 的 _enumerators_ 只在 _enum_ 内可见。只有使用 _cast_ 才能将 _scoped enums_ 所对应的 _enumerators_ 转换  
+为其他的类型。
+* _scoped enums_ 和 _unscoped enums_ 都支持指定 _underlying type_。_scoped enum_ 所对应的 _underlying type_ 默认  
+是 _int_。_unscoped enum_ 所对应的 _underlying type_ 没有默认类型。
+* _scoped enums_ 可以前置声明。_unscoped enums_ 只有当指明了 _underlying type_ 才可以进行前置声明。
+
+
