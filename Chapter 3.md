@@ -7,7 +7,8 @@
     - [需要记住的规则](#需要记住的规则-2)
   - [Item 10 首选 _scoped enums_ 而不是 _unscoped enums_](#item-10-首选-scoped-enums-而不是-unscoped-enums)
     - [需要记住的规则](#需要记住的规则-3)
-  - [Item 10 首选 _deleted functions_ 而不是 _private undefined functions_](#item-10-首选-deleted-functions-而不是-private-undefined-functions)
+  - [Item 11 首选 _deleted functions_ 而不是 _private undefined functions_](#item-11-首选-deleted-functions-而不是-private-undefined-functions)
+    - [需要记住的规则](#需要记住的规则-4)
 
 # Chapter 3 _Moving to Modern C++_
 
@@ -980,17 +981,17 @@ _std::get_ 是一个模板，你提供的值是模板实参，注意是 _&lt;&gt
 是 _int_。_unscoped enum_ 所对应的 _underlying type_ 没有默认类型。
 * _scoped enums_ 可以前置声明。_unscoped enums_ 只有当指明了 _underlying type_ 才可以进行前置声明。
 
-## Item 10 首选 _deleted functions_ 而不是 _private undefined functions_
+## Item 11 首选 _deleted functions_ 而不是 _private undefined functions_
 
-如果你是提供代码给到其他开发者，并且你想要阻止他们调用一个特定的函数的话，那么你一般的方法是不声明这  
-个函数。没有函数声明，就没有函数调用。这很简单。但是，有时候 _C++_ 会为你声明一些函数，而如果你想要阻  
-止客户调用这些函数的话，就不是那么简单了。
+如果你是提供代码给到其他开发者，并且你想要阻止他们调用一个特定的函数的话，那么一般的方法是不声明这个  
+函数。没有函数声明，就没有函数调用。这很简单。但是，有时候 _C++_ 会为你声明一些函数，而如果你想要阻止  
+客户去调用这些函数的话，就不是那么简单了。
 
 只有对 **_特殊的成员函数_** 才会出现这个情况，这些函数只有当它们被需要的时候，_C++_ 才会自动地生成。
 [_Item 17_](./Chapter%203.md#item-17-理解特殊成员函数的生成)  
 详细地讨论了这些函数，但是现在，我们仅仅关心 _copy constructor_ 和 _copy assignment operator_。本节主要致力  
-于已经被 _C++11_ 中的更好的实践所取代的 _C++98_ 中的常见的实践，在 _C++98_ 中如果你想要禁止成员函数的话，  
-那么几乎总是 _copy constructor_ 和 _copy assignment operator_。
+于那些已经被 _C++11_ 中的更好的实践所取代的 _C++98_ 中的常见的实践，在 _C++98_ 中如果你想要禁止成员函数的  
+话，那么几乎总是 _copy constructor_ 和 _copy assignment operator_。
 
 _C++98_ 阻止使用这些函数的方法是声明这些函数为 _private_ 且不进行实现。例如：_C++_ 标准库的 _iostreams_ 的基类  
 是类模板 _basic_ios_。_istream_ 和 _ostream_ 都是继承自可能是直接继承自 _basic_ios_ 的。拷贝 _istream_ 和 _ostream_ 是不  
@@ -1010,7 +1011,7 @@ _C++98_ 阻止使用这些函数的方法是声明这些函数为 _private_ 且�
   };
 ```
 
-声明这些函数为 _private_ 可以阻止客户调用到他们。而故意不去定义他们则意味着：如果仍然有代码调用这些函数  
+声明这些函数为 _private_ 可以阻止客户调用到他们。而故意不去实现他们则意味着：如果仍然有代码调用这些函数  
 的话，即为：类的成员函数或者友元函数，那么会因为没有函数定义而链接出错。
 
 在 _C++11_ 中，有更好的方法去实现这个：使用 _= delete_ 去标记 _copy constructor_ 和 _copy assignment operator_ 为  
@@ -1079,3 +1080,78 @@ _double_ 重载函数的注释说 _doubles_ 和 _floats_ 都是会被拒绝的�
   if (isLucky(3.5f)) …        // error!
 ```
 
+另一个 _deleted functions_ 可以执行而 _private member functions_ 不可以执行的技巧是阻止使用那些应该被 _disabled_   
+的模板实例。例如：假如你需要一个使用了内建指针的模板。尽管 [_Chapter 4_](./Chapter%204.md#-Chapter-4-智能指针) 建议你首选智能指针而不是原始指  
+针：
+```C++
+  template<typename T>
+  void processPointer(T* ptr);
+```  
+在指针的世界里有两个特殊的场景。一个是 _void*_ 指针,因为没有方法解引用它、去增加它或者减少它等。另一个是  
+_char*_ 指针，因为它们一般代表的是 _C-style_ 字符串的指针，而不是单独一个字符的指针。这两个特殊的场景经常  
+需要特殊处理，在 _processPointer_ 模板的场景中，我们假设有一个合适的处理是拒绝这两种类型的调用。也就是说  
+不能调用 _void*_ 或 _char*_ 所对应的 _processPointer_。
+
+非常容易实施。删除这两个实例就好了：
+```C++
+  template<>
+  void processPointer<void>(void*) = delete;
+  
+  template<>
+  void processPointer<char>(char*) = delete;  
+```
+
+现在，如果调用 _void*_ 或 _char*_  所对应的 _processPointer_ 需要得是无效的话，那么调用 _const void*_ 或 _const char*_  所对应的 _processPointer_ 也需要得是无效的，所以下面这些实例通常也需要被删除：
+```C++
+  template<>
+  void processPointer<const void>(const void*) = delete;
+  
+  template<>
+  void processPointer<const char>(const char*) = delete;
+```
+
+如果你真的想要彻底的话 ，那么你也需要删除 _const volatile void*_ 和 _const volatile char*_ 重载函数，还有其他标准  
+字符类型指针的重载函数，比如：_std::wchar_t_、_std::char16_t_ 和 _std::char32_t_。
+
+有趣地是，如果在类中有一个函数模板，并且你想通过  _private_ 声明来 _disable_ 它的一些实例的话，那么这样是不  
+可以的，这是经典的 _C++98_ 的习惯做法，因为不能给成员函数模板的特化一个和主模板是不同的访问级别。例  
+如：如果 _processPointer_ 是 _Widget_ 的成员函数模板，并且你想要 _disable_ _void*_  指针的调用的话，下面这是 _C++98_   
+的方法，尽管它不能通过编译：
+```C++
+  class Widget {
+  public:
+    …
+    template<typename T>
+    void processPointer(T* ptr)
+    { … }
+
+  private:
+    template<>                          // error!       
+    void processPointer<void>(void*);
+ };
+```  
+这是因为模板特化必须被写在 _namespace_ 作用域内，而不是类作用域内。对于 _deleted functions_ 不会发生这种问  
+题，因为它们不需要不同的访问级别。它们可以在类外被删除，因为是在 _namespace_ 作用域内的：  
+```C++
+  class Widget {
+public:
+ …
+ template<typename T>
+ void processPointer(T* ptr)
+ { … }
+ …
+};
+template<>                                                  // still
+void Widget::processPointer<void>(void*) = delete;          // public,
+                                                            // but
+                                                            // deleted
+```
+
+事实上，_C++98_ 声明函数为 _private_ 且不去定义它们的这种做法就是试图去实现 _C++11_ 的 _deleted functions_ 的功  
+能。就像是模仿，_C++98_ 的方法就是不如 _C++11_ 的方法好。因为 _C++98_ 的方法不能应用于类外的函数，也不是  
+总能够应用于类内的函数，当可以应用时，也是在连接时才能工作。所以还是坚持使用 _deleted functions_ 吧。
+
+### 需要记住的规则
+
+* 首选 _deleted functions_ 而不是 _private undefined functions_。
+* 任意函数都可以被删除，包括：非成员函数和模板实例。
