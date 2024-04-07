@@ -993,7 +993,7 @@ _std::get_ 是一个模板，你提供的值是模板实参，注意是 _&lt;&gt
 于那些已经被 _C++11_ 中的更好的实践所取代的 _C++98_ 中的常见的实践，在 _C++98_ 中如果你想要禁止成员函数的  
 话，那么几乎总是 _copy constructor_ 和 _copy assignment operator_。
 
-_C++98_ 阻止使用这些函数的方法是声明这些函数为 _private_ 且不进行实现。例如：_C++_ 标准库的 _iostreams_ 的基类  
+_C++98_ 阻止使用这些函数的方法是声明这些函数为 _private_ 且不进行定义。例如：_C++_ 标准库的 _iostreams_ 的基类  
 是类模板 _basic_ios_。_istream_ 和 _ostream_ 都是继承自可能是直接继承自 _basic_ios_ 的。拷贝 _istream_ 和 _ostream_ 是不  
 想要的，因为真的不知道这些操作应该怎么做。例如：一个 _istream_ 表示的是输入值的 _stream_，其中有的已经读  
 取过了，而有的稍后可能会读取。如果要拷贝一个 _istreams_ 的话，那么需要拷贝已经读取过的和稍后会读取的全  
@@ -1005,13 +1005,14 @@ _C++98_ 阻止使用这些函数的方法是声明这些函数为 _private_ 且�
   class basic_ios : public ios_base {
   public:
     …
+
   private:
     basic_ios(const basic_ios& );                 // not defined
     basic_ios& operator=(const basic_ios&);       // not defined
   };
 ```
 
-声明这些函数为 _private_ 可以阻止客户调用到他们。而故意不去实现他们则意味着：如果仍然有代码调用这些函数  
+声明这些函数为 _private_ 可以阻止客户调用到他们。而故意不去定义他们则意味着：如果仍然有代码调用这些函数  
 的话，即为：类的成员函数或者友元函数，那么会因为没有函数定义而链接出错。
 
 在 _C++11_ 中，有更好的方法去实现这个：使用 _= delete_ 去标记 _copy constructor_ 和 _copy assignment operator_ 为  
@@ -1042,7 +1043,8 @@ _deleted functions_ 的一个重要优势是任何函数都可以被删除，而
   bool isLucky(int number);
 ```
 
-_C++_ 的 _C_ 的遗产意味着几乎任何可以被模糊地视为数字类型的数据都可以被隐式转换为 _int_ ，但是一些可以编译的调用可能是不合理的：
+_C++_ 的 _C_ 的遗产意味着几乎任何可以被模糊地视为数字类型的数据都可以被隐式转换为 _int_ ，但是一些可以编译  
+的调用却可能是不合理的：
 ```C++
   if (isLucky('a')) …         // is 'a' a lucky number?
 
@@ -1066,12 +1068,12 @@ _C++_ 的 _C_ 的遗产意味着几乎任何可以被模糊地视为数字类型
                                         // floats
 ```  
 _double_ 重载函数的注释说 _doubles_ 和 _floats_ 都是会被拒绝的，这可能会让你惊讶，但是的惊讶很快会消失，因为你  
-想起了：对于 _float_ 转换为 _int_ 还是 _double_ 的选择，_C++_ 首选的会是 _double_。因此使用 _float_ 调用 _isLucky_ 调用会  
-是 _double_ 重载函数，而不是 _int_ 重载函数。是的，它会尝试去调用。相关的重载函数被删除的事实将会阻止这个  
-调用被编译。
+想起了：对于 _float_ 转换为 _int_ 还是 _double_ 的选择，_C++_ 首选的会是 _double_。因此使用 _float_ 调用 _isLucky_ 所调用  
+会是 _double_ 重载函数，而不是 _int_ 重载函数。是的，它会尝试去调用。相关的重载函数被删除的事实将会阻止这  
+个调用被编译。
 
-即使 _deleted functions_ 不能被使用，但仍然是你程序的一部分。因此，在重载决议期间它们仍然会被考虑到的。这  
-也是在使用了上面的 _deleted functions_ 后不想要的 _isLucky_ 调用会被拒绝的原因：
+即使 _deleted functions_ 不能被使用了，但它仍然会是你程序的一部分。因此，在重载决议期间它们是仍然会被考虑  
+到的。这也是在使用了上面的 _deleted functions_ 后不想要的 _isLucky_ 调用会被拒绝的原因：
 ```C++
   if (isLucky('a')) …         // error! call to deleted function
   
@@ -1088,7 +1090,7 @@ _double_ 重载函数的注释说 _doubles_ 和 _floats_ 都是会被拒绝的�
   void processPointer(T* ptr);
 ```  
 在指针的世界里有两个特殊的场景。一个是 _void*_ 指针,因为没有方法解引用它、去增加它或者减少它等。另一个是  
-_char*_ 指针，因为它们一般代表的是 _C-style_ 字符串的指针，而不是单独一个字符的指针。这两个特殊的场景经常  
+_char*_ 指针，因为它们一般代表的是 _C-style_ 字符串的指针，而不是一个单独字符的指针。这两个特殊的场景经常  
 需要特殊处理，在 _processPointer_ 模板的场景中，我们假设有一个合适的处理是拒绝这两种类型的调用。也就是说  
 不能调用 _void*_ 或 _char*_ 所对应的 _processPointer_。
 
@@ -1101,7 +1103,8 @@ _char*_ 指针，因为它们一般代表的是 _C-style_ 字符串的指针，�
   void processPointer<char>(char*) = delete;  
 ```
 
-现在，如果调用 _void*_ 或 _char*_  所对应的 _processPointer_ 需要得是无效的话，那么调用 _const void*_ 或 _const char*_  所对应的 _processPointer_ 也需要得是无效的，所以下面这些实例通常也需要被删除：
+现在，如果调用 _void*_ 或 _char*_  所对应的 _processPointer_ 需要是无效的话，那么调用 _const void*_ 或 _const char*_  所  
+对应的 _processPointer_ 也需要是无效的，所以下面这些实例通常也需要被删除：
 ```C++
   template<>
   void processPointer<const void>(const void*) = delete;
@@ -1110,11 +1113,11 @@ _char*_ 指针，因为它们一般代表的是 _C-style_ 字符串的指针，�
   void processPointer<const char>(const char*) = delete;
 ```
 
-如果你真的想要彻底的话 ，那么你也需要删除 _const volatile void*_ 和 _const volatile char*_ 重载函数，还有其他标准  
-字符类型指针的重载函数，比如：_std::wchar_t_、_std::char16_t_ 和 _std::char32_t_。
+如果你真的想要彻底进行的话 ，那么你也需要删除 _const volatile void*_ 和 _const volatile char*_ 重载函数，还有其他  
+标准字符类型指针的重载函数，比如：_std::wchar_t_、_std::char16_t_ 和 _std::char32_t_。
 
-有趣地是，如果在类中有一个函数模板，并且你想通过  _private_ 声明来 _disable_ 它的一些实例的话，那么这样是不  
-可以的，这是经典的 _C++98_ 的习惯做法，因为不能给成员函数模板的特化一个和主模板是不同的访问级别。例  
+有趣地是，如果在类中有一个函数模板，并且你想通过 _private_ 声明来 _disable_ 它的一些实例的话，那么这样做是  
+不可以的，这是经典的 _C++98_ 的习惯做法，因为不能给成员函数模板的特化一个和主模板是不同的访问级别。例  
 如：如果 _processPointer_ 是 _Widget_ 的成员函数模板，并且你想要 _disable_ _void*_  指针的调用的话，下面这是 _C++98_   
 的方法，尽管它不能通过编译：
 ```C++
@@ -1133,7 +1136,7 @@ _char*_ 指针，因为它们一般代表的是 _C-style_ 字符串的指针，�
 这是因为模板特化必须被写在 _namespace_ 作用域内，而不是类作用域内。对于 _deleted functions_ 不会发生这种问  
 题，因为它们不需要不同的访问级别。它们可以在类外被删除，因为是在 _namespace_ 作用域内的：  
 ```C++
-  class Widget {
+class Widget {
 public:
  …
  template<typename T>
@@ -1148,8 +1151,8 @@ void Widget::processPointer<void>(void*) = delete;          // public,
 ```
 
 事实上，_C++98_ 声明函数为 _private_ 且不去定义它们的这种做法就是试图去实现 _C++11_ 的 _deleted functions_ 的功  
-能。就像是模仿，_C++98_ 的方法就是不如 _C++11_ 的方法好。因为 _C++98_ 的方法不能应用于类外的函数，也不是  
-总能够应用于类内的函数，当可以应用时，也是在连接时才能工作。所以还是坚持使用 _deleted functions_ 吧。
+能的。就像是模仿，_C++98_ 的方法就是不如 _C++11_ 的方法好的。因为 _C++98_ 的方法不能应用于类外的函数，也  
+不是总能够应用于类内的函数，当可以应用时，也是在链接时才能工作。所以还是坚持使用 _deleted functions_ 吧。
 
 ### 需要记住的规则
 
