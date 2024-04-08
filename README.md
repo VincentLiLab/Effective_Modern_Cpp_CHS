@@ -33,6 +33,7 @@
 * null pointer 空指针
 * transformation 转换
 *  _braced initializer_ 花括号初始化表达式
+*  _cast_ 转换
 * _initializer_ 表达式
 * _enum_ 枚举
 * brace {}

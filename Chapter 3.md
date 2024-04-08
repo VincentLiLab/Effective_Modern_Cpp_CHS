@@ -11,6 +11,8 @@
     - [需要记住的规则](#需要记住的规则-4)
   - [Item 12 使用 _override_ 来声明重写函数](#item-12-使用-override-来声明重写函数)
     - [需要记住的规则](#需要记住的规则-5)
+  - [Item 13 首选 _const\_iterators_ 而不是 _iterators_](#item-13-首选-const_iterators-而不是-iterators)
+    - [需要记住的规则](#需要记住的规则-6)
 
 # Chapter 3 _Moving to Modern C++_
 
@@ -1409,3 +1411,141 @@ _C++_ 的规则会要求编译器生成拷贝的代码。通过所谓的 _as if 
 
 * 声明重写函数为 _override_。
 * 成员函数的 _reference qualifiers_ 使得可以不同地处理左值 _*this_ 对象和右值 _*this_ 对象了。
+
+## Item 13 首选 _const_iterators_ 而不是 _iterators_
+
+_const_iterators_ 是 _STL_ 的 _pointer-to-const_ 的等价物。它们都指向不可以被更改的值。只要有可能使用 _const_ 就应该  
+去使用 _const_ 的标准实践规定了：当你需要一个 _iterator_ 时，而不需要更改 _iterator_ 所指向的内容时，你应该使用的是 _const_iterators_。
+
+_C++98_ 和 _C++11_ 都是这样，但在 _C++98_ 中，对于 _const_iterators_ 的支持是不够全面的。在 _C++98_ 中，不太容  
+易创建 _const_iterators_，就算你创建了一个，使用它的方法也是有限制的。例如：假定你想要在 _std::vector&lt;int&gt;_ 中  
+搜索 _1983_ 出现的第一个位置，_1983_ 是 _C++_ 取代 _C with Classes_ 来做为编程语言名字的年份，然后在这个位置后  
+面插入值 _1998_，这是第一个 _ISO C++ Standard_ 被采用的年份。如果在这个 _vector_ 中没有 _1983_ 的话，那个插入值  
+应该放在这个 _vector_ 的末尾。在 _C++98_ 中使用 _iterators_ 来完成是非常简单的：  
+```C++
+  std::vector<int> values;
+  
+  …
+  
+  std::vector<int>::iterator it =
+    std::find(values.begin(),values.end(), 1983);
+  values.insert(it, 1998);
+```  
+但是在这里 _iterators_ 真的不是一个合适的选择，因为这个代码永远不会更改 _iterator_ 所指向的内容。更改代码去使  
+用 _const_iterators_ 应该是容易的，但是在 _C++98_ 却不容易。这是一个在概念上合理但实际上却是不正确的方法：  
+```C++
+  typedef std::vector<int>::iterator IterT;                 // type-
+  typedef std::vector<int>::const_iterator ConstIterT;      // defs
+  
+  std::vector<int> values;
+  
+  …
+  
+  ConstIterT ci =
+    std::find(static_cast<ConstIterT>(values.begin()),      // cast
+              static_cast<ConstIterT>(values.end()),        // cast
+              1983);
+  
+  values.insert(static_cast<IterT>(ci), 1998);              // may not
+                                                            // compile; see
+                                                            // below
+```
+
+当然 _typedefs_ 是可以不需要的，但是它可以使得代码中的 _cast_ 更加容易地书写。你可能会好奇为什么我使用的是  
+_typedef_，而不是遵循 [_Item 9_](./Chapter%203.md#item-9-首选-alias-declarations-而不是-typedefs) 的建议去使用 _alias declaration_ 呢？因为这个例子展示的是 _C++98_ 的代码，这时还没  
+有 _alias declaration_， _alias declaration_ 在 _C++11_ 新添加的特性。
+
+_std::find_ 调用中的存在有 _cast_，这是因为 _values_ 是一个 _non-const_ _container_，在 _C++98_ 中没有简单的方法来获取  
+_non-const_ _container_ 的 _const_iterator_。这个 _casts_ 并不是绝对必要的，因为可以使用其他的方法来获取 _non-const_  
+_container_ 的 _const_iterator_，比如：你可以首先使用 _reference-to-const_ 的变量来绑定 _values_，然后再在代码中使用  
+这个变量来代替 _values_，但是不论是哪种方法，从 _non-const_ _container_ 中获取到 _const_iterators_ 的过程都经历了一  
+些曲折。
+
+而一旦你有了 _const_iterators_，事情常常会变得更糟，因为在 _C++98_ 中，插入和删除的位置只能通过 _iterator_ 来指  
+定。_const_iterators_ 是能不被接受的。这也是为什么在上面的代码中我要将 _const_iterator_ 转换为 _iterator_，因为传  
+递 _const_iterator_ 到 _insert_ 是不能通过编译的，而这个 _const_iterator_ 是从 _std::find_ 中非常小心得到的。
+
+老实说，我展示的这个代码是不能通过编译的，因为没有 _const_iterator_ 到 _iterator_ 的可移植转换，使用 _static_cast_  
+也是不行的。甚至使用被称为 _reinterpret_cast_ 的语义大招也是不行的。这不是 _C++98_ 的限制。在 _C++11_ 中也有  
+一样的限制。在 _C++11_ 中，也不能简单地将  _const_iterators_ 转换为 _iterators_，不管这个转换看起来有多么理所应  
+当。是有一些可以生成指向 _const_iterators_ 所指向位置的 _iterators_ 的可移植方法的，但是这些方法不是明显的，也  
+不是普遍适用的，所以不值得在本书中进行讨论。此外，我希望我目前的观点是清晰的：在 _C++98_ 中的开发者并  
+不是只要有可能使用 _const_iterators_  就去使用 _const_iterators_ 的，而是只在适用的时候才去使用它，所以在 _C++98_  
+中，_const_iterators_ 不是非常地适用。
+
+全部的这些都在 _C++11_ 中发生了改变。现在 _const_iterators_ 非常容易被获取，也非常容易被用了。 _container_ 的  
+成员函数 _cbegin_ 和 _cend_ 都产生的是 _const_iterators_，甚至 _non-const_ _container_ 和使用 _iterators_ 去识别位置的 _STL_   
+成员函数，比如：_insert_ 和 _erase_，都完全可以使用 _const_iterators_ 了。修改使用了 _iterators_ 的 _C++98_ 代码去使用   
+_C++11_ 的 _const_iterators_ 就非常简单了：  
+```C++
+  std::vector<int> values;                        // as before
+  
+  …
+  
+  auto it =                                       // use cbegin
+  
+  std::find(values.cbegin(),values.cend(), 1983); // and cend
+  
+  values.insert(it, 1998);
+```
+
+现在是使用了 _const_iterators_ 的代码了，它是适用的。
+
+只有在一个情景中 _C++11_ 对于 _const_iterators_ 的支持还不够充足，那就是当你想要写最通用的库代码时。这些代  
+码会考虑到：一些 _containers_ 和 _containers-like_ 的数据结构会提供 _begin_、_end_、_cbegin_、_cend_ 和 _rbegin_ 等来做为  
+非成员函数，而不是成员函数。例如：内建数组就是这样，第三方库也是这样，它的接口只由自由函数所组成。因  
+此，最通用代码会使用非成员函数，而不是假设有成员函数的版本存在。
+
+例如：我们可以将我们正在工作的代码抽象为 _findAndInsert_，就像下面这样：  
+```C++
+  template<typename C, typename V>
+  void findAndInsert(C& container,                // in container, find
+                      const V& targetVal,         // first occurrence
+                      const V& insertVal)         // of targetVal, then
+  {                                               // insert insertVal
+    using std::cbegin;                            // there
+    using std::cend;
+
+    auto it = std::find(cbegin(container),        // non-member cbegin
+                          cend(container),        // non-member cend
+                          targetVal);
+
+    container.insert(it, insertVal);
+  }
+```  
+这可以在 _C++14_ 中工作，但糟糕地是，不可以在 _C++11_ 中工作。由于标准化期间的疏忽，_C++11_ 只增加了非成  
+员函数 _begin_ 和 _end_，但没有添加 _cbegin_、_cend_、_rbegin_ 和 _crend_。_C++14_ 纠正了这个疏忽。
+
+如果你正在使用的是 _C++11_，并且你想要写最通用的代码，但正在使用的库没有提供所缺失的非成员函数 _cbegin_  
+和友元函数的话，那么你可以很轻松地写出你自己的实现。例如：下面是非成员函数 _cbegin_ 的实现：  
+  ```C++
+    template <class C>
+    auto cbegin(const C& container)->decltype(std::begin(container))
+    {
+      return std::begin(container);     // see explanation below
+    }
+  ```  
+
+看到非成员函数 _cbegin_ 没有调用成员函数 _cbegin_，你会感到很惊讶，对吗？我也是的。但这是符合逻辑的。这个  
+_cbegin_ 模板接受任意类型 _C_ 的实参，这个 _C_ 表示的是 _container-like_ 的数据结构类型，并通过 _reference-to-const_  
+的形参 _container_ 来访问它的实参。如果 _C_ 是一个传统的 _container_ 类型的话，比如：_std::vector&lt;int&gt;_，那么这个  
+_container_ 是一个 _reference-to-const_ 的，比如：const std::vector&lt;int&gt;&。在 _const_ _container_ 上执行 _C++11_ 所提供  
+的非成员函数 _begin_ 会产生一个 _const_iterators_，而模板会返回这个 _const_iterators_。这样做的优势是：对于那些提  
+供有成员函数 _begin_ 但没有提供成员函数 _cbegin_ 的 _container_ 来说，这是可以工作的，其实 _C++11_ 的非成员函数  
+_begin_ 调用的就是成员函数 _begin_。因此你可以在只支持 _begin_ 的 _container_ 上使用非成员函数 _cbegin_。  
+
+如果 _C_ 是内建的数组类型的话，那么这个模板也是可以工作的。在这种情况下，_container_ 就是一个 _const_ 数组的  
+引用了。_C++11_ 为内建的数组提供了一个非成员函数 _begin_ 的特化版本，这个函数会返回一个指向数组首元素的  
+指针。因为 _const_ 数组的元素是 _const_ 的，所以，对于 _const_ 数组来说，非成员函数 _begin_ 所返回的指针也就是一  
+个 _pointer-to-const_，事实上，_pointer-to-const_ 就是数组所对应的 _const_iterator_。为了进一步了解对于内建的数组  
+模板应该如何进行特化，查阅 [_Item 1_](./Chapter%201.md#item-1-理解模板的类型推导) 中关于持有数组引用形参的模板的类型推导的结论。
+
+但是回到基本原则来。本 _Item_ 的观点是：鼓励你只要可以使用 _const_iterators_ 就去使用 _const_iterators_。基本的原  
+则是。只要有可能使用 _const_ 就应该去使用 _const_，这在 _C++11_ 之前就是一直有的。但是在 _C++98_ 中，当使用到  
+_iterators_ 时，这个原则就不适用了。而在 _C++11_ 中，这个原则就很适用了，并且在 _C++14_ 修复了 _C++11_ 留下的  
+未完成工作。
+
+### 需要记住的规则
+
+* 首选 _const_iterators_ 而不是 _iterators_。
+* 在最通用的代码中，首选非成员函数 _begin_、_end_ 和 _rbegin_ 等，而不是相应的成员函数版本。
