@@ -9,6 +9,8 @@
     - [需要记住的规则](#需要记住的规则-3)
   - [Item 11 首选 _deleted functions_ 而不是 _private undefined functions_](#item-11-首选-deleted-functions-而不是-private-undefined-functions)
     - [需要记住的规则](#需要记住的规则-4)
+  - [Item 12 使用 _override_ 来声明重写函数](#item-12-使用-override-来声明重写函数)
+    - [需要记住的规则](#需要记住的规则-5)
 
 # Chapter 3 _Moving to Modern C++_
 
@@ -636,7 +638,7 @@ _alias declarations_ 称之为 _alias templates_，而 _typedefs_ 是不可以�
 类型。
 
 如果你做过任意模板元编程 _TMP_ 的话，那么你几乎肯定遇到过这样的需求：获取模板类型形参，然后根据它来创  
-建修改过的类型。例如：给定一个类型 _T_，你可能想要剥离 _T_ 所包含的 _const-ualifiers_ 或 _reference-qualifiers_，比  
+建修改过的类型。例如：给定一个类型 _T_，你可能想要剥离 _T_ 所包含的 _const-qualifiers_ 或 _reference-qualifiers_，比  
 如：你可能想要将 _const std::string&_ 转换为 _std::string_。或者想要在类型前添加 _const_ 或将其转换为左值引用，比  
 如：将 _Widget_ 转换为 _const Widget_ 或 _Widget&_。如果你没有接触过一点 _TMP_，那就太糟糕了，因为如果你想要  
 成为一位真正地高效率的 _C++_ 编程者的话，那么你需要至少熟悉 _C++_ 的这部分的基础。你可以去看 [_Item 23_](./Chapter%205.md#item-21-理解-std::move-和-std::forward) 和  
@@ -1158,3 +1160,252 @@ void Widget::processPointer<void>(void*) = delete;          // public,
 
 * 首选 _deleted functions_ 而不是 _private undefined functions_。
 * 任意函数都可以被删除，包括：非成员函数和模板实例。
+
+## Item 12 使用 _override_ 来声明重写函数
+
+_C++_ 中的面向对象编程的世界是以类、继承以及 _virtual functions_ 为中心的。在这个世界中的最基本的思想之一是  
+_derived classes_ 中的 _virtual functions_ 的实现会重写它所对应的 _base class_ 中的 _virtual functions_ 的实现。意识到重  
+写 _virtual functions_ 有这么容易出错，是令人沮丧的。语言的这部分似乎是按照墨菲定律的思想来设计的，而且  
+不仅是要遵守，还是要致敬墨菲定律的。
+
+因为 _overriding_ 听起来像是 _overloading_ 的，但其实是完全不相关的，所以让我澄清下：重写 _virtual function_ 只是  
+使得可以通过 _base class_ 的接口来执行 _derived class_ 的函数了而已：
+```C++
+  class Base {
+  public:
+    virtual void doWork();               // base class virtual function
+    …
+  };
+
+  class Derived: public Base {
+  public:
+    virtual void doWork();              // overrides Base::doWork
+    …                                   // ("virtual" is optional
+  };                                    // here)
+
+  std::unique_ptr<Base> upb =           // create base class pointer
+    std::make_unique<Derived>();        // to derived class object;
+                                        // see Item 21 for info on
+  …                                     // std::make_unique
+
+  upb->doWork();                        // call doWork through base
+                                        // class ptr; derived class
+                                        // function is invoked
+```  
+要发生重写，必须要满足一些要求：  
+* _base class_ 的函数必须是 _virtual functions_。
+* _base function_ 和 _derived function_ 的名字必须一致，除了 _destructors_ 的场景以外。
+* _base function_ 和 _derived function_ 的形参类型必须一致。
+* _base function_ 和 _derived function_ 的 _constness_ 必须一致。
+* _base function_ 和 _derived function_ 的返回类型和异常规范必须要兼容。
+
+这些限制也是 _C++98_ 的一部分，_C++11_ 又增加了一个：  
+
+* 函数的 _reference qualifiers_ 必须一致。成员函数的 _reference qualifiers_ 是 _C++11_ 中较少宣传的特性之一，所  
+以如果你没有听过它的话，那么也不要感到太惊讶。它可以限制成员函数只能用于左值或右值。成员函数并不  
+需要是虚函数才能使用它们：
+```C++
+  class Widget {
+  public:
+    …
+    void doWork() &;          // this version of doWork applies
+                              // only when *this is an lvalue
+  
+  void doWork() &&;           // this version of doWork applies
+  };                          // only when *this is an rvalue
+  
+  …
+
+  Widget makeWidget();        // factory function (returns rvalue)
+  
+  Widget w;                   // normal object (an lvalue)
+  
+  …
+  
+  w.doWork();                 // calls Widget::doWork for lvalues
+                              // (i.e., Widget::doWork &)
+  
+  makeWidget().doWork();      // calls Widget::doWork for rvalues
+                              // (i.e., Widget::doWork &&)
+```  
+&ensp;&ensp;&ensp;&ensp;稍后我会详细介绍带有 _reference qualifiers_ 的成员函数，但是现在我们只需要了解：如果 _base class_ 所对应的  
+&ensp;&ensp;&ensp;&ensp;_virtual function_ 是有 _reference qualifier_ 的话，那么 _derived class_ 所对应的 _virtual function_ 也必须要有完全相  
+&ensp;&ensp;&ensp;&ensp;同的 _reference qualifiers_。如果不是完全相同的话，虽然所声明的函数仍然会在 _derived class_ 中，但是却不会  
+&ensp;&ensp;&ensp;&ensp;重写 _base class_ 中的任何东西了。
+
+全部的这些对于重写的要求意味着小的错误可以造成大的不同。包含着重写错误的代码一般都是有效的，只是它的  
+含义不是你所期望的。因此你不能依靠编译器去通知你是否发生了错误。例如：下面的代码完全是合法，第一眼看  
+时，还像是合理的，但是并没有包含 _virtual function_ 重写，没有一个 _derived class_ 函数绑定到 _base class_ 函数。你  
+可以发现每一个例子中的问题吗？即为：为什么 _derived class_ 不能重写有着相同名字的 _base class_ 函数呢？  
+```C++
+  class Base {
+  public:
+    virtual void mf1() const;
+    virtual void mf2(int x);
+    virtual void mf3() &;
+    void mf4() const;
+  };
+
+  class Derived: public Base {
+  public:
+    virtual void mf1();
+    virtual void mf2(unsigned int x);
+    virtual void mf3() &&;
+    void mf4() const;
+  };
+```
+
+需要帮助吗？  
+* _mf1_ 在 _Base_ 中有 _const_，但在 _Derived_ 中却没有。
+* _mf2_ 在 _Base_ 中持有的是 _int_，但在 _Derived_ 中持有的却是 _unsigned int_。
+* _mf3_ 在 _Base_ 中是 _lvalue-qualified_，但是在 _Derived_ 中却是 _rvalue-qualified_。
+* _mf4_ 在 _Base_ 中不是 _virtual functions_。
+
+你可能会想“嘿，在实践中，这些都会引发编译器警告，所以我不需要担心。”可能是的，也可能不是。我测试过两  
+个编译器，它们不会发出抱怨，这个代码是会被接受的，这还是在全部警告都开启的情况下。其他的编译器提供了  
+这些问题的警告，但也不全。
+
+因为声明 _derived class_ 的函数是重写的是非常重要的，所以 _C++11_ 提供了一个方法，可以显式地让 _derived class_  
+的函数重写 _base class_ 的函数：
+```C++
+  class Derived: public Base {
+  public:
+  virtual void mf1() override;
+  virtual void mf2(unsigned int x) override;
+  virtual void mf3() && override;
+  virtual void mf4() const override;
+  };
+```  
+当然，这是不可以通过编译的，因为当这样写时，编译器会抱怨所有与重写相关的问题。这完全就是你所想要的，  
+这也是为什么你应该声明所有的重写函数为 _override_。
+
+使用 _override_ 的可以通过编译的代码看起来就像下面这样的，假设要重写 _Base_ 中的所有 _virtual function_：  
+```C++
+  class Base {
+  public:
+    virtual void mf1() const;
+    virtual void mf2(int x);
+    virtual void mf3() &;
+    virtual void mf4() const;
+  };
+  class Derived: public Base {
+  public:
+    virtual void mf1() const override;
+    virtual void mf2(int x) override;
+    virtual void mf3() & override;
+    void mf4() const override;          // adding "virtual" is OK,
+  };                                    // but not necessary
+```  
+在这个例子中，让事情可以工作的一部分是将 _Base_ 中的 _mf4_ 声明为 _virtual function_。大多数与重写相关的错误都  
+是在 _derived classes_ 中，但是也可以出现在 _base classes_ 中。
+
+在 _derived classes_ 上使用 _override_ 的策略不只是可以让编译器在你想要重写却没有重写时提醒你。如果你要打算改  
+变 _base class_ 中的 _virtual function_ 的 _signatrue_ 的话，那么它还可以帮助你来评估后果。如果你在 _derived classes_  
+中的每一个地方都使用了 _override_ 的话，那么你可以通过改变 _base class_ 中的 _signatrue_ 且重新编译系统来看这会  
+造成多大的破坏，即为：看看有多少个 _derived classes_ 会因此而编译失败，然后再决定这个 _signatrue_ 是否值得改  
+变。而在没有 _override_ 的情况下，你只能希望能有一个完备的单元测试了，因为正如我们已经看到的，应该重写  
+但没有重写 _base class_ 的函数的 _derived class_ 的 _virtual function_ 不会引发编译器的诊断。
+
+_C++_ 一直就是有关键字的，但是 _C++11_ 又引入了两个 _contextual_ 关键字：_override_ 和 _final_。这两个关键字有一个  
+特点，那就是它们是被保留的，只在固定的上下文中被保留。在 _override_ 场景中，只有当 _override_ 出现在成员函  
+数的末尾时，才会有所保留的含义。这意味着：如果你有已经使用了 _override_ 名称的 _legacy_ 代码的话，你不需要  
+为了 _C++11_ 来改变它：  
+```C++
+  class Warning {             // potential legacy class from C++98
+  public:
+    …
+    void override();          // legal in both C++98 and C++11
+    …                         // (with the same meaning)
+  };
+```
+
+这就是 _override_ 的全部了，但是关于成员函数的 _reference qualifier_ 还有要说的。在前面我就说过会提供更多关于  
+它的信息，现在开始。
+
+如果我们想要写一个只接收左值实参的函数的话，那么我们声明一个 _non-const_ 左值引用形参：
+```C++
+  void doSomething(Widget& w);          // accepts only lvalue Widgets
+```  
+如果我们想要写一个只接收右值实参的函数的话，那么我们声明一个右值引用形参：  
+```C++
+  void doSomething(Widget&& w);         // accepts only rvalue Widgets
+```  
+成员函数的 _reference qualifier_ 只是使得可以给调用成员函数的对象做区分了，即为：_*this_。类似于成员函数末尾  
+的 _const_，这个 _const_ 表示调用成员函数的对象，即为 _*this_，必须得是 _const_ 的。
+
+对于 _reference-qualified_ 成员函数的需求是不常见的，但也不是没有。例如：假定 _Widget_ 类有一个 _std::vector_ 的  
+数据成员，而且我们提供了一个访问函数来让客户直接访问这个数据成员：
+```C++
+  class Widget {
+  public:
+    using DataType = std::vector<double>;          // see Item 9 for
+    …                                             // info on "using"
+
+    DataType& data() { return values; }
+    …
+    private:
+      DataType values;
+    };
+```  
+
+很难这是最有封装性的设计，但先不考虑封装性，考虑一下下面这样的客户代码会发生什么：  
+```C++
+  Widget w;
+  …
+  auto vals1 = w.data();      // copy w.values into vals1
+```  
+_Widget::data_ 的返回类型是左值引用，准确说是 _std::vector<double>&_，因为左值引用是被定义来为左值的，所以我们是根  
+据一个左值来初始化的 _vals1_。因此 _vals1_ 是调用 _w.values_ 来进行拷贝构造的，正如注释所说的那样。  
+
+现在假定我们有创建 _Widgets_ 的工厂函数，  
+```C++
+  Widget makeWidget();
+```  
+而且我们想要使用 _makeWidget_ 所返回的 _Widget_ 的 _std::vector_ 来初始化一个变量：  
+```C++
+  auto vals2 = makeWidget().data();     // copy values inside the
+                                        // Widget into vals2
+```  
+再一次，_Widget::data_ 返回一个左值引用，再一次，左值引用是左值，所以，再一次，我们的新对象 _vals2_ 是根据  
+_Widget_ 的 _values_ 而拷贝构造出的。但是，这一次这个 _Widget_ 是一个 _makeWidget_ 所返回的临时对象，即为：一  
+个右值，所以拷贝 _std::vector_ 是浪费时间的。此时最好去移动它，但是，因为 _data_ 是一个返回的左值引用，所以  
+_C++_ 的规则会要求编译器生成拷贝的代码。通过所谓的 _as if rule_，是有一些优化的余地的，但不要指望编译器能  
+找到利用它的方法。  
+
+需要一种方法：当在右值 _Widget_ 上执行 _data_ 时，可以指定所产生的结果也是一个右值。使用 _reference qualifiers_  
+来重载左值 _Widget_ 的 _data_ 和右值 _Widget_ 的 _data_ 就可以完成：  
+```C+++
+  class Widget {
+  public:
+    using DataType = std::vector<double>;
+    …
+
+    DataType& data() &                            // for lvalue Widgets,
+    { return values; }                            // return lvalue
+
+    DataType data() &&                            // for rvalue Widgets,
+    { return std::move(values); }                 // return rvalue
+    …
+  private:
+    DataType values;
+  };
+```  
+注意 _data_ 重载函数的不同的返回类型。左值引用重载函数返回的是左值引用，即为：一个左值，而右值引用重载  
+函数返回的是临时对象，即为：一个右值。这意味着客户代码现在按照我们想的那样执行了：  
+```C++
+  auto vals1 = w.data();                // calls lvalue overload for
+                                        // Widget::data, copy-
+                                        // constructs vals1
+
+  auto vals2 = makeWidget().data();     // calls rvalue overload for
+                                        // Widget::data, move-
+                                        // constructs vals2
+```  
+
+这确实非常棒，但是不要让这个完美结尾的温暖光芒分散了本 _Item_ 的真正观点。真正的观点是：无论何时，只要  
+你想在 _derived class_ 中声明一个重写了 _base class_ 中的 _virtual function_ 的函数时，就请声明函数为 _override_。
+
+### 需要记住的规则
+
+* 声明重写函数为 _override_。
+* 成员函数的 _reference qualifiers_ 使得可以不同地处理左值 _*this_ 对象和右值 _*this_ 对象了。

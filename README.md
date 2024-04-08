@@ -34,14 +34,14 @@
 * transformation 转换
 *  _braced initializer_ 花括号初始化表达式
 * _initializer_ 表达式
-* _enums_ 枚举
-* braces {}
-* parentheses ()
+* _enum_ 枚举
+* brace {}
+* parenthes ()
 * _lamba expression_ 
 * _iterator_
 * _undefined behavior_
-* _move operations_
-* _copy operations_
+* _move operation_
+* _copy operation_
 * _exception safe_
 * _basic guarantee_
 * _strong guarntee_
@@ -57,24 +57,32 @@
 * _alias declartion_ 
 * _braced initialization_
 * _uncopyable_
-* _narrowing conversions_
+* _narrowing conversion_
 * _legacy_
 * _numeric_ 
 * _integral_
 * _mutex_
-* _alias declarations_
+* _alias declaration_
 * _allocator_
 * _dependent type_
-* _type traits_
+* _type trait_
 * _tutorial_
 * _Standardization Committee_
-* _scoped enums_
-* _unscoped enums_
+* _scoped enum_
+* _unscoped enum_
 * _namespace_
 * _strongly typed_
 * _copy constructor_
 * _copy assignment operator_
-* _deleted functions_
+* _deleted function_
+* a, b and c a、b 和 c 或 a、b 以及 c 
+* _virtual functions_
+* _base class_
+* _derived class_
+* _qualifier_ 
+* _const-qualifier_
+* _reference-qualifier_
+* _reference qualifier_
 > 比如 container 可以翻译为容器，也可以使用 _container_，大部分都使用的是 _container_。
 
 译者注  
