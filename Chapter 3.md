@@ -13,6 +13,8 @@
     - [需要记住的规则](#需要记住的规则-5)
   - [Item 13 首选 _const\_iterators_ 而不是 _iterators_](#item-13-首选-const_iterators-而不是-iterators)
     - [需要记住的规则](#需要记住的规则-6)
+  - [Item 14 当函数不会抛出异常时声明函数为 _noexcept_](#item-14-当函数不会抛出异常时声明函数为-noexcept)
+    - [需要记住的规则](#需要记住的规则-7)
 
 # Chapter 3 _Moving to Modern C++_
 
@@ -351,7 +353,7 @@ _go-parentheses-go_ 派则将 _()_ 做为其默认。_()_ 和 _C++98_ 的语法�
 
 如果创建 _localObject_ 时 _doSomeWork_ 使用了 _()_ 的话，那么 _std::vector_ 就是有 _10_ 个元素。如果创建 _localObject_ 时   
 _doSomeWork_ 使用了 _{}_ 的话，那么 _std::vector_ 就是有 _2_ 个元素。哪一个是正确的？_doSomeWork_ 的作者是不知道  
-的，只有调用者知道。
+的，只有调用方知道。
 
 这是标准库函数 _std::make_unique_ 和 _std::make_shared_ 面对的问题，见 [_Item 21_](./Chapter%204.md#item-21-首选-std::make-unique-和-std::make-shared-而不是直接使用-new)。这些函数通过内部使用 _()_ 和记录  
 这个决定做为接口的一部分来解决这个问题。
@@ -360,9 +362,8 @@ _doSomeWork_ 使用了 _{}_ 的话，那么 _std::vector_ 就是有 _2_ 个元�
 
 * braced initialization_ 是最广泛的可使用的初始化语法，它可以禁止 _narrowing conversions_ 并且对对 _C++_ 的  
 _most vexing parse_ 所免疫。  
-* 在构造函数重载决议期间，如果可能，_braced initializer_ 会和 _std::initializer_list_ 形参匹配，即
-使其他的构造函  
-数提供了看起来是更好的匹配。
+* 在构造函数重载决议期间，如果可能，_braced initializer_ 就会和 _std::initializer_list_ 形参匹配，即使其他的构造  
+  函数提供了看起来是更好的匹配。
 * 在选择使用 _()_ 和 _{}_ 时可能产生显著差异的一个例子是使用两个实参来创建 _std::vector&lt;numeric type&gt;_ 时。
 * 当在模板中创建对象时，在 _()_ 和 _{}_ 之间进行选择是具有挑战性的。
 
@@ -486,7 +487,7 @@ _nullptr_ 的优势是它不是 _integral_ 类型。老实说，它也不是指�
   }
 ```  
 
-对于给定的 _lockAndCall_ 模板，另一个版本，调用者可以像下面这样写代码：
+对于给定的 _lockAndCall_ 模板，另一个版本，调用方可以像下面这样写代码：
 ```C++
   auto result1 = lockAndCall(f1, f1m, 0);         // error!
   
@@ -1196,7 +1197,7 @@ _derived classes_ 中的 _virtual functions_ 的实现会重写它所对应的 _
 ```  
 要发生重写，必须要满足一些要求：  
 * _base class_ 的函数必须是 _virtual functions_。
-* _base function_ 和 _derived function_ 的名字必须一致，除了 _destructors_ 的场景以外。
+* _base function_ 和 _derived function_ 的名字必须一致，除了析构函数的场景以外。
 * _base function_ 和 _derived function_ 的形参类型必须一致。
 * _base function_ 和 _derived function_ 的 _constness_ 必须一致。
 * _base function_ 和 _derived function_ 的返回类型和异常规范必须要兼容。
@@ -1356,8 +1357,8 @@ _C++_ 一直就是有关键字的，但是 _C++11_ 又引入了两个 _contextua
   …
   auto vals1 = w.data();      // copy w.values into vals1
 ```  
-_Widget::data_ 的返回类型是左值引用，准确说是 _std::vector<double>&_，因为左值引用是被定义来为左值的，所以我们是根  
-据一个左值来初始化的 _vals1_。因此 _vals1_ 是调用 _w.values_ 来进行拷贝构造的，正如注释所说的那样。  
+_Widget::data_ 的返回类型是左值引用，准确说是 _std::vector&lt;double&gt;&_，因为左值引用是被定义来为左值的，所以  
+我们是根据一个左值来初始化的 _vals1_。因此 _vals1_ 是调用 _w.values_ 来进行拷贝构造的，正如注释所说的那样。  
 
 现在假定我们有创建 _Widgets_ 的工厂函数，  
 ```C++
@@ -1415,7 +1416,8 @@ _C++_ 的规则会要求编译器生成拷贝的代码。通过所谓的 _as if 
 ## Item 13 首选 _const_iterators_ 而不是 _iterators_
 
 _const_iterators_ 是 _STL_ 的 _pointer-to-const_ 的等价物。它们都指向不可以被更改的值。只要有可能使用 _const_ 就应该  
-去使用 _const_ 的标准实践规定了：当你需要一个 _iterator_ 时，而不需要更改 _iterator_ 所指向的内容时，你应该使用的是 _const_iterators_。
+去使用 _const_ 的标准实践规定了：当你需要一个 _iterator_，而不需要更改 _iterator_ 所指向的内容时，你应该使用的是  
+_const_iterators_。
 
 _C++98_ 和 _C++11_ 都是这样，但在 _C++98_ 中，对于 _const_iterators_ 的支持是不够全面的。在 _C++98_ 中，不太容  
 易创建 _const_iterators_，就算你创建了一个，使用它的方法也是有限制的。例如：假定你想要在 _std::vector&lt;int&gt;_ 中  
@@ -1549,3 +1551,210 @@ _iterators_ 时，这个原则就不适用了。而在 _C++11_ 中，这个原�
 
 * 首选 _const_iterators_ 而不是 _iterators_。
 * 在最通用的代码中，首选非成员函数 _begin_、_end_ 和 _rbegin_ 等，而不是相应的成员函数版本。
+
+## Item 14 当函数不会抛出异常时声明函数为 _noexcept_
+
+在 _C++98_ 中，_exception specification_ 确实是性情不定的野兽。你必须要总结出一个函数所有的可能会抛出的异常  
+类型，所以如果这个函数的实现被更改了的话，那么它的 _exception specification_ 可能也需要更改。而改变一个函  
+数的  _exception specification_  是可能会破坏客户的代码的，因为调用方可能是依赖于原来的 _exception specification_  
+的。编译器一般不会帮助你去维护函数实现、_exception specification_ 和客户代码之间的一致性。所以大多数的开发  
+者最终认为：_C++98_ 的 _exception specification_ 是不值得使用的。
+
+在 _C++11_ 开发期间，达成了一个共识：关于函数的异常抛出行为，真正有意义的信息是它是否有异常。黑或白，  
+函数要么可能会抛出异常，要么保证不会抛出异常。_maybe-or-never_ 二分法是 _C++11_ 的 _exception specification_  
+的基础，本质上取代了 _C++98_ 的 _exception specification_。_C++98-style_ 的 _exception specification_ 仍然是有效的，  
+但是是被废弃的。在 _C++11_ 中，无条件的 _noexcept_ 是对应于那些保证不会抛出异常的函数的。
+
+函数是否应该被如此声明是接口设计的问题。函数的异常抛出行为对于客户是至关重要的。调用方可以查询函数的  
+_noexcept_ 状态，这个查询的结果可以影响调用代码的异常安全性和运行效率。本身来说，函数是否是 _noexcept_ 的  
+和成员函数是否是 _const_ 的是同等重要的。当你知道函数不会抛出异常，却没有声明函数为 _noexcept_ 时，就是一  
+个糟糕的接口规范了。
+
+还有一个应用 _noexcept_ 到不会抛出异常的函数的额外激励：这会允许编译器去生成更好的对象代码。想要理解为  
+什么会这样，只需要检查 _C++98_ 和 _C++11_ 在指明函数不会抛出异常的方式上的不同。考虑一个函数 _f_，它对调用  
+方承诺永远不会抛出一个异常。有两种方法表示：  
+```C++
+  int f(int x) throw();       // no exceptions from f: C++98 style
+  
+  int f(int x) noexcept;      // no exceptions from f: C++11 style
+```  
+
+在运行期间，如果有一个异常离开了 _f_ 的话，那么这就是违反了 _f_ 的 _exception specification_ 了。又由于 _C++98_ 的  
+_exception specification_，调用堆栈会被展开至 _f_ 的调用方，然后在一些和本 _Item_ 不相关的操作之后，程序执行被终  
+止。而由于 _C++11_ 的 _exception specification_，运行行为会稍微有不同：调用堆栈只是在程序执行被终止之前，可  
+能会被展开。
+
+会展开调用堆栈和可能会展开调用堆栈之间的不同对于代码的生成有着很大的影响。在 _noexcept_ 函数中，如果一  
+个异常将会被传播到到函数之外的话，那么 _optimizers_ 是不需要将运行堆栈保持为展开状态的，_optimizers_ 也不必  
+确保：当一个异常离开函数时，_noexcept_ 函数中的对象必须要按照构造的相反顺序来进行析构。对于带有 _throw()_  
+_exception specification_ 的函数则缺乏这样的优化灵活性，就和完全没有异常明细的函数做的一样。这个情景可以这  
+样总结：  
+```C++
+  RetType function(params) noexcept;    // most optimizable
+  
+  RetType function(params) throw();     // less optimizable
+  
+  RetType function(params);             // less optimizable
+```
+
+单是这个就有足够理由让你只要知道函数不会产生异常就声明函数为 _noexcept_ 了。
+
+对于某些函数，情况更典型。_move operation_ 是极好的例子。假定你使用了 _std::vector&lt;Widget&gt;_ 的 _C++98_ 代码。  
+偶尔会通过 _push_back_ 来将 _Widget_ 添加到 _std::vector_ 中：  
+```C++
+  std::vector<Widget> vw;
+  
+  …
+  
+  Widget w;
+  
+  …                           // work with w
+  
+  vw.push_back(w);            // add w to vw
+  
+  …
+```  
+假设这个代码是可以工作的，并且你没兴趣为了 _C++11_ 去修改这个代码。然而，你想要利用以下这个事实的优  
+势：当涉及到 _move-enabled_ 类型时，_C++11_ 的移动语义可以提高 _legacy_ 代码的性能。因此你要确保 _Widget_ 有  
+_move operations_，要么是你要自己写它的 _move operatins_，要么是你要确保满足 _move operations_ 的自动生成条  
+件，见 [_Item 17_](./Chapter%203.md#item-17-理解特殊成员函数的生成)。
+
+当一个新元素被添加到 _std::vector_ 时，_std::vector_ 可能已经没有这个元素的空间了，即为：_std::vector_ 的大小等于它  
+的容量了。当发生这种情况时，_std::vector_ 会分配一个新的大的内存块去保存它的元素，并将它的元素从旧内存块  
+转移到新内存块上。在 _C++98_ 中，是通过将每一个元素从旧内存拷贝到新内存来完成的，然后再去销毁旧内存上   
+的对象。这种方法给 _push_back_ 提供了强异常安全保证：如果在拷贝期间抛出了一个异常的话，那么 _std::vector_ 的  
+状态是保持不变的。因为直到全部元素都被成功拷贝到新内存后，旧内存上的全部元素才会被销毁。
+
+在 _C++11_ 中，一个自然的优化是：对于 _std::vector_ 的元素，会使用移动来代替拷贝。不幸地是，这样做是冒着违  
+反 _push_back_ 的异常安全保证风险的。如果 _n_ 个元素已经从旧内存移走了，然后在移动第 _n+1_ 
+个元素期间抛出了  
+一个异常，那么 _push_back_ 操作是不可以完成的。但是原来的 _std::vector_ 已经被更改了：因为 _n_ 个元素已经被移动  
+走了。不可能恢复原来的状态，因为试图移动每一个元素回到原来的旧内存都可能会产生异常。
+
+这是一个严重的问题，因为 _legacy_ 代码的行为可能是依赖于 _push_back_ 的强异常安全保证的。因此，_C++11_ 的实  
+现不能悄悄地使用 _move operations_ 来替换 _push_back_ 中的 _copy operations_，除非确认 _move operations_ 不会抛出  
+异常。不会抛出异常时，_move operations_ 代替 _copy operations_ 是安全的，唯一的附加影响是将会提升性能。
+
+_std::vector::push_back_ 利用了 **_move if you can, but copy if you must_** 的策略的优势，它不是唯一一个在标准库中这  
+样做的函数。其他的利用了 _C++98_ 的强异常安全保证的函数也是使用了相同的方式，比如：_std::vector::reserve_ 和  
+ _std::deque::insert_ 等。如果 _move operations_ 被认为是不会抛出异常异常的话，那么全部的这些函数会使用 _C++11_   
+的 _move operations_ 来代替 _C++98_ 的 _copy operations_。但是这些函数如何可以知道 _move operation_ 是否不会产生  
+异常呢？答案是明显的：去检查 _move operations_ 是否被声明为了 _noexcept_。
+
+_swap_ 函数包括了另一种 _noexcept_ 尤其值得拥有的场景。_swap_ 是很多 _STL_ 算法实现的关键组成部分，它通常也会  
+在 _copy assignment operators_ 中被使用。_swap_ 的广泛应用使得 _noexcept_ 所提供的优化特别地值得。有趣地是，标  
+准库的 _swaps_ 是否是 _noexcept_ 的有时是依赖于用户所定义的 _swaps_ 是否是 _noexcept_ 的。例如：_array_ 和 _std::pair_  
+所对应的标准库的 _swap_ 的声明是：  
+```C++
+  template <class T, size_t N>
+  void swap(T (&a)[N],                                      // see
+            T (&b)[N]) noexcept(noexcept(swap(*a, *b)));    // below
+  
+  template <class T1, class T2>
+  struct pair {
+    …
+    void swap(pair& p) noexcept(noexcept(swap(first, p.first)) &&
+                                noexcept(swap(second, p.second)));
+    …
+  };
+```  
+
+这些函数是 **_有条件地_** _noexcept_ 的：它们是否是 _noexcept_ 的是依赖于 _noexcept clauses_ 中的表达式是否是 _noexcept_  
+的。例如：给定两个 _Widget_ 类型的 _array_，只有当 _array_ 中的单独的元素的交换是 _noexcept_ 时，即为：_Widget_ 的  
+_swap_ 是 _noexcept_ 的时，这两个 _array_ 的交换才会是 _noexcept_ 的。因此，_Widget_ 的 _swap_ 的作者决定了 _Widget_ 的  
+_array_ 的交换是否是 _noexcept_ 的。这依次决定了其他的像 _Widget_ 的 _array_ 的 _array_ 这样的 _swaps_ 是否是 _noexcept_  
+的。类似地，还有两个包含着 _Widget_ 的 _std::pair_ 对象的交换是否是 _noexcept_ 的是依赖于 _Widget_ 的  _swap_ 是否是  
+_noexcept_ 的。只有当低级别成分的交换是 _noexcept_ 的时，高级别的数据结构才可以是 _noexcept_ 的，这个事实激励  
+你只要可以就应该去提供 _noexcept_ 的 _swap_ 函数。
+
+目前，我希望你对 _noexcept_ 所提供的优化机是感到兴奋的。但我必须缓和你的热情。因为虽然优化是重要的，但  
+是正确性是更重要的。在本 _Item_ 的开头我就强调了 _noexcept_ 是函数接口的一部分，所以只有当你愿意长期来维护  
+一个 _noexcept_ 实现时，你才应该声明一个函数为 _noexcept_。如果你开始时声明了一个函数为 _noexcept_，但是后续  
+却后悔了的话，那么你的选择是有限的。你可以从函数的声明中删除 _noexcept_，即为：改变它的接口，但这是冒  
+着破坏客户的代码的风险的。你还可以改变函数的实现，以让一个异常可以 _escape_，但还是保持原始的但现在是  
+错误的 _exception specification_。如果你这样做了，当这个异常尝试离开函数时，你的程序将会被终止。又或者你可  
+以接受现有的实现，而从一开始就抛弃任何激起你想要改变实现的想法。这些选择都没有吸引力。
+
+事实上，大多数函数都是 _exception-neutral_ 的。这些函数它们本身是不会抛出异常的，但是它们所调用的函数是  
+可能会抛出异常的。当这种情况发生时，_exception-neutral_ 的函数允许它们所调用的函数所抛出的异常通过它们的  
+路到达更上层的调用链路的处理程序。_exception-neutral_ 的函数永远不是 _noexcept_ 的，因为它们还是可能会抛出  
+**_just passing through_** 的异常的。因此，大多数函数很恰当地缺少了 _noexcept_ 名称。
+
+然而，有些函数有着不会抛出任何异常的自然实现，对于一些函数来说，尤其是 _move operations_ 和 _swap_，声明  
+为 _noexcept_ 可以有巨大的回报，如果可能的话，值得按照 _noexcept_ 的方式去实现。当你可以确保一个函数是永远  
+不会抛出异常时，你确实应该声明这个函数为 _noexcept_。
+
+请注意，我说的是有些函数有着自然的 _noexcept_ 的实现。扭曲函数的实现以去让 _noexcept_ 成为可能是不合理的。  
+**_Is putting the cart before the horse. Is not seeing the forest for the trees_.** 选择你最爱的比喻。如果一个简单的函  
+数实现可能会产生异常的话，比如：调用可能会抛出异常的函数，那么你可以付出努力来将这些抛出的异常对调用  
+方进行隐藏，比如：捕获所有的异常并使用状态码或特殊返回值来代替它，这不仅会使得你的函数的实现变得非常  
+复杂，还通常也会使得调用点的代码变得复杂。例如：调用方必须要检查状态码或者特殊返回值。这些复杂度的运  
+行时间成本，比如：额外的分支和更大的函数会给指令缓存施加更大的压力，可能会超出你希望通过 _noexcept_ 所  
+实现的加速，而且代码更难以理解和维护了。这将是糟糕的软件工程。
+
+对于一些函数来说，成为 _noexcept_ 的是非常重要的，它们默认就应该是那样。在 _C++98_ 中，允许内存释放函数，  
+即为：_operator delete and operator delete[]_，和析构函数去抛出异常被认为是一个糟糕的设计，而在 _C++11_ 中，  
+这种风格规则已经被升级为是一个语言规则了。所有的内存释放函数和析构函数，包括用户定义的和编译器生成  
+的，默认都是隐式 _noexcept_ 的。因此不需要声明它们为 _noexcept_。进行声明也不会伤害任何东西，只是不常见而  
+已。只有当类的数据成员，包括所继承的成员和被包含在其他数据成员中的成员，明确地声明了它们的析构函数可  
+能会抛出异常时，比如：声明为 _noexcept(false)_，才是仅有的析构函数不是隐式 _noexcept_ 的情况。这样的析构函  
+数是不常见的。在标准库中是没有这样的析构函数的，如果标准库所使用的对象的析构函数抛出了一个异常的话，  
+比如：这个对象是在 _container_ 中的，是被传递到算法中的，那么程序的行为是未定义的。
+
+值得注意的是：一些库接口设计者会区分 _wide contracts_ 函数和 _narrow contracts_ 函数。_wide contracts_ 函数没有前  
+置条件。这些函数不管程序状态如何都可以会被调用，没有在调用方所传递的实参上强加限制。_wide contracts_ 函  
+数永远不会出现 _undefined behavior_。
+
+没有 _wide contracts_ 的函数就是有 _narrow contracts_ 的了。对于这样的函数，如果违反了前置条件的话，那么结果  
+将是未定义的。
+
+如果你正在写一个 _wide contracts_ 函数，并且你知道它是不会抛出异常的话，那么遵循本 _Item_ 的建议，将它声明  
+为 _noexcept_ 是简单的。对于 _narrow contracts_ 函数来说，是狡猾的。比如，假定你正在写一个持有 _std::string_ 形参  
+的函数 _f_，而且假设这个 _f_ 的自然的实现永远不会产生异常。建议应该将 _f_ 声明为 _noexcept_。 
+
+现在假定 _f_ 有一个前置条件：它的 _std::string_ 形参的长度不能超过 _32_ 个字符。如果使用了超过了 _32_ 个字符长度的  
+_std::string_ 来调用了 _f_ 的话，那么行为将是 _undefined behavior_，因为违反了前置条件会导致 _undefined behavior_。_f_  
+没有责任去检查这个前置条件，因为函数可以假设它的前置条件都是被满足的。调用方有责任确保这个假设是有效  
+的。所以，即使有了前置条件，声明 _f_ 为 _noexcept_ 似乎也是合理的：
+```C++
+  void f(const std::string& s) noexcept;          // precondition:
+                                                  // s.length() <= 32
+```  
+
+但是，现在假设 _f_ 的实现者选择检查是否违反前置条件了。检查不是必须的，但是也不是被禁止的，而且检查前置  
+条件也可能是有用的。比如：在系统测试期间。调试已经被抛出的异常通常比追踪 _undefined behavior_ 的原因要容  
+易。但是违反前置条件应该如何报告才能使测试工具或客户的错误程序能够探测它呢？一个简单的方法是去抛出一  
+个“违反了前置条件”的异常，但是如果 _f_ 被声明为了 _noexcept_ 的话，那么就不可以这样了，抛出异常将会导致程序  
+终止。所以，区分 _wide contracts_ 和 _narrow contracts_ 的库设计者通常只会为 _wide contracts_ 函数保留 _noexcept_。
+
+最后，让我详细说明我之前的观察：编译器一般不会提供帮助去识别函数实现和它们的 _exception specifications_ 之  
+间的不一致性。考虑这个代码，是完美合法的：  
+```C++
+  void setup();               // functions defined elsewhere
+  void cleanup();
+
+  void doWork() noexcept
+  {
+    setup();                  // set up work to be done
+    
+    …                         // do the actual work
+    
+    cleanup();                // perform cleanup actions
+  }
+```  
+此处，_doWork_ 是被声明为 _noexcept_ 的，尽管 _doWork_ 调用了 _non-noexcept_ 函数 _setup_ 和 _cleanup_ 函数。这似乎  
+是矛盾的，但却是可以的，那就是当 _setup_ 和 _cleanup_ 在文档中说明了它们永远不会抛出异常，尽管它们没有被声  
+明为 _noexcept_。有好的理由将这样不会抛出异常的函数不声明为 _noexcept_，例如：它们可能是 _C_ 库的一部分，甚  
+至一些已经从 _C_ 标准库移动到 _std namespace_ 的函数仍然缺少着 _exception specification_，比如：_std::strlen_ 没有被  
+声明为 _noexcept_。又或者它们是决定不使用 _C++98_ 的 _exception specification_，但还没有被修改为使用 _C++11_ 的  
+_exception specification_ 的 _C++98_ 的库。
+
+因为有着确实的理由使得 _noexcept_ 函数依赖着缺乏 _noexcept_ 保证的代码，所以 _C++_ 允许这样的代码可以通过编  
+译，而且编译器通常不会对这样的代码产生警告。
+
+### 需要记住的规则
+
+* _noexcept_ 是函数接口的一部分，这意味着调用方可能会依赖它。
+* _noexcept_ 函数比 _non-noexcept_ 函数是更可优化的。
+* _noexcept_ 函数尤其对 _move operations_、_swap_、内存释放函数以及析构函数有价值。
+* 大多数函数是 _exception-neutral_ 的，而不是 _noexcept_ 的。
