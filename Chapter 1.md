@@ -277,7 +277,7 @@ _const_ 则说明了 _ptr_ 所指向的字符串是 _const_ 的，因此是不�
 ```C++
   void myFunc(int param[]);
 ```  
-但是数组声明是被当作为指针声明的，这意味着 "myFunc" 可以被等同地声明为下面这样：
+但是数组声明是被当作为指针声明的，这意味着 _myFunc_ 可以被等同地声明为下面这样：
 ```C++
   void myFunc(int* param);    // same function as above
 ```
@@ -683,9 +683,9 @@ _decltype_ 是一个古怪的产物。给定一个名字或表达式，它会告
 使用这个声明，_authAndAccess_ 返回传入的容器的 _operator[]_ 所返回的类型，完全符合我们的预期。
 
 _C++11_ 允许 _single-statement_ 的 _lambdas_ 的返回类型被推导，而 _C++14_ 扩展到了全部的 _lambdas_ 和函数中，包  
-括 _multiple-statements_ 的 _lambdas_ 和函数。在 _authAndAccess_ 的场景中，这意味着在 _C++14_ 中，我们可以忽略  
-_trailing return type_，而只留下前置的 _auto_。使用这种声明的格式，_auto_ 意味着类型推导将会发生。特别是意味着  
-编译器将会根据函数的实现来产生函数的返回类型：  
+括 _multiple-statements_ 的 _lambdas_ 和函数。在 _authAndAccess_ 的场景中，这意味着：在 _C++14_ 中，我们可以忽  
+略 _trailing return type_，而只留下前置的 _auto_。使用这种声明的格式，_auto_ 意味着类型推导将会发生。特别是意味  
+着编译器将会根据函数的实现来产生函数的返回类型：  
 ```C++
   template<typename Container, typename Index>    // C++14;
   auto authAndAccess(Container& c, Index i)       // not quite

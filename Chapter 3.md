@@ -15,6 +15,8 @@
     - [需要记住的规则](#需要记住的规则-6)
   - [Item 14 当函数不会抛出异常时声明函数为 _noexcept_](#item-14-当函数不会抛出异常时声明函数为-noexcept)
     - [需要记住的规则](#需要记住的规则-7)
+  - [Item 15 只要有可能就使用 _constexpr_](#item-15-只要有可能就使用-constexpr)
+    - [需要记住的规则](#需要记住的规则-8)
 
 # Chapter 3 _Moving to Modern C++_
 
@@ -1758,3 +1760,249 @@ _exception specification_ 的 _C++98_ 的库。
 * _noexcept_ 函数比 _non-noexcept_ 函数是更可优化的。
 * _noexcept_ 函数尤其对 _move operations_、_swap_、内存释放函数以及析构函数有价值。
 * 大多数函数是 _exception-neutral_ 的，而不是 _noexcept_ 的。
+
+## Item 15 只要有可能就使用 _constexpr_
+
+如果存在有一个 _C++11_ 的最令人困惑新名词的奖项时，_constexpr_ 大概率会赢得这个奖项。当 _constexpr_ 被应用到  
+对象上时，它就是一个 _const_ 的强化形式，但是当 _constexpr_ 被应用到函数上时，它就有非常不同的含义了。搞清  
+楚这个是值得的。因为当 _constexpr_ 与你想要去表达的内容相符合时，你绝对会想要使用它。
+
+概念上来说，_constexpr_ 不仅表明一个值是常量的，而且还表明这个值在编译期间就是已知的。但是这个概念只是  
+故事的一部分，因为当 _constexpr_ 被应用到函数上时，事情要比这个说明更加微妙。我先不剧透那个令人惊喜的  
+结论，现在我只说：你不能假设 _constexpr_ 函数的结果是 _const_ 的，也不能认为 _constexpr_ 函数的结果的值在编译  
+期间就是已知的。大概最有趣地是，这些都是是特性。_constexpr_ 函数不需要产生是 _const_ 的或者在编译期间就是  
+已知的结果。
+
+让我们从 _constexpr_ 对象开始。实际上，它们是 _const_ 的，它们的值在编译期间就是已知的。技术上来说，它们的  
+值是在 _translation_ 期间被确定的，_translation_ 不仅包括编译，还包括链接。然而，除非你写的是 _C++_ 的编译器或  
+链接器，否则不会影响到你，所以你可以无忧无虑地编程，就像是 _constexpr_ 对象的值是在编译期间确定的。
+
+在编译期间就是已知的值是被特殊对待的。例如：它们会被放到只读内存上，特别对于嵌入式系统的开发者来说，  
+这可以是一个相当重要的特性。更广泛的应用是：那些是常量的和在编译器期间就是已知的 _integral_ 值是可以被用  
+在 _C++_ 是需要 _integral_ 常量表达式的上下文中的。包括指定：_array_ 的大小、_integral_ 模板的实参、_std::array_ 对象  
+的长度、_enumerator_ 值、_alignment specifiers_ 等等。如果你想要使用变量来完成这些的话，那么你肯定会想要声  
+明这个变量为 _constexpr_ ，因为编译器会确保这个变量有一个 _compile-time_ 的值：  
+```C++
+  int sz;                               // non-constexpr variable
+  
+  …
+  
+  constexpr auto arraySize1 = sz;       // error! sz's value not
+                                        // known at compilation
+  
+  std::array<int, sz> data1;            // error! same problem
+  
+  constexpr auto arraySize2 = 10;       // fine, 10 is a
+                                        // compile-time constant
+  
+  std::array<int, arraySize2> data2;    // fine, arraySize2
+                                        // is constexpr
+```
+
+注意：_const_ 不会提供和 _constexpr_ 相同的保证，因为 _const_ 对象不需要使用在编译期间就是已知的值来进行初始  
+化:  
+```C++
+  int sz;                               // as before
+  
+  …
+  
+  const auto arraySize = sz;            // fine, arraySize is
+                                        // const copy of sz
+
+  std::array<int, arraySize> data;      // error! arraySize's value
+                                        // not known at compilation
+```  
+
+简单来说：所有 _constexpr_ 对象都是 _const_ 的，但所有 _const_ 对象不都是 _constexpr_ 的。如果你想要编译器去保证一  
+个变量的值是可以被用在需要 _compile-time_ 的常量的上下文中的话，那么可以完成这个工作的是 _constexpr_，而不  
+是 _const_。
+
+当涉及到 _constexpr_ 函数时，_constexpr_ 对象的使用情况是会变得更有意思的。当使用 _compile-time_ 的常量来调用  
+_constexpr_ 函数时，函数会产生 _compile-time_ 的常量。当使用 _run-time_ 的值来调用  _constexpr_ 函数的话，函数会产  
+生 _run-time_ 的值。听起来好像不知道它们会做什么，但不是的。应该这样去看待：  
+
+* _constexpr_ 函数可以被用在需要 _compile-time_ 的常量上下文中。在这个上下文中，如果你传递给 _constexpr_ 函  
+数的实参的值是在编译期间就是已知的话，那么这个 _constexpr_ 函数的结果将会在编译期间被计算。如果任意  
+一个实参的值不是在编译期间就是已知的，那么你的代码将会被拒绝。
+
+* 当使用一个或者多个不是在编译期间就是已知的值来调用 _constexpr_ 函数时，这个 _constexpr_ 函数变现地就像  
+一个普通函数了，这个 _constexpr_ 函数是在运行期间被计算的。这意味着你不需要两个函数来执行相同的操作  
+了，一个对应于 _compile-time_ 的常量，另一个对应于其他的值。_constexpr_ 函数会一起完成。
+
+假定我们需要一个数据结构去保存一个可以以多种方式运行的实验的结果。例如：光照水平在实验过程中可以是高  
+的、低的或者关闭的，同理还有风扇速度和温度等。如果有 _n_ 个与实验相关的环境条件，它们的每一个都有三个  
+可能状态的话，那么就共有 _3^n_ 个组合了。因此，想要存储所有条件的组合的实验结果，就得需要一个有着足够  
+的空间的可以存下 _3^n_ 个值的数据结构。如果每一个结果都是一个 _int_，并且 _n_ 是在编译期间就是已知的或是在编  
+译器期间就是可以被计算出的话，那么 _std::array_ 是一个合理的数据结构的选择。但我们需要一个方法在编译期间  
+就计算出 _3^n_ 的值。_C++_ 的标准库提供了 _std::pow_，它是一个我们需要的数学功能，但是要想完成我们的目标的  
+话，还存在两个问题。首先，_std::pow_ 使用的是 _floating-point_ 类型，而我们需要的是 _integral_ 结果。其次，它不  
+是一个 _constexpr_ 函数，即为：当使用 _compile-time_ 的值来调试时，不能保证返回 _compile-time_ 的结果，所以我  
+们不能使用 _std::pow_ 函数来指明 _std::array_ 的大小。
+
+
+幸运地是，我们可以写一个我们所需要的 _pow_。我会立刻来展示如何去做，先让我们看下是如何声明和使用的：  
+```C++
+  constexpr                                       // pow's a constexpr func
+  int pow(int base, int exp) noexcept             // that never throws
+  {
+    …                                             // impl is below
+  }
+  
+  constexpr auto numConds = 5;                    // # of conditions
+  std::array<int, pow(3, numConds)> results;      // results has
+                                                  // 3^numConds
+                                                  // elements
+```
+
+回忆一下：_pow_ 前面的 _constexpr_ 不是说 _pow_ 返回了一个 _const_ 值，而是说如果 _base_ 和 _exp_
+是 _compile-time_ 的常  
+量的话，那么 _pow_ 的结果可以被用来做为一个 _compile-time_ 的常量。如果 _base_ 和或 _exp_ 不是 _compile-time_ 的常  
+量的话，那么 _pow_ 的结果是在运行期间被计算的。这意味着：_pow_ 不仅仅被调用来去做像  _compile-time-compute_  
+_std::array_ 的大小这样的事，而且可以在运行期间像下面的这样被调用：  
+```C++
+  auto base = readFromDB("base");       // get these values
+  auto exp = readFromDB("exponent");    // at runtime
+  
+  auto baseToExp = pow(base, exp);      // call pow function
+// at runtime
+```
+
+因为当使用 _compile-time_ 的值调用 _constexpr_ 函数时，_constexpr_ 函数必须能够返回 _compile-time_ 的结果，所以一  
+些限制被施加到了这个函数实现中。而且这些限制在 _C++11_ 和 _C++14_ 是不相同的。
+
+在 _C++11_ 中，_constexpr_ 函数不能包含多个 _return_ 语句。听起来限制很多，实际上却不是，因为有两个技巧可以  
+被用来扩展 _constexpr_ 函数的表达性，这是超出你可能想到的。首先，条件操作符 _?:_ 可以被用来代替 _if-else_ 语句，  
+其次，递归可以被用来代替循环。因此 _pow_ 可以被像下面这样实现：  
+```C++
+  constexpr int pow(int base, int exp) noexcept
+  {
+    return (exp == 0 ? 1 : base * pow(base, exp - 1));
+  }
+```  
+
+这是可以工作的，但是很难想象除了硬核函数式程序员以外，还会有其他人会认为它是好的。而在 _C++14_ 中，对  
+_constexpr_ 函数的限制减少了，所以可以下面这样实现了：
+```C++
+  constexpr int pow(int base, int exp) noexcept // C++14
+  {
+    auto result = 1;
+    for (int i = 0; i < exp; ++i) result *= base;
+    
+    return result;
+  }
+```
+
+_constexpr_ 函数被限于仅能持有和返回 _literal_ 类型，这样的类型的值是在编译期间就能被确定的。在 _C++11_ 中除  
+了 _void_ 以外的其他全部内建类型都是 _literal_ 类型，用户定义的类型也是 _literal_ 类型，因为构造函数和其他成员函  
+数也可以是 _constexpr_ 的：  
+```C++
+  class Point {
+  public:
+    constexpr Point(double xVal = 0, double yVal = 0) noexcept
+      : x(xVal), y(yVal)
+      {}
+
+      constexpr double xValue() const noexcept { return x; }
+      constexpr double yValue() const noexcept { return y; }
+      
+      void setX(double newX) noexcept { x = newX; }
+      void setY(double newY) noexcept { y = newY; }
+    
+    private:
+      double x, y;
+  };
+```  
+此处，_Point_ 的构造函数可以被声明为 _constexpr_，因为如果所传入的实参是在编译期间就是已知的话，那么所构造  
+的 _Point_ 的数据成员的值也是在编译期间就是已知的。所以可以是 _constexpr_ 的：  
+```C++
+  constexpr Point p1(9.4, 27.7);        // fine, "runs" constexpr
+                                        // ctor during compilation
+  
+  constexpr Point p2(28.8, 5.3);        // also fine
+```  
+
+类似地，_getters_ 函数 _xValue_ 和 _yValue_ 也可以是 _constexpr_ 的，因为如果这些函数使用的是在编译期间就是已知的  
+值的话，比如：_constexpr_ 的 _Point_ 对象，那么数据成员 _x_ 和 _y_ 的值也就是在编译期间就是已知的了。这样就可以  
+编写有调用了 _Point_ 的 _getters_ 函数的 _constexpr_ 函数了，并使用这些 _constexpr_ 函数的结果来初始化 _constexpr_ 对  
+象：
+```C++
+  constexpr
+  Point midpoint(const Point& p1, const Point& p2) noexcept
+  {
+    return { (p1.xValue() + p2.xValue()) / 2,               // call constexpr
+    (p1.yValue() + p2.yValue()) / 2 };                      // member funcs
+  }
+  
+  constexpr auto mid = midpoint(p1, p2);                    // init constexpr
+                                                            // object w/result of
+                                                            // constexpr function
+```  
+
+这是非常令人兴奋的。这意味着：尽管 _mid_ 的初始化涉及到了调用构造函数、_getters_ 函数和非成员函数，但是它  
+仍然可以在只读内存中被创建。这意味着：你可以在模板的实参中或者在要指定 _enumerator_ 值的表达式中使用像  
+_mid.xValue() * 10_ 这样的的表达式了。这意味着：在编译期间所完成的工作和运行期间所完成的工作之间传统上是  
+相当严格的界限开始变得模糊了，一些传统上是在运行期间所完成的计算现在可以迁移到编译期间来进行了。迁移  
+的代码越多，你的程序将会运行的更快，当然编译也会更耗时。
+
+在 _C++11_ 中，有两个限制会阻止 _Point_ 的成员函数 _setX_ 和 _setY_ 被声明为 _constexpr_。首先，这两个函数会更改它  
+们要操作的对象，而在 _C++11_ 中 _constexpr_ 成员函数是隐式 _const_ 的。其次，这两个函数的返回类型是 _void_ 类  
+型，而在 _C++11_ 中 _void_ 不是 _literal_ 类型。全部的这些限制在 _C++14_ 中都被解除了，在 _C++14_ 中，甚至 _Point_   
+的 _setters_ 也可以是 _constexpr_ 的：  
+```C++
+  class Point {
+  public:
+    …
+    
+    constexpr void setX(double newX) noexcept // C++14
+    { x = newX; }
+    
+    constexpr void setY(double newY) noexcept // C++14
+    { y = newY; }
+
+    …
+
+  };
+```
+
+也可以写下面这样的函数了：  
+```C++
+  // return reflection of p with respect to the origin (C++14)
+  constexpr Point reflection(const Point& p) noexcept
+  {
+    Point result;                       // create non-const Point
+
+    result.setX(-p.xValue());           // set its x and y values
+    result.setY(-p.yValue());
+    
+    return result;                      // return copy of it
+  }
+```
+
+客户代码可能看起来像下面这样：  
+```C++
+  constexpr Point p1(9.4, 27.7);                  // as above
+  constexpr Point p2(28.8, 5.3);
+  constexpr auto mid = midpoint(p1, p2);
+
+  constexpr auto reflectedMid =                   // reflectedMid's value is
+  reflection(mid);                                // (-19.1 -16.5) and known
+                                                  // during compilation
+```
+
+本 _Item_ 的建议是只要有可能就使用 _constexpr_，现在我希望你已经明白了为什么要这样了：_constexpr_ 对象和函数  
+都可以被使用在比 _non-constexpr_ 对象和函数要更广泛的上下文中。通过只要有可能就使用 _constexpr_，你最大化  
+了你的对象和函数可以被使用的情景的范围。  
+
+_constexpr_ 是对象或者函数接口的一部分。这很重要，需要特别注意。_constexpr_ 强调了“我可以被用在 _C++_ 是需要  
+一个常量表达式的上下文中”。如果你声明了一个对象或函数为 _constexpr_ 的话，那么客户是可以在这样的上下文  
+中使用它的。如果你后续觉得使用 _constexpr_ 是错误的，并且删除了它的话，那么这可能会导致大量的客户代码不  
+能通过编译。增加 _I/O_ 到一个函数中来进行调式或者性能调整，就可能会导致这样的错误发生，因为在 _constexpr_  
+函数中一般是不被允许存在 _I/O_ 语句的。在“只要有可能就使用 _constexpr_”中的“只要有可能”表示你愿意长期对某个  
+函数或函数施加这种限制。
+
+### 需要记住的规则
+
+* _constexpr_ 对象是 _const_ 的，需要使用是在编译期间就是已知的值来进行初始化。
+* 当调用 _constexpr_ 函数的实参的值是在编译期间就是已知的时，_constexpr_ 函数可以产生 _compile-time_ 的结果。
+* _constexpr_ 对象和函数可以比 _non-constexpr_ 对象和函数用在更广泛的上下文中。
+* _constexpr_ 是对象或者函数接口的一部分。

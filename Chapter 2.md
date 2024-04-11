@@ -42,7 +42,7 @@
 糟糕，糟糕，糟糕。_C++_ 编程没有它应该有的愉快体验啊！
 
 好吧，过去就是这样的。但从 _C++11_ 开始，_auto_ 出现了，全部的这些问题都得走开。因为 _auto_ 变量的类型是根  
-据它们的 _initializer_ 而推导出的，所以是必须要进行初始化的。这意味着当你在 _modern C++_ 的高速公路上飞驰  
+据它们的 _initializer_ 而推导出的，所以是必须要进行初始化的。这意味着：当你在 _modern C++_ 的高速公路上飞驰  
 时，可以和未初始化问题说拜拜了：  
 ```C++
   int x1;                     // potentially uninitialized
@@ -133,9 +133,9 @@ _auto_ 的优势不止可以避免未初始化的变量和冗长的变量声明�
 _v.size()_ 的官方的返回类型是 _std::vector<int>::size_type_，但是很少有开发者会注意到它。_std::vector<int>::size_type_ 被指定为是  
 _unsigned integral_ 类型，所以很多开发者认为使用 _unsigned_ 也足够了，所以就写成了上面那样。这可以有一些有  
 趣的后果。例如：在 _32-bit_ _Windows_ 上，_unsigned_ 和 _std::vector<int>::size_type_ 是相同的大小，但是在 _64-bit_ _Windows_  
-上，_unsigned_ 是 _32bits_ 而 _std::vector<int>::size_type_ 则是  _64bits_。这意味着在 _32-bit_ _Windows_ 上可以正确工作的代码可  
-能在 _64-bit_ _Windows_ 下就表现的是不正确的，然后当你将程序从 _32bits_ 移植到 _64bits_ 时，谁会想花时间在这种问  
-题上呢？
+上，_unsigned_ 是 _32bits_ 而 _std::vector<int>::size_type_ 则是  _64bits_。这意味着：在 _32-bit_ _Windows_ 上可以正确工作的代码  
+可能在 _64-bit_ _Windows_ 下就表现的是不正确的，然后当你将程序从 _32bits_ 移植到 _64bits_ 时，谁会想花时间在这种  
+问题上呢？
 
 使用 _auto_ 可以确保你不需要做这些：  
 ```C++
