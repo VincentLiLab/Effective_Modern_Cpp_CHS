@@ -120,7 +120,7 @@ _std::function_ 的构造函数就会去分配堆栈内存来存储 _closure_。
 乎肯定要比通过 _auto_ 所声明的对象来调用 _closure_ 要慢。换句话说，_std::function_ 方法通常是比 _auto_ 方法要大和  
 慢的，而且可能还会产生内存溢出的异常。再加上，正如你在上面的例子中看到的，写 _auto_ 要比写 _std::function_  
 的实例化的类型轻松的多。在持有 _closure_ 的 _auto_ 和 _std::function_ 的比赛中，_auto_ 就是赢家。还有一个类似的讨  
-论，那就是要使用 _auto_ 而不是使用 _std::function_ 来持有调用 _std::bind_ 所产生的结果，在  [_Item 34_](./Chapter%201.md#item-2-首选-lambdas-而不是-std::bind) 中，我会尽力说  
+论，那就是要使用 _auto_ 而不是使用 _std::function_ 来持有调用 _std::bind_ 所产生的结果，在  [_Item 34_](./Chapter%201.md#item-2-首选-lambda-而不是-std::bind) 中，我会尽力说  
 服你在任何情况下都使用 _lambda_ 来代替 _std::bind_。
 
 _auto_ 的优势不止可以避免未初始化的变量和冗长的变量声明，还可以直接持有 _closure_。它还有一个能力，那就是  

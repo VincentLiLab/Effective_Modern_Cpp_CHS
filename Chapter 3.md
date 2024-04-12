@@ -938,7 +938,7 @@ _std::get_ 是一个模板，你提供的值是模板实参，注意是 _&lt;&gt
 
 事实上，这个函数应该是 _constexpr_ 的函数模板，因为它应该能和各种 _enum_ 一起工作。如果我们做了这个泛化的  
 话，那么我们也应该泛化它的返回类型。我们应该要返回的是这个 _enum_ 的 _underlying type_ 而不是 _std::size_t_。关  
-于 _type trait_ 见 [_Item 9_](./Chapter%203.md#item-9-首选-alias-declarations-而不是-typedefs)。最后，我们声明它为 _noexcept_，见 [_Item 14_](./Chapter%203.md#item-14-如果发出异常的话就声明函数为-noexcept)，因为我们知道它永远不会产生异常。我们构  
+于 _type trait_ 见 [_Item 9_](./Chapter%203.md#item-9-首选-alias-declaration-而不是-typedef)。最后，我们声明它为 _noexcept_，见 [_Item 14_](./Chapter%203.md#item-14-如果发出异常的话就声明函数为-noexcept)，因为我们知道它永远不会产生异常。我们构  
 建一个函数模板 _toUType_，它持有一个任意的 _enumerator_ 并且按照编译期间常量的形式返回其值：
 ```C++
   template<typename E>
@@ -952,7 +952,7 @@ _std::get_ 是一个模板，你提供的值是模板实参，注意是 _&lt;&gt
 ```
 
 在 _C++14_ 中，使用更简洁的 _std::underlying_type_t_ 来代替 _typename std::underlying_type<E>::type_ 可以使 _toUType_ 更  
-简化，见 [_Item 9_](./Chapter%203.md#item-9-首选-alias-declarations-而不是-typedefs)：
+简化，见 [_Item 9_](./Chapter%203.md#item-9-首选-alias-declaration-而不是-typedef)：
 ```C++
   template<typename E>                                      // C++14
   constexpr std::underlying_type_t<E>
@@ -1457,7 +1457,7 @@ _C++98_ 和 _C++11_ 都是这样，但在 _C++98_ 中，对于 _const_iterator_ 
 ```
 
 当然 _typedef_ 是可以不需要的，但是它是可以使得代码中的 _cast_ 更加容易地书写的。你可能会好奇为什么使用的是   
-_typedef_，而不是遵循 [_Item 9_](./Chapter%203.md#item-9-首选-alias-declarations-而不是-typedefs) 的建议去使用 _alias declaration_ 呢？因为这个例子展示的是 _C++98_ 的代码，这时还没  
+_typedef_，而不是遵循 [_Item 9_](./Chapter%203.md#item-9-首选-alias-declaration-而不是-typedef) 的建议去使用 _alias declaration_ 呢？因为这个例子展示的是 _C++98_ 的代码，这时还没  
 有 _alias declaration_， _alias declaration_ 在 _C++11_ 新添加的特性。
 
 _std::find_ 调用中的存在有 _cast_，这是因为 _values_ 是一个 _non-const_ _container_，在 _C++98_ 中没有简单的方法来获取  
