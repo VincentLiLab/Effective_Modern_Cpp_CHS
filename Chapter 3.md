@@ -19,6 +19,7 @@
     - [需要记住的规则](#需要记住的规则-8)
   - [Item 16 使 _const_ 成员函数成为线程安全的](#item-16-使-const-成员函数成为线程安全的)
     - [需要记住的规则](#需要记住的规则-9)
+  - [Item 17 理解特殊成员函数的生成](#item-17-理解特殊成员函数的生成)
 
 # Chapter 3 _Moving to Modern C++_
 
@@ -2227,3 +2228,54 @@ _cachedValue_，尽管第一个线程还没有对它的赋值。因此，所返�
 
 * 使 _const_ 成员函数成为线程安全的，除非你确定这些函数永远不会被用在并发的上下文中。
 * 可能使用 _std::atomic_ 变量比使用 _mutex_ 要有更好的性能，但是只适用于操作单一变量和内存区域的情况。
+
+## Item 17 理解特殊成员函数的生成
+
+按照 _C++_ 官方的说法，特殊成员函数是 _C++_ 主动生成的。_C++98_ 有四个这样的函数：_default constructor_、析构  
+函数、_copy constructor_ 和 _copy assignment operator_。当然，这里有注解。只有当这些函数在被需要的时候，才会  
+生成这些函数，即为：一些代码使用了这些函数，但是在类中没有显式地声明这些函数。只有当在类中没有声明任  
+何的构造函数时，_default constructor_ 才会被生成。而在类中指定构造函数所需要的实参就可以去阻止编译器创建  
+_default constructor_。所生成的特殊成员函数是隐式 _public_ 和 _inline_ 的，而且这些函数是 _nonvirtual_ 的，除了继承  
+自有着 _virtual_ 析构函数的 _base class_ 的 _derived class_ 中的析构函数以外。在这种情况下，编译器生成 _derived class_   
+的析构函数也是 _virtual_ 的。
+
+不过这些都是你已经知道的了。是的，是的，老掉牙的故事：_Mesopotamia_、_the Shang dynasty_、_FORTRAN_ 以及  
+_C++98_。但是时代变了，_C++_ 的特殊成员函数的生成规则也随着一起变了。知道新的规则是非常重要的，对于高  
+效的 _C++_ 编程来说，很少有事情能像知道编译器何时会悄悄地向类中添加成员函数一样重要。
+
+从 _C++11_ 开始，特殊成员函数俱乐部新增了两个成员：_move constructor_ 和 _move assignment operator_。它们的  
+_signature_ 是：  
+```C++
+  class Widget {
+  public:
+    …
+    Widget(Widget&& rhs);               // move constructor
+    
+    Widget& operator=(Widget&& rhs);    // move assignment operator
+    …
+  };
+```  
+
+这两个函数的生成规则和行为规则类似于它们的拷贝部分。只有当 _move operation_ 被需要时，_move operation_ 才  
+会被生成，如果 _move operation_ 是被生成的话，那么它会对类的非静态数据成员执行 **_memberwise move_**。这意味  
+着：_move constructor_ 会根据它的形参 _rhs_ 的相应的成员来 _move-construct_ 所对应类的每一个非静态数据成员，同  
+样 _move assignment operator_ 也会根据它的形参 _rhs_ 的相应的成员来 _move-assign_ 类的每一个非静态数据成员。如  
+果有 _base class_ 的话，那么 _move constructor_ 会 _move-construct_ 它的 _base class_，同样  _move assignment operator_  
+也会 _move-assign_ 它的 _base class_。
+
+现在，当我提及 _move constructor_ 或 _move-assign_ 数据成员和 _base class_ 的 _move operation_ 时，并不能保证移动  
+是一定会发生的。事实上，**_memberwise move_** 更像是 _memberwise move_ 请求，因为那些不支持移动的类型，即  
+为：没有提供 _move operation_ 的特殊支持，比如：大多数 _C++98_ 的 _legacy_ 类，都是通过 _copy operation_ 来进行  
+**_移动_** 的。_memberwise move_ 的关键是：首先将 _std::move_ 应用到所要移动的对象上，然后所产生的结果会在函数  
+重载决议期间被使用，最后决定执行的是移动还是拷贝。[_Item 23_](./Chapter%205.md#item-23-理解-std::move-和-std::forward) 会详细介绍这个过程。对于本 _Item_，只需要记  
+住：_memberwise move_ 包含了那些支持了 _move operation_ 的数据成员和 _base class_ 所对应的 _move operation_ 和那  
+些不支持 _move operation_ 的数据成员和 _base class_ 所对应的 _copy operation_。
+
+就像 _move operation_ 场景一样，如果你自己声明了 _move operation_，那么编译器就不会生成它。但是，可以生成  
+_move operation_ 的准确条件和 _copy operation_ 的是稍有不同的。
+
+两个 _copy operation_ 是独立的：声明一个并不会阻止编译器生成另一个。所以，如果你声明了 _copy constructor_，  
+但没有声明 _copy assignment operator_，而且又写了需要 _copy assignment operator_ 的代码的话，那么编译器是会  
+为你生成 _copy assignment operator_ 的。类似地也是这样，如果你声明了 _copy assignment operator_，但没有声明   
+_copy constructor_，而且你的代码需要 _copy constructor_ 的话，编译器是会为你生成 _copy constructor_ 的。在 _C++98_  
+是这样的，在 _C++11_ 中仍然是这样的。
