@@ -74,11 +74,14 @@
 * _unscoped enum_
 * _namespace_
 * _strongly typed_
+* _default constructor_
 * _copy constructor_
 * _copy assignment operator_
+* _move constructor_
+* _move assignment operator_
 * _deleted function_
 * a, b and c a、b 和 c 或 a、b 以及 c 
-* _virtual functions_
+* _virtual function_
 * _base class_
 * _derived class_
 * _qualifier_ 

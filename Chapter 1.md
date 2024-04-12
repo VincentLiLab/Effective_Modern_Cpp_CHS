@@ -468,7 +468,8 @@ _场景 2_ 也如你希望地那样工作：
                               // so uref3's type is int&&
 ```
 
-[_Item 1_](./Chapter%201.md#item-1-理解模板的类型推导) 是以数组名和函数名是如何退化为 _non-reference type specifiers_ 为结束的。在 _auto_ 的类型推导中也是这样的：  
+[_Item 1_](./Chapter%201.md#item-1-理解模板的类型推导) 是以数组名和函数名是如何退化为 _non-reference type specifier_ 为结束的。在 _auto_ 的类型推导中也是这样  
+的：  
 ```C++
   const char name[] =                   // name's type is const char[13]
     "R. N. Briggs";
@@ -538,7 +539,7 @@ _auto_ 来代替 _int_。直接的文本替换生成了以下代码：
 着 _T_ 的类型也是必须要被推导出来的。这些推导会在此处发生的第二种类型推导的范围内失败：模板的类型推导  
 会失败。在这个例子中，推导会失败，因为在  _braced initializer_ 中的值不是只有一种类型。
 
-_braced initializers_ 的处理是唯一一个 _auto_ 的类型推导和模板的类型推导不同的地方。当 _auto-declared_ 变量是使用  
+_braced initializer_ 的处理是唯一一个 _auto_ 的类型推导和模板的类型推导不同的地方。当 _auto-declared_ 变量是使用  
 _braced initializer_ 来初始化时，所推导出的类型是 _std::initialier_list_。但是如果相应的模板被传递了相同的 _initializer_  
 的话，那么类型推导会失败，而且代码会被拒绝：
 ```C++
@@ -572,7 +573,7 @@ _auto_ 声明变量，并且是使用 _braced initializer_ 进行的初始化的
 论。
 
 对于 _C++11_ 来说，这是一个完整的故事，而对于 _C++14_，故事还在继续。_C++14_ 允许 _auto_ 去指明一个函数的返  
-回值类型应该被推导，然后 _C++14_ 的 _lambdas_ 可以在形参的声明中使用 _auto_ 。然而，这些 _auto_ 的用法利用的是  
+回值类型应该被推导，然后 _C++14_ 的 _lambda_ 可以在形参的声明中使用 _auto_ 。然而，这些 _auto_ 的用法利用的是  
 模板的类型推导，而不是 _auto_ 的类型推导。所以，返回类型为 _auto_ 的函数返回 _braced initializer_ 是不能通过编译  
 的：  
 ```C++
@@ -682,10 +683,10 @@ _decltype_ 是一个古怪的产物。给定一个名字或表达式，它会告
 
 使用这个声明，_authAndAccess_ 返回传入的容器的 _operator[]_ 所返回的类型，完全符合我们的预期。
 
-_C++11_ 允许 _single-statement_ 的 _lambdas_ 的返回类型被推导，而 _C++14_ 扩展到了全部的 _lambdas_ 和函数中，包  
-括 _multiple-statements_ 的 _lambdas_ 和函数。在 _authAndAccess_ 的场景中，这意味着：在 _C++14_ 中，我们可以忽  
-略 _trailing return type_，而只留下前置的 _auto_。使用这种声明的格式，_auto_ 意味着类型推导将会发生。特别是意味  
-着编译器将会根据函数的实现来产生函数的返回类型：  
+_C++11_ 允许那些有着 _single-statement_ 的 _lambda_ 的返回类型被推导，而 _C++14_ 扩展到了全部的 _lambda_ 和函数  
+中，包括 _multiple-statement_ 的 _lambda_ 和函数。在 _authAndAccess_ 的场景中，这意味着：在 _C++14_ 中，我们可  
+以忽略 _trailing return type_，而只留下前置的 _auto_。使用这种声明的格式，_auto_ 意味着类型推导将会发生。特别是  
+意味着编译器将会根据函数的实现来产生函数的返回类型：  
 ```C++
   template<typename Container, typename Index>    // C++14;
   auto authAndAccess(Container& c, Index i)       // not quite
@@ -767,7 +768,7 @@ to-const_，这里并不是这种场景。
 ```  
 支持这样的用法意味着我们需要去修改 _authAndAccess_ 的声明以去接受右值和左值。重载将会起作用，一个重载  
 声明左值引用类型的形参，另一个声明右值引用类型的形参，但是我们就有了两个函数需要维护。避免重载的方法  
-是让 _authAndAccess_ 利用可以同时绑定左值和右值的引用类型的形参，[_Item 24_](./Chapter%205.md#item-24-区分通用引用和右值引用) 解释了那正是 _univeral references_  
+是让 _authAndAccess_ 利用可以同时绑定左值和右值的引用类型的形参，[_Item 24_](./Chapter%205.md#item-24-区分通用引用和右值引用) 也解释了那正是 _univeral reference_  
 的作用。因此 _authAndAccess_ 可以声明为下面这样：  
 ```C+++
   template<typename Container, typename Index>    // c is now a
@@ -781,7 +782,7 @@ to-const_，这里并不是这种场景。
 题，见 [_Item 40_](./Chapter%208.md#item-41-对于移动代价小且总是进行拷贝的可拷贝形参-考虑-pass-by-value) 和同事嘲笑的刺痛，但是在容器索引的场景中，遵循索引值所对应的标准库的例子看起来仍然是合  
 理的，比如：_std::string_、_std::vector_ 和 _std::deque_ 的 _operator[]_，所以对此我们仍然 _pass-by-value_。
 
-然而，我们需要去更新模板的实现，使其符合 [_Item 25_](./Chapter%205.md#item-25-std::move-用于右值引用-std::forward-用于-univeral-reference) 的警告，将 _std::forward_ 应用到 _univeral references_ 上：  
+然而，我们需要去更新模板的实现，使其符合 [_Item 25_](./Chapter%205.md#item-25-std::move-用于右值引用-std::forward-用于-univeral-reference) 的警告，将 _std::forward_ 应用到 _univeral reference_ 上：  
 ```C++
   template<typename Container, typename Index>        // final
   decltype(auto)                                      // C++14
@@ -820,9 +821,9 @@ to-const_，这里并不是这种场景。
 ```C++
   int x = 0;
 ```  
-_x_ 是变量的名字，所以 _decltype(x)_ 是 _int_。但是使用 _parentheses_ 将名字 _x_ 括起来，也就是 _(x)_，产生的是比名字还  
-要复杂的表达式。做为名字的 _x_ 是左值，而 _C++_ 把 _(x)_ 也是定义为左值的。因此，_decltype((x))_ 是 _int&_。将名字用  
-_parentheses_ 括起来可以改变 _decltype_ 所报告的类型。
+_x_ 是变量的名字，所以 _decltype(x)_ 是 _int_。但是是使用 _parenthese_ 将名字 _x_ 括起来的，也就是 _(x)_，产生的是比名字  
+还要复杂的表达式。做为名字的 _x_ 是左值，而 _C++_ 把 _(x)_ 也是定义为左值的。因此，_decltype((x))_ 是 _int&_。将名字  
+用 _parenthese_ 括起来可以改变 _decltype_ 所报告的类型。
 
 在 _C++_ 中，这不过是稍微稀奇点。但是结合 _C++14_ 对于 _decltype(auto)_ 的支持，这意味着在你写的 _return_ 语句  
 上的一点看起来是微不足道的改变就可以影响函数的所推导出的类型：  
@@ -867,8 +868,8 @@ _parentheses_ 括起来可以改变 _decltype_ 所报告的类型。
 
 ### _IDE_ 编辑器
 
-当你将鼠标放在程序实体上时，_IDEs_ 的代码编辑器通常会显示程序实体的类型，比如：变量、形参和函数等。例  
-如这样的代码：  
+当你将鼠标放在程序实体上时，_IDE_ 的代码编辑器通常会显示程序实体的类型，比如：变量、形参和函数等。例如  
+这样的代码：  
 ```C ++
   const int theAnswer = 42;
   
@@ -1006,11 +1007,11 @@ _param_ 应该是 _const int&_，不应该是相同的。
 比起 _T_ 的类型来说，这没有那么令人不安，但是其中的 _..._ 是令人困惑的，直到你明白了其中的 _..._ 是 _IDE_ 编辑器在  
 说“我正在忽略 _T_ 的类型那部分呢。”幸运的话，你的开发环境可以更好地处理这样的代码。
 
-如果你更倾向于依赖库而不是幸运的话，那么你会很想知道：_std::type_info::name_ 和 _IDEs_ 为什么会失败呢？而通  
-常被写为 _Boost.TypeIndex_ 的 _Boost TypeIndex library_ 又为什么会成功呢？这个库不是标准 _C++_ 的一部分，但 _IEDs_  
-和像 _TD_ 这样的模板也不是标准 _C++_ 的一部分。此外， [boost.com](https://www.boost.org/) 上的 _Boost libraries_ 是跨平台的、开源的，并  
-且可以在一个许可证下使用，即使是最偏执的公司的法律团队也能接受这个许可证，这意味着使用 _Boost libraries_  
-的代码几乎可以像依赖于标准库的那些代码一样可移植。
+如果你更倾向于依赖库而不是幸运的话，那么你会很想知道：_std::type_info::name_ 和 _IDE_ 为什么会失败呢？而通常  
+被写为 _Boost.TypeIndex_ 的 _Boost TypeIndex library_ 又为什么会成功呢？这个库不是标准 _C++_ 的一部分，但 _IED_ 和  
+像 _TD_ 这样的模板也不是标准 _C++_ 的一部分。此外， [boost.com](https://www.boost.org/) 上的 _Boost library_ 是跨平台的、开源的，并且可  
+以在一个许可证下使用，即使是最偏执的公司的法律团队也能接受这个许可证，这意味着使用 _Boost library_ 的代码  
+几乎可以像依赖于标准库的那些代码一样可移植。
 
 下面是我们的函数 _f_ 如何使用 _Boost.TypeIndex_ 来生成准确的类型信息：  
 ```C++
@@ -1036,7 +1037,7 @@ _param_ 应该是 _const int&_，不应该是相同的。
 ```
 
 它的工作方式是：函数模板 _boost::typeindex::type_id_with_cvr_ 接受一个类型实参，而这个类型就是我们想要的信  
-息，并且这个函数模板是不会将 _const_、_volatile_ 和 _reference qualifiers_ 进行忽略的 ，所以这个函数模板名中包含有  
+息，并且这个函数模板是不会将 _const_、_volatile_ 和 _reference qualifier_ 进行忽略的 ，所以这个函数模板名中包含有  
 **_with_cvr_**。结果就是 _boost::typeindex::type_id_with_cvr_ 的 _pretty_name_ 成员函数会产生一个包含有类型的人性化表  
 示的 _std::string_。
 

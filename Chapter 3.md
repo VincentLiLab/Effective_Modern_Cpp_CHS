@@ -3,15 +3,15 @@
     - [需要记住的规则](#需要记住的规则)
   - [Item 8 首选 _nullptr_ 而不是 _0_ 和 _NULL_](#item-8-首选-nullptr-而不是-0-和-null)
     - [需要记住的规则](#需要记住的规则-1)
-  - [Item 9 首选 _alias declarations_ 而不是 _typedefs_](#item-9-首选-alias-declarations-而不是-typedefs)
+  - [Item 9 首选 _alias declaration_ 而不是 _typedef_](#item-9-首选-alias-declaration-而不是-typedef)
     - [需要记住的规则](#需要记住的规则-2)
-  - [Item 10 首选 _scoped enums_ 而不是 _unscoped enums_](#item-10-首选-scoped-enums-而不是-unscoped-enums)
+  - [Item 10 首选 _scoped enum_ 而不是 _unscoped enum_](#item-10-首选-scoped-enum-而不是-unscoped-enum)
     - [需要记住的规则](#需要记住的规则-3)
-  - [Item 11 首选 _deleted functions_ 而不是 _private undefined functions_](#item-11-首选-deleted-functions-而不是-private-undefined-functions)
+  - [Item 11 首选 _deleted function_ 而不是 _private undefined function_](#item-11-首选-deleted-function-而不是-private-undefined-function)
     - [需要记住的规则](#需要记住的规则-4)
   - [Item 12 使用 _override_ 来声明重写函数](#item-12-使用-override-来声明重写函数)
     - [需要记住的规则](#需要记住的规则-5)
-  - [Item 13 首选 _const\_iterators_ 而不是 _iterators_](#item-13-首选-const_iterators-而不是-iterators)
+  - [Item 13 首选 _const\_iterator_ 而不是 _iterator_](#item-13-首选-const_iterator-而不是-iterator)
     - [需要记住的规则](#需要记住的规则-6)
   - [Item 14 当函数不会抛出异常时声明函数为 _noexcept_](#item-14-当函数不会抛出异常时声明函数为-noexcept)
     - [需要记住的规则](#需要记住的规则-7)
@@ -22,11 +22,11 @@
 
 # Chapter 3 _Moving to Modern C++_
 
-_C++11_ 和 _C++14_ 有很多值得夸耀的特性：_auto_、智能指针、移动语义、_lambdas_ 和 _concurrency_，每一个都是非  
-常重要的。我专门写了这一章来介绍它们。掌握这些特性是必不可少的，但是需要一系列更小的步骤才能变为一名  
-高效率的 _modern C++_ 的编程者。每一个步骤都回答了在 _C++98_ 转向 _modern C++_ 的过程中所产生的问题。什么  
-时候应该使用 _{}_ 代替 _()_ 来创建对象？为什么 _alias declartions_ 要比 _typedefs_ 更好呢？_constexpr_ 和 _const_ 是如何的  
-不同呢？_const_ 成员函数和线程安全之间有什么关系？还有很多，本章一个接着一个来进行解答。
+_C++11_ 和 _C++14_ 有很多值得夸耀的特性：_auto_、智能指针、移动语义、_lambda_ 和 _concurrency_，每一个都是非常  
+重要的。我专门写了这一章来介绍它们。掌握这些特性是必不可少的，但是需要一系列更小的步骤才能变为一名高  
+效率的 _modern C++_ 的编程者。每一个步骤都回答了在 _C++98_ 转向 _modern C++_ 的过程中所产生的问题。什么时  
+候应该使用 _{}_ 代替 _()_ 来创建对象？为什么 _alias declartion_ 要比 _typedef_ 更好呢？_constexpr_ 和 _const_ 是如何的不同  
+呢？_const_ 成员函数和线程安全之间有什么关系？还有很多，本章一个接着一个来进行解答。
 
 ## Item 7 创建对象时区分 _()_ 和 _{}_
 
@@ -49,7 +49,7 @@ _C++11_ 和 _C++14_ 有很多值得夸耀的特性：_auto_、智能指针、移
 地处理。 
 
 > 实际测试不是这样，使用的编译器是 _c++ (Ubuntu 11.4.0-1ubuntu1~22.04) 11.4.0_。_auto v{0, 1};_ 这样是无法通过  
-> 编译的并且 _auto v{0}_ 中的 _v_ 是 _int_ 类型而不是 _std::initializer_lists_ 类型。
+> 编译的并且 _auto v{0}_ 中的 _v_ 是 _int_ 类型而不是 _std::initializer_list_ 类型。
 
 **_令人困惑的混乱_** 派指出：使用 _=_ 来进行初始化常常会让 _C++_ 菜鸟误认为 _assignment_ 发生了，实际并不是。对于  
 像 _int_ 这样的内建类型来说只是学术上的不同，但是对于用户定义的类型来说，区分 _initialization_ 和 _assignment_  
@@ -97,7 +97,7 @@ _{}_ 也可以被用于指明非静态数据成员的默认初始化值。这个
 这也就能理解了为什么 _braced initialization_ 被称为 **_uniform_**。在 _C++_ 的三种指定初始化表达式的方法中，只有 _{}_   
 可以被用在所有地方。
 
-_braced initialization_ 的新颖特性是可以禁止内建类型之间的 _implicit narrowing conversions_。如果 _braced initializer_  
+_braced initialization_ 的新颖特性是可以禁止内建类型之间的 _implicit narrowing conversion_。如果 _braced initializer_  
 中的表达式的值不能保证被正在被初始化的对象的类型所表达的话，那么就不能通过编译：  
 ```C++
   double x, y, z;
@@ -108,7 +108,7 @@ _braced initialization_ 的新颖特性是可以禁止内建类型之间的 _imp
                               // not be expressible as int
 ```
 
-使用 _()_ 和 _=_ 进行初始化不会检查 _narrowing conversions_，因为这会破坏很多的 _legacy_ 代码：  
+使用 _()_ 和 _=_ 进行初始化不会检查 _narrowing conversion_，因为这会破坏很多的 _legacy_ 代码：  
 ```C++
   int sum2(x + y + z);        // okay (value of expression
                               // truncated to an int)
@@ -135,16 +135,16 @@ _braced initialization_ 的另一个值得关注的特性是它对于 _C++_ 的 
 ```
 
 因此，对于 _braced initialization_ 就有很多值得一提的地方了。它是可以在最广泛的语境下被使用的语法、它可以  
-避免 _implicit narrowing conversions_，并且它对于 _C++_ 的 _most vexing parse_ 是免疫的。三连冠！那为什么本 _Item_  
+避免 _implicit narrowing conversion_，并且它对于 _C++_ 的 _most vexing parse_ 是免疫的。三连冠！那为什么本 _Item_  
 不命名为“首选 _braced initialization_ 语法”呢？
 
-_braced initialization_ 的缺点是有时会出现令人惊讶的行为。这些行为源自于 _braced initializers_、_std::initializer_lists_  
-和构造函数重载决议之间的异常复杂的关系。它们的相互作用可能会导致代码看起来像是在做一件事，但实际上却  
-是在做另一件事。例如：[_Item 2_](./Chapter%201.md#item-2-理解-auto-的类型推导) 解释了：当 _auto_ 声明的变量有 _braced initializer_ 时，所推导出的这个变量的类型  
-是 _std::initializer_list_ 的，尽管用其他方式声明带有相同 _initializer_ 的变量可能会产生更直观的类型。结果就是你越  
-喜欢使用 _auto_，你就越不喜欢 _braced initialization_。
+_braced initialization_ 的缺点是有时会出现令人惊讶的行为。这些行为源自于 _braced initializer_、_std::initializer_list_ 和
+构造函数重载决议之间的异常复杂的关系。它们的相互作用可能会导致代码看起来像是在做一件事，但实际上却是  
+在做另一件事。例如：[_Item 2_](./Chapter%201.md#item-2-理解-auto-的类型推导) 解释了：当 _auto_ 声明的变量有 _braced initializer_ 时，所推导出的这个变量的类型应  
+该是 _std::initializer_list_ 的，尽管用其他方式声明带有相同 _initializer_ 的变量可能会产生更直观的类型。结果就是你  
+越喜欢使用 _auto_，你就越不喜欢 _braced initialization_。
 
-在构造函数调用中，只要不涉及到 _std::initializer_lists_ 的话，那么 _{}_ 和 _=_ 就有着相同的意义：  
+在构造函数调用中，只要不涉及到 _std::initializer_list_ 的话，那么 _{}_ 和 _=_ 就有着相同的意义：  
 ```C++
 class Widget {
 public:
@@ -161,9 +161,9 @@ Widget w3(10, 5.0);           // calls second ctor
 
 Widget w4{10, 5.0};           // also calls second ctor
 ```
-然而，如果一个或多个构造函数声明了类型 _std::initializer_lists_ 的形参的话，那么使用了 _braced initialization_ 语法  
-的调用会强烈地优选持有 _std::initializer_lists_ 的重载函数。是强烈地。如果编译器有方法将使用了 _braced initializer_  
-的调用解释为持有 _std::initializer_lists_ 的构造函数的话，那么编译器将会采用这种解释。如果上面的 _Widget_ 类增加  
+然而，如果一个或多个构造函数声明了类型 _std::initializer_list_ 的形参的话，那么使用了 _braced initialization_ 语法  
+的调用会强烈地优选持有 _std::initializer_list_ 的重载函数。是强烈地。如果编译器有方法将使用了 _braced initializer_  
+的调用解释为持有 _std::initializer_list_ 的构造函数的话，那么编译器将会采用这种解释。如果上面的 _Widget_ 类增加  
 了持有 _std::initializer_list&lt;long double&gt;_ 的构造函数的话，例如：  
 ```C++
   class Widget {
@@ -176,7 +176,7 @@ Widget w4{10, 5.0};           // also calls second ctor
 };
 ```  
 
-_Widgets_ _w2_ 和 _w4_ 将使用新的构造函数来进行构造，虽然 _std::initializer_list_ 的元素的类型 _long double_ 相对于其他  
+_Widget_ _w2_ 和 _w4_ 将使用新的构造函数来进行构造，虽然 _std::initializer_list_ 的元素的类型 _long double_ 相对于其他  
 的 _non-std::initializer_list_ 构造函数来说是对所有实参的更糟糕的匹配！看：
 ```C++
   Widget w1(10, true);        // uses parens and, as before,
@@ -220,8 +220,8 @@ _Widgets_ _w2_ 和 _w4_ 将使用新的构造函数来进行构造，虽然 _std
                                                             // (for same reason as w6)
 ```
 
-编译器对持有 _std::initializer_list_ 的构造函数和 _braced initializers_ 进行匹配的决定是非常强烈的，即使最匹配的  
-_std::initializer_list_ 构造器不可以被调用，它也是占上风的。比如：
+编译器决定将持有 _std::initializer_list_ 的构造函数和 _braced initializer_ 来进行匹配的决心是非常强烈的，即使这个所  
+匹配的 _std::initializer_list_ 构造函数是不可以被调用的，它也是占上风的。比如：
 ```C++
   class Widget {
   public:
@@ -236,13 +236,13 @@ _std::initializer_list_ 构造器不可以被调用，它也是占上风的。�
   Widget w{10, 5.0};                              // error! requires narrowing conversions
 ```  
 此处，编译器将会忽略前两个构造函数，尽管其中的第二个构造函数提供了对全部实参类型的准确匹配，然后尝试  
-去调用持有 _std::initializer_list&lt;bool&gt;_ 的构造函数。调用这个构造函数需要将 _int(10)_ 和 _double(5.0)_ 转换为 _bools_。  
-这两个转换都是 _narrowing_ 的，_bool_ 不能准确地表示这两个值，_braced initializers_ 是禁止 _narrowing conversions_  
+去调用持有 _std::initializer_list&lt;bool&gt;_ 的构造函数。调用这个构造函数是需要将 _int(10)_ 和 _double(5.0)_ 转换为 _bool_  
+的。这两个转换都是 _narrowing_ 的，_bool_ 不能准确表示这两个值，_braced initializer_ 是禁止 _narrowing conversion_  
 的，所以这个调用是无效的，然后代码无法通过编译。
 
 只有当没有办法将 _braced initializer_ 中的实参的类型转换为 _std::initializer_list_ 中的类型时，编译器才会回退到一般  
 的重载决议中。例如：如果我们使用 _std::initializer_list&lt;std::string&gt;_ 的构造函数来代替 _std::initializer_list&lt;bool&gt;_ 的  
-话，那么 _non-std::initializer_list_ 构造函数将再次成为候选，因为没有办法转换将 _ints_ 和 _bools_ 转换为 _std::strings_：
+话，那么 _non-std::initializer_list_ 构造函数将再次成为候选，因为没有办法转换将 _int_ 和 _bool_ 转换为 _std::string_：
 ```C++
   class Widget {
   public:
@@ -291,11 +291,11 @@ _std::initializer_list_ 构造器不可以被调用，它也是占上风的。�
   Widget w5{{}};              // ditto
 ```
 
-此时，_braced initializers_、_std::initializer_list_ 和构造函数重载这些看起来是晦涩难懂的规则在你的脑海中萦绕，你  
-可能正在好奇这些在日常编程中又有多重要。比你想的要重要，因为直接受影响的类便是 _std::vector_。_std::vector_  
-有 _non-std::initializer_list_ 构造函数，这个构造函数允许你指明 _container_ 的大小和每个元素的初始值，_std::vector_  
-也有 _std::initializer_list_ 构造函数，这个构造函数允许你指明 _container_ 的初始值。如果你创建了 _numeric_ 类型的  
-_std::vector_ 的话，比如：_std::vectort&lt;int&gt;_，然后你传递了两个实参到构造函数中，使用 _{}_ 或 _()_ 会有巨大的不同：  
+此时，_braced initializer_、_std::initializer_list_ 和构造函数重载这些看起来是晦涩难懂的规则在你的脑海中萦绕，你可  
+能正在好奇这些在日常编程中又有多重要。比你想的要重要，因为直接受影响的类便是 _std::vector_。_std::vector_ 有   
+_non-std::initializer_list_ 构造函数，这个构造函数允许你指明 _container_ 的大小和每个元素的初始值，_std::vector_ 也有  
+_std::initializer_list_ 构造函数，这个构造函数允许你指明 _container_ 的初始值。如果你创建了 _numeric_ 类型 _std::vector_   
+的话，比如：_std::vectort&lt;int&gt;_，然后你传递了两个实参到构造函数中，使用 _{}_ 或 _()_ 会有巨大的不同：  
 ```C++
   std::vector<int> v1(10, 20);          // use non-std::initializer_list
                                         // ctor: create 10-element
@@ -322,8 +322,8 @@ _braced initialization_ 的客户代码可能会认为：原先调用的是 _non
 
 其次：做为一个类用户，当创建对象时，你必须在使用 _()_ 还是使用 _{}_ 之间做谨慎选择。大多数的开发者会选择其  
 中一种来做为其默认，只有当必须要使用另一种时，才会去使用另一种。 _{}_ 的无与伦比的适用性广度、_{}_ 可以禁  
-止 _narrowing conversions_ 以及 _{}_ 对 _C++_ 的 _most vexing parse_ 的免疫都吸引了 _Braces-by-default_ 派。他们认为只  
-有在一些场景下，比如：在创建给定大小和每个元素的初始值的 _std::vector_ 时，才需要去使用 _()_。而在另一方面， 
+止 _narrowing conversion_ 以及 _{}_ 对 _C++_ 的 _most vexing parse_ 的免疫都吸引了 _Braces-by-default_ 派。他们认为只有  
+在一些特定场景下，比如：在创建给定大小和每个元素初始值的 _std::vector_ 时，才需要去使用 _()_。而在另一方面，  
 _go-parentheses-go_ 派则将 _()_ 做为其默认。_()_ 和 _C++98_ 的语法一致、_()_ 可以避免 _auto-deduced-a-std::initializer_list_  
 的问题以及创建对象的调用不会被 _std::initializer_list_ 构造函数所无意地拦截都吸引着 _go-parentheses-go_ 派。他们  
 承认有时候只有 _{}_ 才能完成一些事，比如：当创建一个有着特定值的 _container_ 时。哪个更好是没有共识的，所以  
@@ -364,8 +364,8 @@ _doSomeWork_ 使用了 _{}_ 的话，那么 _std::vector_ 就是有 _2_ 个元�
 
 ### 需要记住的规则
 
-* braced initialization_ 是最广泛的可使用的初始化语法，它可以禁止 _narrowing conversions_ 并且对对 _C++_ 的  
-_most vexing parse_ 所免疫。  
+* _braced initialization_ 是最广泛的可使用的初始化语法，它禁止 _narrowing conversion_ ，并且它可以对 _C++_ 的  
+ _most vexing parse_ 所免疫。
 * 在构造函数重载决议期间，如果可能，_braced initializer_ 就会和 _std::initializer_list_ 形参匹配，即使其他的构造  
   函数提供了看起来是更好的匹配。
 * 在选择使用 _()_ 和 _{}_ 时可能产生显著差异的一个例子是使用两个实参来创建 _std::vector&lt;numeric type&gt;_ 时。
@@ -529,9 +529,9 @@ _std::nullptr_t_ 的。当 _ptr_ 被传递给 _f3_ 时，会有从 _std::nullptr
 * 首选 _nullptr_ 而不是 _0_ 和 _NULL_。
 * 避免重载 _integral_ 类型和指针类型。
 
-## Item 9 首选 _alias declarations_ 而不是 _typedefs_
+## Item 9 首选 _alias declaration_ 而不是 _typedef_
 
-我相信我们都同意使用 _STL_ 的 _containers_ 是一个好注意，我也希望 [_Item 18_](./Chapter%204.md#item-18-对于-exclusive-ownership-的资源管理使用-std::unique_ptr) 可以说服你使用 _std::unique_ptr_ 是一个  
+我相信我们都同意使用 _STL_ 的 _container_ 是一个好注意，我也希望 [_Item 18_](./Chapter%204.md#item-18-对于-exclusive-ownership-的资源管理使用-std::unique_ptr) 可以说服你使用 _std::unique_ptr_ 是一个  
 好主意。而且我认为我们都不喜欢写像 _std::unique_ptr&lt;std::unordered_map&lt;std::string, std::string&gt;&gt;_ 这样的代码多  
 过于一次。仅是想想这个就会增加 _carpal tunnel syndrome_ 的风险。
 
@@ -541,7 +541,7 @@ _std::nullptr_t_ 的。当 _ptr_ 被传递给 _f3_ 时，会有从 _std::nullptr
     std::unique_ptr<std::unordered_map<std::string, std::string>>
     UPtrMapSS;
 ```  
-但是，_typedefs_ 太 _C++98_ 了。_typedefs_ 可以在 _C++11_ 中工作，但是 _C++11_ 也提供了 _alias declarations_：
+但是，_typedef_ 太 _C++98_ 了。_typedef_ 可以在 _C++11_ 中工作，但是 _C++11_ 也提供了 _alias declaration_：
 ```C++
   using UPtrMapSS =
     std::unique_ptr<std::unordered_map<std::string, std::string>>;
@@ -562,13 +562,13 @@ _std::nullptr_t_ 的。当 _ptr_ 被传递给 _f3_ 时，会有从 _std::nullptr
                                                   // declaration
 ```  
 当然，这两种形式都不是那么容易理解的，因为很少有人愿意花时间来处理函数指针类型的同义词，所以这不是选  
-择 _alias declarations_ 而不是 _typedefs_ 的最有说服力的理由。
+择 _alias declaration_ 而不是 _typedef_ 的最有说服力的理由。
 
 
-但是，最有说服力的理由是存在的，那就是模板。特别是 _alias declarations_ 是可以被模板化的，我们将模板化的  
-_alias declarations_ 称之为 _alias templates_，而 _typedefs_ 是不可以被模板化的。这为 _C++11_ 的程序员提供了一个直  
-接的机制来表达那些在 _C++98_ 中必须通过嵌套在模板化的 _structs_ 中的 _typedefs_ 才能拼凑出来的东西。例如：考  
-虑一个使用了定制 _allocator_ _MyAlloc_ 的 _linked list_ 的同义词的定义。使用 _alias template_ 时，这就是小菜一碟：
+但是，最有说服力的理由是存在的，那就是模板。特别是，_alias declaration_ 是可以被模板化的，我们将模板化的  
+_alias declaration_ 称之为 _alias template_，而 _typedef_ 是不可以被模板化的。这为 _C++11_ 的程序员提供了一个直接  
+的机制来表达那些在 _C++98_ 中必须通过嵌套在模板化的 _struct_ 中的 _typedef_ 才能拼凑出来的东西。例如：考虑一  
+个使用了定制 _allocator_ _MyAlloc_ 的 _linked list_ 的同义词的定义。使用 _alias template_ 时，这就是小菜一碟：
 ```C
   template<typename T>                            // MyAllocList<T>
   using MyAllocList = std::list<T, MyAlloc<T>>;   // is synonym for
@@ -597,7 +597,7 @@ _alias declarations_ 称之为 _alias templates_，而 _typedefs_ 是不可以�
   };
 ```  
 此处，_MyAllocList&lt;T&gt;::type_ 引用了一个依赖于模板类型形参 _T_ 的类型。因此它是一个 _dependent type_。_C++_ 的众  
-多的 **_可爱的_** 规则的其中一个便是必须在 _dependent types_ 的名字前加上 _typename_。
+多的 **_可爱的_** 规则的其中一个便是必须在 _dependent type_ 的名字前加上 _typename_。
 
 如果 _MyAllocList_ 是被定义来做为 _alias template_ 的话，那么就不需要 _typename_ 了，繁琐的后缀_::type_ 也不需要  
 了：
@@ -645,15 +645,15 @@ _alias declarations_ 称之为 _alias templates_，而 _typedefs_ 是不可以�
 类型。
 
 如果你做过任意模板元编程 _TMP_ 的话，那么你几乎肯定遇到过这样的需求：获取模板类型形参，然后根据它来创  
-建修改过的类型。例如：给定一个类型 _T_，你可能想要剥离 _T_ 所包含的 _const-qualifiers_ 或 _reference-qualifiers_，比  
+建修改过的类型。例如：给定一个类型 _T_，你可能想要剥离 _T_ 所包含的 _const-qualifier_ 或者 _reference-qualifier_，比  
 如：你可能想要将 _const std::string&_ 转换为 _std::string_。或者想要在类型前添加 _const_ 或将其转换为左值引用，比  
 如：将 _Widget_ 转换为 _const Widget_ 或 _Widget&_。如果你没有接触过一点 _TMP_，那就太糟糕了，因为如果你想要  
 成为一位真正地高效率的 _C++_ 编程者的话，那么你需要至少熟悉 _C++_ 的这部分的基础。你可以去看 [_Item 23_](./Chapter%205.md#item-21-理解-std::move-和-std::forward) 和  
 [_Item 25_](./Chapter%205.md#item-25-熟悉重载-univeral-references-的替代方法) 中的 _TMP_ 的实战例子，包括我刚才提到的那几种类型转换。
 
-_C++_ 给了你工具可以按照 _type traits_ 的形式来执行那几种类型转换，它们是在头文件 _&lt;type_trsits&gt;_ 中的一些模  
-板。在这个头文件中有很多 _type traits_，它们都提供了预期的接口，但不是都执行的是类型转换。给定一个类型  
-_T_，你想要对它应用转换，其结果类型就是 _std::transformation&lt;T&gt;::type_ 了。例如：  
+_C++_ 给了你工具可以按照 _type trait_ 的形式来执行那几种类型转换，它们是在头文件 _&lt;type_trsits&gt;_ 中的一些模板。  
+在这个头文件中有很多 _type trait_，它们都提供了预期的接口，但不都是执行的是类型转换。给定一个类型 _T_，你想  
+要对它应用转换，其结果类型就是 _std::transformation&lt;T&gt;::type_ 了。例如：  
 ```C++
   std::remove_const<T>::type            // yields T from const T
   std::remove_reference<T>::type        // yields T from T& and T&&
@@ -662,15 +662,15 @@ _T_，你想要对它应用转换，其结果类型就是 _std::transformation&l
 注释只是总结了这些转换做了什么，不要太咬文嚼字。我知道在项目上使用它们之前，你会查询精确的规格说明文  
 档。
 
-总之，此处我的目的不是给你 _type traits_ 的 _tutorial_。而是要注意这些转换的应用都需要在每次使用时写 _::type_。如  
+总之，此处我的目的不是给你 _type trait_ 的 _tutorial_。而是要注意这些转换的应用都需要在每次使用时写 _::type_。如  
 果你想要在模板中应用这些转换到类型形参上的话，在实际的代码中几乎总是这样使用，
 那么在每次使用时你也  
-必须都加上 _typename_。这两个语法减速带存在的原因是 _C++11_ 的 _type traits_ 是用通过嵌套在模板化的 _structs_ 中  
-的 _typedefs_ 来实现的。是的，是使用我一直试图说服你的比 _alias templates_ 要差的类型同义词技术来实现的！
+必须都加上 _typename_。这两个语法减速带存在的原因是 _C++11_ 的 _type trait_ 是用通过嵌套在模板化的 _struct_ 中的  
+_typedef_ 来实现的。是的，是使用我一直试图说服你的比 _alias template_ 要差的类型同义词技术来实现的！
 
 这是有历史原因的，但是我们不谈论这个历史原因，因为非常傻，我保证，因为 _Standardization Committee_ 后来  
-意识到了 _alias templates_ 是更好的方式，并在 _C++14_ 中为 _C++11_ 的类型转换提供了相应的模板。_aliases_ 有通用  
-的形式：对每一个 _C++11_ 的转换 _std::transformation<T>::type_ 都有所对应的被命名为 _std::transformation_t_ 的 _C++14_  
+意识到了 _alias template_ 是更好的方式，并在 _C++14_ 中为 _C++11_ 的类型转换提供了相应的模板。_alias_ 有通用的  
+形式：对每一个 _C++11_ 的转换 _std::transformation<T>::type_ 都有所对应的被命名为 _std::transformation_t_ 的 _C++14_  
 的 _alias template_。例子会说明我的意思： 
 ```C++
   std::remove_const<T>::type            // C++11: const T → T
@@ -701,15 +701,15 @@ _C++11_ 所对应的方法在 _C++14_ 中仍然有效，但是我不知道你为
 
 ### 需要记住的规则
 
-* _typedef_ 不支持模板化，而 _alias declarations_ 支持。
-* _alias templates_ 可以避免 _::type_ 后缀，并且在模板中引用 _typedefs_ 时常常需要加上 _typename_ 前缀。
-* _C++14_ 为 _C++11_ 的 _type traits_ 转换都提供了所对应的 _alias temmplates_。
+* _typedef_ 不支持模板化，而 _alias declaration_ 支持。
+* _alias template_ 可以避免 _::type_ 后缀，并且在模板中引用 _typedef_ 时常常需要加上 _typename_ 前缀。
+* _C++14_ 为 _C++11_ 的 _type trait_ 转换都提供了所对应的 _alias temmplate_。
 
-## Item 10 首选 _scoped enums_ 而不是 _unscoped enums_
+## Item 10 首选 _scoped enum_ 而不是 _unscoped enum_
 
 一般而言，在 _{}_ 内声明一个名称会将这个名称的可见性限制在 _{}_ 所定义的作用域内。对于使用了 _C++98-style_ 的  
-_enums_ 所声明的 _enumerators_ 来说却不是这样。这些 _enumerators_ 的名称是属于那个包含着它所对应的 _enum_ 的  
-作用域的。这意味着在这个作用域内不能有相同的名称：
+_enum_ 所声明的 _enumerator_ 来说却不是这样。这些 _enumerator_ 的名称是属于那个包含着它所对应的 _enum_ 的作用  
+域的。这意味着在这个作用域内不能有相同的名称：
 ```C++
   enum Color { black, white, red };     // black, white, red are
                                         // in same scope as Color
@@ -718,8 +718,8 @@ _enums_ 所声明的 _enumerators_ 来说却不是这样。这些 _enumerators_ 
                                         // declared in this scope
 ```
 
-这些 _enumerators_ 的名称是被泄露到了那个包含着它所对应的 _enum_ 的作用域的事实产生了这种 _enum_ 所对应的  
-官方术语：_unscoped_。_C++11_ 有所对应的 _scoped enums_，不会发生泄露：
+这些 _enumerator_ 的名称是被泄露到了那个包含着它所对应的 _enum_ 的作用域的事实产生了这种 _enum_ 所对应的官  
+方术语：_unscoped_。_C++11_ 有所对应的 _scoped enum_，不会发生泄露：
 ```C++
   enum class Color { black, white, red };         // black, white, red
                                                   // are scoped to Color
@@ -736,12 +736,12 @@ _enums_ 所声明的 _enumerators_ 来说却不是这样。这些 _enumerators_ 
                                                   // with Item 5's advice)
 ```
 
-因为 _scoped enums_ 是通过 _enum class_ 来声明的，所以有时候称为 _enum classes_。 
+因为 _scoped enum_ 是通过 _enum class_ 来声明的，所以有时候称为 _enum class_。 
 
-_scoped enums_ 降低了 _namespace_ 的污染，这个就足以选择 _scoped enums_ 而不是 _unscoped enums_ 了，但是还有  
-第二个有说服力的优势：它们的 _enumerators_ 是更 _strongly typed_。_unscoped enums_ 所对应的 _enumerators_ 是可以  
-被隐式转换为 _integral_ 类型的，并是能够进一步被转换为 _floating-point_ 类型的。因此，像下面这样的扭曲语义完  
-全是有效的：  
+_scoped enum_ 降低了 _namespace_ 的污染，这个就足以选择 _scoped enum_ 而不是 _unscoped enum_ 了，但是还有第二  
+个有说服力的优势：它们的 _enumerator_ 是更 _strongly typed_。_unscoped enum_ 所对应的 _enumerator_ 是可以被隐式  
+转换为 _integral_ 类型的，并是能够进一步被转换为 _floating-point_ 类型的。因此，像下面这样的扭曲语义完全是有  
+效的：  
 ```C++
   enum Color { black, white, red };     // unscoped enum
 
@@ -758,8 +758,8 @@ _scoped enums_ 降低了 _namespace_ 的污染，这个就足以选择 _scoped e
   }
 ```
 
-然而，在 _enum_ 之后加一个简单的 _class_ 将 _unscoped enums_ 转换为 _scoped enums_ 后，就是不同的故事了。不可以
-将 _scoped enums_ 所对应的 _enumerators_ 隐式转换为到其他类型：
+然而，在 _enum_ 之后加一个简单的 _class_ 将 _unscoped enum_ 转换为 _scoped enum_ 后，就是不同的故事了。不可以  
+将 _scoped enum_ 所对应的 _enumerator_ 隐式转换为到其他类型：
 ```C++
   enum class Color { black, white, red };         // enum is now scoped
 
@@ -786,20 +786,20 @@ _cast_：
   }
 ```
 
-_scoped enums_ 相对于 _unscoped enums_ 似乎还有的第三个优势，因为 _scoped enums_ 是可以进行前置声明的，即  
-为：在没有指明 _enumerators_ 的时候，就可以声明 _scoped enums_：
+_scoped enum_ 相对于 _unscoped enum_ 似乎还有的第三个优势，因为 _scoped enum_ 是可以进行前置声明的，即为：  
+在没有指明 _enumerator_ 的时候，就可以声明 _scoped enum_：
 ```C++
   enum Color;                 // error!
 
   enum class Color;           // fine
 ```  
-这有点误导人。在 _C++11_ 中，_unscoped enums_ 也是可以进行前置声明的，但是需要一点额外的工作。这点额外  
-的工作源于这样的事实：在 _C++_ 中每个 _enum_ 都有一个编译器所决定的 _underlying type_，是 _integral_ 的。对于像  
-_Color_ 的 _unscoped enums_，  
+这有点误导人。在 _C++11_ 中，_unscoped enum_ 也是可以进行前置声明的，但是需要一点额外的工作。这点额外的  
+工作源于这样的事实：在 _C++_ 中每个 _enum_ 都有一个编译器所决定的 _underlying type_，是 _integral_ 的。对于像下  
+面这样的 _Color_ 的 _unscoped enum_，  
 ```C++
   enum Color { black, white, red };
 ```  
-编译器可能选择 _char_ 来做为 _underlying type_，因为只需要三个值来表示。然而，一些 _enums_ 有一组更大范围的  
+编译器可能选择 _char_ 来做为 _underlying type_，因为只需要三个值来表示。然而，一些 _enum_ 有一组更大范围的  
 值，比如：  
 ```C++
   enum Status { good = 0,
@@ -816,7 +816,7 @@ _Color_ 的 _unscoped enums_，
 _enumerator_ 的  
 值的范围就可以了。在一些场景中，编译器优化的是速度而不是大小，在这些场景中，编译器可能不会选择所允许  
 的最小的 _underlying type_，但是仍然想要能够优化大小。为了可以这样做，_C++98_ 就只提供了 _enum_ 定义，就是  
-要列出全部的 _enumerators_，而 _enum_ 声明是被不允许的。这使得编译器可以在每个 _enum_ 被使用之前来为它们来  
+要列出全部的 _enumerator_，而 _enum_ 声明是被不允许的。这使得编译器可以在每个 _enum_ 被使用之前来为它们来  
 选择一个 _underlying type_ 了。
 
 但是无法前置声明 _enum_ 也有缺点。最明显的大概就是增加了编译依赖。再一次考虑 _Status_ _enum_：
@@ -868,7 +868,7 @@ _scoped enum_ 所对应的 _underlying type_ 默认是 _int_：
                                         // (from <cstdint>)
 ```  
 
-不管怎样，编译器是知道 _scoped enum_ 中的 _enumerators_ 的大小的。
+不管怎样，编译器是知道 _scoped enum_ 中的 _enumerator_ 的大小的。
 
 为了指明 _unscoped enum_ 所对应的的 _underlying type_，需要和 _scoped enum_ 做同样的事情，那么这样就可以进行  
 前置声明了：
@@ -938,7 +938,7 @@ _std::get_ 是一个模板，你提供的值是模板实参，注意是 _&lt;&gt
 
 事实上，这个函数应该是 _constexpr_ 的函数模板，因为它应该能和各种 _enum_ 一起工作。如果我们做了这个泛化的  
 话，那么我们也应该泛化它的返回类型。我们应该要返回的是这个 _enum_ 的 _underlying type_ 而不是 _std::size_t_。关  
-于 _type traits_ 见 [_Item 9_](./Chapter%203.md#item-9-首选-alias-declarations-而不是-typedefs)。最后，我们声明它为 _noexcept_，见 [_Item 14_](./Chapter%203.md#item-14-如果发出异常的话就声明函数为-noexcept)，因为我们知道它永远不会产生异常。我们构  
+于 _type trait_ 见 [_Item 9_](./Chapter%203.md#item-9-首选-alias-declarations-而不是-typedefs)。最后，我们声明它为 _noexcept_，见 [_Item 14_](./Chapter%203.md#item-14-如果发出异常的话就声明函数为-noexcept)，因为我们知道它永远不会产生异常。我们构  
 建一个函数模板 _toUType_，它持有一个任意的 _enumerator_ 并且按照编译期间常量的形式返回其值：
 ```C++
   template<typename E>
@@ -977,20 +977,20 @@ _std::get_ 是一个模板，你提供的值是模板实参，注意是 _&lt;&gt
   auto val = std::get<toUType(UserInfoFields::uiEmail)>(uInfo);
 ```
 
-这仍然比使用 _unscoped enum_ 的方式写的要多，但是可以避免 _namespace_ 的污染和避免涉及到 _enumerators_ 时的  
+这仍然比使用 _unscoped enum_ 的方式写的要多，但是可以避免 _namespace_ 的污染和避免涉及到 _enumerator_ 时的  
 不经意间的转换。在很多的场景下，你都会同意：为了避免使用一种源自数字通信的艺术状态仅为 _2400-baud_ 调  
 制解调器时期的 _enum_ 的技术的陷阱，多打几个字符是一个合理的代价。
 
 ### 需要记住的规则
 
-* _C++98-style_ 的 _enums_ 现在被称为 _unscoped enums_。
-* _scoped enums_ 的 _enumerators_ 只在 _enum_ 内可见。使用 _cast_ 才能将 _scoped enums_ 所对应的 _enumerators_ 转  
-换为其他的类型。
-* _scoped enums_ 和 _unscoped enums_ 都支持指定 _underlying type_。_scoped enum_ 所对应的 _underlying type_ 默认  
+* _C++98-style_ 的 _enum_ 现在被称为 _unscoped enum_。
+* _scoped enum_ 的 _enumerator_ 只在 _enum_ 内可见。使用 _cast_ 才能将 _scoped enum_ 所对应的 _enumerator_ 转换为  
+其他的类型。
+* _scoped enum_ 和 _unscoped enum_ 都支持指定 _underlying type_。_scoped enum_ 所对应的 _underlying type_ 默认  
 是 _int_。_unscoped enum_ 所对应的 _underlying type_ 没有默认类型。
-* _scoped enums_ 可以前置声明。_unscoped enums_ 只有当指明了 _underlying type_ 才可以进行前置声明。
+* _scoped enum_ 可以前置声明。_unscoped enum_ 只有当指明了 _underlying type_ 才可以进行前置声明。
 
-## Item 11 首选 _deleted functions_ 而不是 _private undefined functions_
+## Item 11 首选 _deleted function_ 而不是 _private undefined function_
 
 如果你是提供代码给到其他开发者，并且你想要阻止他们调用一个特定的函数的话，那么一般的方法是不声明这个  
 函数。没有函数声明，就没有函数调用。这很简单。但是，有时候 _C++_ 会为你声明一些函数，而如果你想要阻止  
@@ -1002,11 +1002,11 @@ _std::get_ 是一个模板，你提供的值是模板实参，注意是 _&lt;&gt
 于那些已经被 _C++11_ 中的更好的实践所取代的 _C++98_ 中的常见的实践，在 _C++98_ 中如果你想要禁止成员函数的  
 话，那么几乎总是 _copy constructor_ 和 _copy assignment operator_。
 
-_C++98_ 阻止使用这些函数的方法是声明这些函数为 _private_ 且不进行定义。例如：_C++_ 标准库的 _iostreams_ 的基类  
+_C++98_ 阻止使用这些函数的方法是声明这些函数为 _private_ 且不进行定义。例如：_C++_ 标准库的 _iostream_ 的基类  
 是类模板 _basic_ios_。_istream_ 和 _ostream_ 都是继承自可能是直接继承自 _basic_ios_ 的。拷贝 _istream_ 和 _ostream_ 是不  
 想要的，因为真的不知道这些操作应该怎么做。例如：一个 _istream_ 表示的是输入值的 _stream_，其中有的已经读  
-取过了，而有的稍后可能会读取。如果要拷贝一个 _istreams_ 的话，那么需要拷贝已经读取过的和稍后会读取的全  
-部的值吗？处理这个问题的最简单的方法就是让它们不存在。这正是禁止拷贝 _streams_ 这件事要做的。
+取过了，而有的稍后可能会读取。如果要拷贝一个 _istream_ 的话，那么需要拷贝已经读取过的和稍后会读取的全部  
+的值吗？处理这个问题的最简单的方法就是让它们不存在。这正是禁止拷贝 _stream_ 这件事要做的。
 
 为了让 _istream_ 和 _ostream_ 是不可拷贝的，_C++98_ 中的 _basic_ios_ 被指定为下面这样：
 ```C++
@@ -1025,7 +1025,7 @@ _C++98_ 阻止使用这些函数的方法是声明这些函数为 _private_ 且�
 的话，即为：类的成员函数或者友元函数，那么会因为没有函数定义而链接出错。
 
 在 _C++11_ 中，有更好的方法去实现这个：使用 _= delete_ 去标记 _copy constructor_ 和 _copy assignment operator_ 为  
-_deleted functions_。下面是 _C++11 中 _basic_ios_：  
+_deleted function_。下面是 _C++11 中 _basic_ios_：  
 ```C++
   template <class charT, class traits = char_traits<charT> >
   class basic_ios : public ios_base {
@@ -1037,16 +1037,16 @@ _deleted functions_。下面是 _C++11 中 _basic_ios_：
   };
 ```
 
-删除函数和声明函数为 _private_ 的区别似乎更多是时尚问题，而非其他，但其实比你想的要更多。_deleted functions_  
+删除函数和声明函数为 _private_ 的区别似乎更多是时尚问题，而非其他，但其实比你想的要更多。_deleted function_  
 不能以任何方式被使用，成员函数和友元函数中的代码尝试去拷贝 _basic_ios_ 时也会编译失败。这是相对于 _C++98_   
 行为的提升，在 _C++98_ 中直到链接时才能诊断出错误。
 
-按照惯例，_deleted functions_ 是应该被声明为 _public_ 而不是 _private_ 的。这是有原因的。因为当客户尝试去使用一  
-个 _deleted private function_ 时，一些编译器只会抱怨函数是 _private_ 的，即使函数的可访问性并不真正影响它是否  
-可以使用。当修改 _legacy_ 代码使用 _deleted member functions_ 去代替 _private-and-not-defined member functions_  
-时，尤其要注意这点，因为声明为 _public_ 一般会得到更好的错误信息。  
+按照惯例，_deleted function_ 是应该被声明为 _public_ 而不是 _private_ 的。这是有原因的。因为当客户尝试去使用一个  
+_deleted private function_ 时，一些编译器只会抱怨函数是 _private_ 的，即使函数的可访问性并不真正影响它是否可以  
+使用。当修改 _legacy_ 代码使用 _deleted member function_ 去代替 _private-and-not-defined member function_ 时，尤  
+其要注意这点，因为声明为 _public_ 一般会得到更好的错误信息。  
 
-_deleted functions_ 的一个重要优势是任何函数都可以被删除，而只有成员函数是可以为 _private_。例如：假定我们有  
+_deleted function_ 的一个重要优势是任何函数都可以被删除，而只有成员函数是可以为 _private_。例如：假定我们有  
 一个持有 _integer_ 并且返回它是否为幸运数字的函数：
 ```C++
   bool isLucky(int number);
@@ -1063,7 +1063,7 @@ _C++_ 的 _C_ 的遗产意味着几乎任何可以被模糊地视为数字类型
                               // before checking for luckiness?
 ```
 
-如果幸运数字必须是 _integers_ 的话，那么我们想要阻止这样的调用被编译。
+如果幸运数字必须是 _integer_ 的话，那么我们想要阻止这样的调用被编译。
 
 一种可以完成的方法是去创建我们想要过滤的类型所对应的 _deleted_ 的重载函数：
 ```C++
@@ -1076,13 +1076,13 @@ _C++_ 的 _C_ 的遗产意味着几乎任何可以被模糊地视为数字类型
   bool isLucky(double) = delete;        // reject doubles and
                                         // floats
 ```  
-_double_ 重载函数的注释说 _doubles_ 和 _floats_ 都是会被拒绝的，这可能会让你惊讶，但是的惊讶很快会消失，因为你  
+_double_ 重载函数的注释说 _double_ 和 _float_ 都是会被拒绝的，这可能会让你惊讶，但是的惊讶很快会消失，因为你  
 想起了：对于 _float_ 转换为 _int_ 还是 _double_ 的选择，_C++_ 首选的会是 _double_。因此使用 _float_ 调用 _isLucky_ 所调用  
 会是 _double_ 重载函数，而不是 _int_ 重载函数。是的，它会尝试去调用。相关的重载函数被删除的事实将会阻止这  
 个调用被编译。
 
-即使 _deleted functions_ 不能被使用了，但它仍然会是你程序的一部分。因此，在重载决议期间它们是仍然会被考虑  
-到的。这也是在使用了上面的 _deleted functions_ 后不想要的 _isLucky_ 调用会被拒绝的原因：
+即使 _deleted function_ 不能被使用了，但它仍然会是你程序的一部分。因此，在重载决议期间它们是仍然会被考虑  
+到的。这也是在使用了上面的 _deleted function_ 后不想要的 _isLucky_ 调用会被拒绝的原因：
 ```C++
   if (isLucky('a')) …         // error! call to deleted function
   
@@ -1091,9 +1091,8 @@ _double_ 重载函数的注释说 _doubles_ 和 _floats_ 都是会被拒绝的�
   if (isLucky(3.5f)) …        // error!
 ```
 
-另一个 _deleted functions_ 可以执行而 _private member functions_ 不可以执行的技巧是阻止使用那些应该被 _disabled_   
-的模板实例。例如：假如你需要一个使用了内建指针的模板。尽管 [_Chapter 4_](./Chapter%204.md#-Chapter-4-智能指针) 建议你首选智能指针而不是原始指  
-针：
+另一个 _deleted function_ 可以执行而 _private member function_ 不可以执行的技巧是阻止使用那些应该被 _disabled_ 的  
+模板实例。例如：假如你需要一个使用了内建指针的模板。尽管 [_Chapter 4_](./Chapter%204.md#-Chapter-4-智能指针) 建议你首选智能指针而不是原始指针：
 ```C++
   template<typename T>
   void processPointer(T* ptr);
@@ -1142,7 +1141,7 @@ _char*_ 指针，因为它们一般代表的是 _C-style_ 字符串的指针，�
     void processPointer<void>(void*);
  };
 ```  
-这是因为模板特化必须被写在 _namespace_ 作用域内，而不是类作用域内。对于 _deleted functions_ 不会发生这种问  
+这是因为模板特化必须被写在 _namespace_ 作用域内，而不是类作用域内。对于 _deleted function_ 不会发生这种问  
 题，因为它们不需要不同的访问级别。它们可以在类外被删除，因为是在 _namespace_ 作用域内的：  
 ```C++
 class Widget {
@@ -1159,21 +1158,21 @@ void Widget::processPointer<void>(void*) = delete;          // public,
                                                             // deleted
 ```
 
-事实上，_C++98_ 声明函数为 _private_ 且不去定义它们的这种做法就是试图去实现 _C++11_ 的 _deleted functions_ 的功  
+事实上，_C++98_ 声明函数为 _private_ 且不去定义它们的这种做法就是试图去实现 _C++11_ 的 _deleted function_ 的功  
 能的。就像是模仿，_C++98_ 的方法就是不如 _C++11_ 的方法好的。因为 _C++98_ 的方法不能应用于类外的函数，也  
-不是总能够应用于类内的函数，当可以应用时，也是在链接时才能工作。所以还是坚持使用 _deleted functions_ 吧。
+不是总能够应用于类内的函数，当可以应用时，也是在链接时才能工作。所以还是坚持使用 _deleted function_ 吧。
 
 ### 需要记住的规则
 
-* 首选 _deleted functions_ 而不是 _private undefined functions_。
+* 首选 _deleted function_ 而不是 _private undefined function_。
 * 任意函数都可以被删除，包括：非成员函数和模板实例。
 
 ## Item 12 使用 _override_ 来声明重写函数
 
-_C++_ 中的面向对象编程的世界是以类、继承以及 _virtual functions_ 为中心的。在这个世界中的最基本的思想之一是  
-_derived classes_ 中的 _virtual functions_ 的实现会重写它所对应的 _base class_ 中的 _virtual functions_ 的实现。意识到重  
-写 _virtual functions_ 有这么容易出错，是令人沮丧的。语言的这部分似乎是按照墨菲定律的思想来设计的，而且  
-不仅是要遵守，还是要致敬墨菲定律的。
+_C++_ 中的面向对象编程的世界是以类、继承以及 _virtual function_ 为中心的。在这个世界中的最基本的思想之一是  
+_derived class_ 中的 _virtual function_ 的实现会重写它所对应的 _base class_ 中的 _virtual function_ 的实现。意识到了重写  
+_virtual function_ 有这么容易出错，是令人沮丧的。语言的这部分似乎是按照墨菲定律的思想来设计的，而且不仅是  
+要遵守，还是要致敬墨菲定律的。
 
 因为 _overriding_ 听起来像是 _overloading_ 的，但其实是完全不相关的，所以让我澄清下：重写 _virtual function_ 只是  
 使得可以通过 _base class_ 的接口来执行 _derived class_ 的函数了而已：
@@ -1200,7 +1199,7 @@ _derived classes_ 中的 _virtual functions_ 的实现会重写它所对应的 _
                                         // function is invoked
 ```  
 要发生重写，必须要满足一些要求：  
-* _base class_ 的函数必须是 _virtual functions_。
+* _base class_ 的函数必须是 _virtual function_。
 * _base function_ 和 _derived function_ 的名字必须一致，除了析构函数的场景以外。
 * _base function_ 和 _derived function_ 的形参类型必须一致。
 * _base function_ 和 _derived function_ 的 _constness_ 必须一致。
@@ -1208,8 +1207,8 @@ _derived classes_ 中的 _virtual functions_ 的实现会重写它所对应的 _
 
 这些限制也是 _C++98_ 的一部分，_C++11_ 又增加了一个：  
 
-* 函数的 _reference qualifiers_ 必须一致。成员函数的 _reference qualifiers_ 是 _C++11_ 中较少宣传的特性之一，所  
-以如果你没有听过它的话，那么也不要感到太惊讶。它可以限制成员函数只能用于左值或右值。成员函数并不  
+* 函数的 _reference qualifier_ 必须一致。成员函数的 _reference qualifier_ 是 _C++11_ 中较少宣传的特性之一，所以  
+* 如果你没有听过它的话，那么也不要感到太惊讶。它可以限制成员函数只能用于左值或右值。成员函数并不  
 需要是虚函数才能使用它们：
 ```C++
   class Widget {
@@ -1235,9 +1234,9 @@ _derived classes_ 中的 _virtual functions_ 的实现会重写它所对应的 _
   makeWidget().doWork();      // calls Widget::doWork for rvalues
                               // (i.e., Widget::doWork &&)
 ```  
-&ensp;&ensp;&ensp;&ensp;稍后我会详细介绍带有 _reference qualifiers_ 的成员函数，但是现在我们只需要了解：如果 _base class_ 所对应的  
+&ensp;&ensp;&ensp;&ensp;稍后我会详细介绍带有 _reference qualifier_ 的成员函数，但是现在我们只需要了解：如果 _base class_ 所对应的  
 &ensp;&ensp;&ensp;&ensp;_virtual function_ 是有 _reference qualifier_ 的话，那么 _derived class_ 所对应的 _virtual function_ 也必须要有完全相  
-&ensp;&ensp;&ensp;&ensp;同的 _reference qualifiers_。如果不是完全相同的话，虽然所声明的函数仍然会在 _derived class_ 中，但是却不会  
+&ensp;&ensp;&ensp;&ensp;同的 _reference qualifier_。如果不是完全相同的话，虽然所声明的函数仍然会在 _derived class_ 中，但是却不会  
 &ensp;&ensp;&ensp;&ensp;重写 _base class_ 中的任何东西了。
 
 全部的这些对于重写的要求意味着小的错误可以造成大的不同。包含着重写错误的代码一般都是有效的，只是它的  
@@ -1266,7 +1265,7 @@ _derived classes_ 中的 _virtual functions_ 的实现会重写它所对应的 _
 * _mf1_ 在 _Base_ 中有 _const_，但在 _Derived_ 中却没有。
 * _mf2_ 在 _Base_ 中持有的是 _int_，但在 _Derived_ 中持有的却是 _unsigned int_。
 * _mf3_ 在 _Base_ 中是 _lvalue-qualified_，但是在 _Derived_ 中却是 _rvalue-qualified_。
-* _mf4_ 在 _Base_ 中不是 _virtual functions_。
+* _mf4_ 在 _Base_ 中不是 _virtual function_。
 
 你可能会想“嘿，在实践中，这些都会引发编译器警告，所以我不需要担心。”可能是的，也可能不是。我测试过两  
 个编译器，它们不会发出抱怨，这个代码是会被接受的，这还是在全部警告都开启的情况下。其他的编译器提供了  
@@ -1304,14 +1303,14 @@ _derived classes_ 中的 _virtual functions_ 的实现会重写它所对应的 _
   };                                    // but not necessary
 ```  
 在这个例子中，让事情可以工作的一部分是将 _Base_ 中的 _mf4_ 声明为 _virtual function_。大多数与重写相关的错误都  
-是在 _derived classes_ 中，但是也可以出现在 _base classes_ 中。
+是在 _derived class_ 中，但是也可以出现在 _base class_ 中。
 
-在 _derived classes_ 上使用 _override_ 的策略不只是可以让编译器在你想要重写却没有重写时提醒你。如果你要打算改  
-变 _base class_ 中的 _virtual function_ 的 _signatrue_ 的话，那么它还可以帮助你来评估后果。如果你在 _derived classes_  
-中的每一个地方都使用了 _override_ 的话，那么你可以通过改变 _base class_ 中的 _signatrue_ 且重新编译系统来看这会  
-造成多大的破坏，即为：看看有多少个 _derived classes_ 会因此而编译失败，然后再决定这个 _signatrue_ 是否值得改  
-变。而在没有 _override_ 的情况下，你只能希望能有一个完备的单元测试了，因为正如我们已经看到的，应该重写  
-但没有重写 _base class_ 的函数的 _derived class_ 的 _virtual function_ 不会引发编译器的诊断。
+在 _derived class_ 上使用 _override_ 的策略不只是可以让编译器在你想要重写却没有重写时提醒你。如果你要打算改  
+变 _base class_ 中的 _virtual function_ 的 _signatrue_ 的话，那么它还可以帮助你来评估后果。如果你在 _derived class_ 中  
+的每一个地方都使用了 _override_ 的话，那么你可以通过改变 _base class_ 中的 _signatrue_ 且重新编译系统来看这会造  
+成多大的破坏，即为：看看有多少个 _derived class_ 会因此而编译失败，然后再决定这个 _signatrue_ 是否值得改变。  
+而在没有 _override_ 的情况下，你只能希望能有一个完备的单元测试了，因为正如我们已经看到的，应该重写但没  
+有重写 _base class_ 的函数的 _derived class_ 的 _virtual function_ 不会引发编译器的诊断。
 
 _C++_ 一直就是有关键字的，但是 _C++11_ 又引入了两个 _contextual_ 关键字：_override_ 和 _final_。这两个关键字有一个  
 特点，那就是它们是被保留的，只在固定的上下文中被保留。在 _override_ 场景中，只有当 _override_ 出现在成员函  
@@ -1364,7 +1363,7 @@ _C++_ 一直就是有关键字的，但是 _C++11_ 又引入了两个 _contextua
 _Widget::data_ 的返回类型是左值引用，准确说是 _std::vector&lt;double&gt;&_，因为左值引用是被定义来为左值的，所以  
 我们是根据一个左值来初始化的 _vals1_。因此 _vals1_ 是调用 _w.values_ 来进行拷贝构造的，正如注释所说的那样。  
 
-现在假定我们有创建 _Widgets_ 的工厂函数，  
+现在假定我们有创建 _Widget_ 的工厂函数，  
 ```C++
   Widget makeWidget();
 ```  
@@ -1379,7 +1378,7 @@ _Widget_ 的 _values_ 而拷贝构造出的。但是，这一次这个 _Widget_ 
 _C++_ 的规则会要求编译器生成拷贝的代码。通过所谓的 _as if rule_，是有一些优化的余地的，但不要指望编译器能  
 找到利用它的方法。  
 
-需要一种方法：当在右值 _Widget_ 上执行 _data_ 时，可以指定所产生的结果也是一个右值。使用 _reference qualifiers_  
+需要一种方法：当在右值 _Widget_ 上执行 _data_ 时，可以指定所产生的结果也是一个右值。使用 _reference qualifier_   
 来重载左值 _Widget_ 的 _data_ 和右值 _Widget_ 的 _data_ 就可以完成：  
 ```C+++
   class Widget {
@@ -1415,19 +1414,19 @@ _C++_ 的规则会要求编译器生成拷贝的代码。通过所谓的 _as if 
 ### 需要记住的规则
 
 * 声明重写函数为 _override_。
-* 成员函数的 _reference qualifiers_ 使得可以不同地处理左值 _*this_ 对象和右值 _*this_ 对象了。
+* 成员函数的 _reference qualifier_ 使得可以不同地处理左值 _*this_ 对象和右值 _*this_ 对象了。
 
-## Item 13 首选 _const_iterators_ 而不是 _iterators_
+## Item 13 首选 _const_iterator_ 而不是 _iterator_
 
-_const_iterators_ 是 _STL_ 的 _pointer-to-const_ 的等价物。它们都指向不可以被更改的值。只要有可能使用 _const_ 就应该  
+_const_iterator_ 是 _STL_ 的 _pointer-to-const_ 的等价物。它们都指向不可以被更改的值。只要有可能使用 _const_ 就应该  
 去使用 _const_ 的标准实践规定了：当你需要一个 _iterator_，而不需要更改 _iterator_ 所指向的内容时，你应该使用的是  
-_const_iterators_。
+_const_iterator_。
 
-_C++98_ 和 _C++11_ 都是这样，但在 _C++98_ 中，对于 _const_iterators_ 的支持是不够全面的。在 _C++98_ 中，不太容  
-易创建 _const_iterators_，就算你创建了一个，使用它的方法也是有限制的。例如：假定你想要在 _std::vector&lt;int&gt;_ 中  
-搜索 _1983_ 出现的第一个位置，_1983_ 是 _C++_ 取代 _C with Classes_ 来做为编程语言名字的年份，然后在这个位置后  
-面插入值 _1998_，这是第一个 _ISO C++ Standard_ 被采用的年份。如果在这个 _vector_ 中没有 _1983_ 的话，那个插入值  
-应该放在这个 _vector_ 的末尾。在 _C++98_ 中使用 _iterators_ 来完成是非常简单的：  
+_C++98_ 和 _C++11_ 都是这样，但在 _C++98_ 中，对于 _const_iterator_ 的支持是不够全面的。在 _C++98_ 中，不太容易  
+创建 _const_iterator_，就算你创建了一个，使用它的方法也是有限制的。例如：假定你想要在 _std::vector&lt;int&gt;_ 中搜  
+索 _1983_ 出现的第一个位置，_1983_ 是 _C++_ 取代 _C with Classes_ 来做为编程语言名字的年份，然后在这个位置后面  
+插入值 _1998_，这是第一个 _ISO C++ Standard_ 被采用的年份。如果在这个 _vector_ 中没有 _1983_ 的话，那个插入值应  
+该放在这个 _vector_ 的末尾。在 _C++98_ 中使用 _iterator_ 来完成是非常简单的：  
 ```C++
   std::vector<int> values;
   
@@ -1437,8 +1436,8 @@ _C++98_ 和 _C++11_ 都是这样，但在 _C++98_ 中，对于 _const_iterators_
     std::find(values.begin(),values.end(), 1983);
   values.insert(it, 1998);
 ```  
-但是在这里 _iterators_ 真的不是一个合适的选择，因为这个代码永远不会更改 _iterator_ 所指向的内容。更改代码去使  
-用 _const_iterators_ 应该是容易的，但是在 _C++98_ 却不容易。这是一个在概念上合理但实际上却是不正确的方法：  
+但是在这里 _iterator_ 真的不是一个合适的选择，因为这个代码永远不会更改 _iterator_ 所指向的内容。更改代码去使  
+用 _const_iterator_ 应该是容易的，但是在 _C++98_ 却不容易。这是一个在概念上合理但实际上却是不正确的方法：  
 ```C++
   typedef std::vector<int>::iterator IterT;                 // type-
   typedef std::vector<int>::const_iterator ConstIterT;      // defs
@@ -1457,32 +1456,31 @@ _C++98_ 和 _C++11_ 都是这样，但在 _C++98_ 中，对于 _const_iterators_
                                                             // below
 ```
 
-当然 _typedefs_ 是可以不需要的，但是它可以使得代码中的 _cast_ 更加容易地书写。你可能会好奇为什么我使用的是  
+当然 _typedef_ 是可以不需要的，但是它是可以使得代码中的 _cast_ 更加容易地书写的。你可能会好奇为什么使用的是   
 _typedef_，而不是遵循 [_Item 9_](./Chapter%203.md#item-9-首选-alias-declarations-而不是-typedefs) 的建议去使用 _alias declaration_ 呢？因为这个例子展示的是 _C++98_ 的代码，这时还没  
 有 _alias declaration_， _alias declaration_ 在 _C++11_ 新添加的特性。
 
 _std::find_ 调用中的存在有 _cast_，这是因为 _values_ 是一个 _non-const_ _container_，在 _C++98_ 中没有简单的方法来获取  
-_non-const_ _container_ 的 _const_iterator_。这个 _casts_ 并不是绝对必要的，因为可以使用其他的方法来获取 _non-const_  
-_container_ 的 _const_iterator_，比如：你可以首先使用 _reference-to-const_ 的变量来绑定 _values_，然后再在代码中使用  
-这个变量来代替 _values_，但是不论是哪种方法，从 _non-const_ _container_ 中获取到 _const_iterators_ 的过程都经历了一  
-些曲折。
+_non-const_ _container_ 的 _const_iterator_。并不是非得要这样做，因为可以使用其他的方法来获取 _non-const_ _container_   
+的 _const_iterator_，比如：你可以首先使用 _reference-to-const_ 的变量来绑定 _values_，然后再在代码中使用这个变量  
+来代替 _values_，但是不论是哪种方法，从 _non-const_ _container_ 中获取到 _const_iterator_ 的过程都经历了一些曲折。
 
-而一旦你有了 _const_iterators_，事情常常会变得更糟，因为在 _C++98_ 中，插入和删除的位置只能通过 _iterator_ 来指  
-定。_const_iterators_ 是能不被接受的。这也是为什么在上面的代码中我要将 _const_iterator_ 转换为 _iterator_，因为传  
-递 _const_iterator_ 到 _insert_ 是不能通过编译的，而这个 _const_iterator_ 是从 _std::find_ 中非常小心得到的。
+而一旦你有了 _const_iterator_，事情常常会变得更糟，因为在 _C++98_ 中，插入和删除的位置只能通过 _iterator_ 来指  
+定。_const_iterator_ 是能不被接受的。这也是为什么在上面的代码中我要将 _const_iterator_ 转换为 _iterator_，因为传递   
+_const_iterator_ 到 _insert_ 是不能通过编译的，而这个 _const_iterator_ 是从 _std::find_ 中非常小心得到的。
 
 老实说，我展示的这个代码是不能通过编译的，因为没有 _const_iterator_ 到 _iterator_ 的可移植转换，使用 _static_cast_  
 也是不行的。甚至使用被称为 _reinterpret_cast_ 的语义大招也是不行的。这不是 _C++98_ 的限制。在 _C++11_ 中也有  
-一样的限制。在 _C++11_ 中，也不能简单地将  _const_iterators_ 转换为 _iterators_，不管这个转换看起来有多么理所应  
-当。是有一些可以生成指向 _const_iterators_ 所指向位置的 _iterators_ 的可移植方法的，但是这些方法不是明显的，也  
+一样的限制。在 _C++11_ 中，也不能简单地将  _const_iterator_ 转换为 _iterator_，不管这个转换看起来有多么地理所应  
+当。是有一些可以生成指向 _const_iterator_ 所指向位置的 _iterator_ 的可移植方法的，但是这些方法不是明显的，也  
 不是普遍适用的，所以不值得在本书中进行讨论。此外，我希望我目前的观点是清晰的：在 _C++98_ 中的开发者并  
-不是只要有可能使用 _const_iterators_  就去使用 _const_iterators_ 的，而是只在适用的时候才去使用它，所以在 _C++98_  
-中，_const_iterators_ 不是非常地适用。
+不是只要有可能使用 _const_iterator_  就去使用 _const_iterator_ 的，而是只在适用的时候才去使用它，所以在 _C++98_  
+中，_const_iterator_ 不是非常地适用。
 
-全部的这些都在 _C++11_ 中发生了改变。现在 _const_iterators_ 非常容易被获取，也非常容易被用了。 _container_ 的  
-成员函数 _cbegin_ 和 _cend_ 都产生的是 _const_iterators_，甚至 _non-const_ _container_ 和使用 _iterators_ 去识别位置的 _STL_   
-成员函数，比如：_insert_ 和 _erase_，都完全可以使用 _const_iterators_ 了。修改使用了 _iterators_ 的 _C++98_ 代码去使用   
-_C++11_ 的 _const_iterators_ 就非常简单了：  
+全部的这些都在 _C++11_ 中发生了改变。现在 _const_iterator_ 非常容易被获取，也非常容易被用了。 _container_ 的成  
+员函数 _cbegin_ 和 _cend_ 都产生的是 _const_iterator_，甚至 _non-const_ _container_ 和使用了 _iterator_ 去识别位置的 _STL_ 成  
+员函数，比如：_insert_ 和 _erase_ 函数，都完全可以使用 _const_iterator_ 了。修改使用了 _iterator_ 的 _C++98_ 代码去使  
+用 _C++11_ 的 _const_iterator_ 就非常简单了：  
 ```C++
   std::vector<int> values;                        // as before
   
@@ -1495,10 +1493,10 @@ _C++11_ 的 _const_iterators_ 就非常简单了：
   values.insert(it, 1998);
 ```
 
-现在是使用了 _const_iterators_ 的代码了，它是适用的。
+现在是使用了 _const_iterator_ 的代码了，它是适用的。
 
-只有在一个情景中 _C++11_ 对于 _const_iterators_ 的支持还不够充足，那就是当你想要写最通用的库代码时。这些代  
-码会考虑到：一些 _containers_ 和 _containers-like_ 的数据结构会提供 _begin_、_end_、_cbegin_、_cend_ 和 _rbegin_ 等来做为  
+只有在一个情景中 _C++11_ 对于 _const_iterator_ 的支持还不够充足，那就是当你想要写最通用的库代码时。这些代  
+码会考虑到：一些 _container_ 和 _containers-like_ 的数据结构会提供 _begin_、_end_、_cbegin_、_cend_ 和 _rbegin_ 等来做为  
 非成员函数，而不是成员函数。例如：内建数组就是这样，第三方库也是这样，它的接口只由自由函数所组成。因  
 此，最通用代码会使用非成员函数，而不是假设有成员函数的版本存在。
 
@@ -1536,7 +1534,7 @@ _C++11_ 的 _const_iterators_ 就非常简单了：
 _cbegin_ 模板接受任意类型 _C_ 的实参，这个 _C_ 表示的是 _container-like_ 的数据结构类型，并通过 _reference-to-const_  
 的形参 _container_ 来访问它的实参。如果 _C_ 是一个传统的 _container_ 类型的话，比如：_std::vector&lt;int&gt;_，那么这个  
 _container_ 是一个 _reference-to-const_ 的，比如：const std::vector&lt;int&gt;&。在 _const_ _container_ 上执行 _C++11_ 所提供  
-的非成员函数 _begin_ 会产生一个 _const_iterators_，而模板会返回这个 _const_iterators_。这样做的优势是：对于那些提  
+的非成员函数 _begin_ 会产生一个 _const_iterator_，而模板会返回这个 _const_iterator_。这样做的优势是：对于那些提  
 供有成员函数 _begin_ 但没有提供成员函数 _cbegin_ 的 _container_ 来说，这是可以工作的，其实 _C++11_ 的非成员函数  
 _begin_ 调用的就是成员函数 _begin_。因此你可以在只支持 _begin_ 的 _container_ 上使用非成员函数 _cbegin_。  
 
@@ -1546,14 +1544,13 @@ _begin_ 调用的就是成员函数 _begin_。因此你可以在只支持 _begin
 个 _pointer-to-const_，事实上，_pointer-to-const_ 就是数组所对应的 _const_iterator_。为了进一步了解对于内建的数组  
 模板应该如何进行特化，查阅 [_Item 1_](./Chapter%201.md#item-1-理解模板的类型推导) 中关于持有数组引用形参的模板的类型推导的结论。
 
-但是回到基本原则来。本 _Item_ 的观点是：鼓励你只要可以使用 _const_iterators_ 就去使用 _const_iterators_。基本的原  
-则是。只要有可能使用 _const_ 就应该去使用 _const_，这在 _C++11_ 之前就是一直有的。但是在 _C++98_ 中，当使用到  
-_iterators_ 时，这个原则就不适用了。而在 _C++11_ 中，这个原则就很适用了，并且在 _C++14_ 修复了 _C++11_ 留下的  
-未完成工作。
+但是回到基本原则来。本 _Item_ 的观点是：鼓励你只要可以使用 _const_iterator_ 就去使用 _const_iterator_。基本的原则  
+是只要有可能就应该去使用 _const_，这在 _C++11_ 之前就是一直有的。但是在 _C++98_ 中，当使用到 _iterator_ 时，这  
+个原则就不适用了。而在 _C++11_ 中，这个原则就很适用了，并且在 _C++14_ 修复了 _C++11_ 留下的未完成工作。
 
 ### 需要记住的规则
 
-* 首选 _const_iterators_ 而不是 _iterators_。
+* 首选 _const_iterator_ 而不是 _iterator_。
 * 在最通用的代码中，首选非成员函数 _begin_、_end_ 和 _rbegin_ 等，而不是相应的成员函数版本。
 
 ## Item 14 当函数不会抛出异常时声明函数为 _noexcept_
@@ -1589,8 +1586,8 @@ _exception specification_，调用堆栈会被展开至 _f_ 的调用方，然�
 能会被展开。
 
 会展开调用堆栈和可能会展开调用堆栈之间的不同对于代码的生成有着很大的影响。在 _noexcept_ 函数中，如果一  
-个异常将会被传播到到函数之外的话，那么 _optimizers_ 是不需要将运行堆栈保持为展开状态的，_optimizers_ 也不必  
-确保：当一个异常离开函数时，_noexcept_ 函数中的对象必须要按照构造的相反顺序来进行析构。对于带有 _throw()_  
+个异常将会被传播到到函数之外的话，那么 _optimizer_ 是不需要将运行堆栈保持为展开状态的，_optimizer_ 也不必确  
+保：当一个异常离开函数时，_noexcept_ 函数中的对象必须要按照构造的相反顺序来进行析构。而对于带有 _throw()_  
 _exception specification_ 的函数则缺乏这样的优化灵活性，就和完全没有异常明细的函数做的一样。这个情景可以这  
 样总结：  
 ```C++
@@ -1618,10 +1615,10 @@ _exception specification_ 的函数则缺乏这样的优化灵活性，就和完
   
   …
 ```  
-假设这个代码是可以工作的，并且你没兴趣为了 _C++11_ 去修改这个代码。然而，你想要利用以下这个事实的优  
-势：当涉及到 _move-enabled_ 类型时，_C++11_ 的移动语义可以提高 _legacy_ 代码的性能。因此你要确保 _Widget_ 有  
-_move operations_，要么是你要自己写它的 _move operatins_，要么是你要确保满足 _move operations_ 的自动生成条  
-件，见 [_Item 17_](./Chapter%203.md#item-17-理解特殊成员函数的生成)。
+假设这个代码是可以工作的，并且你也没兴趣为了 _C++11_ 去修改这个代码。然而，你想要利用以下这个事实的优  
+势：当涉及到 _move-enabled_ 类型时，_C++11_ 的移动语义可以提高 _legacy_ 代码的性能。因此你要确保 _Widget_ 有所  
+对应的 _move operation_，要么是你要自己写它的 _move operatin_，要么是你要确保满足 _move operation_ 的自动生成  
+条件，见 [_Item 17_](./Chapter%203.md#item-17-理解特殊成员函数的生成)。
 
 当一个新元素被添加到 _std::vector_ 时，_std::vector_ 可能已经没有这个元素的空间了，即为：_std::vector_ 的大小等于它  
 的容量了。当发生这种情况时，_std::vector_ 会分配一个新的大的内存块去保存它的元素，并将它的元素从旧内存块  
@@ -1636,19 +1633,19 @@ _move operations_，要么是你要自己写它的 _move operatins_，要么是�
 走了。不可能恢复原来的状态，因为试图移动每一个元素回到原来的旧内存都可能会产生异常。
 
 这是一个严重的问题，因为 _legacy_ 代码的行为可能是依赖于 _push_back_ 的强异常安全保证的。因此，_C++11_ 的实  
-现不能悄悄地使用 _move operations_ 来替换 _push_back_ 中的 _copy operations_，除非确认 _move operations_ 不会抛出  
-异常。不会抛出异常时，_move operations_ 代替 _copy operations_ 是安全的，唯一的附加影响是将会提升性能。
+现不能悄悄地使用 _move operation_ 来替换 _push_back_ 中的 _copy operation_，除非确认 _move operation_ 不会抛出异  
+常。不会抛出异常时，_move operation_ 代替 _copy operation_ 是安全的，唯一的附加影响是将会提升性能。
 
 _std::vector::push_back_ 利用了 **_move if you can, but copy if you must_** 的策略的优势，它不是唯一一个在标准库中这  
 样做的函数。其他的利用了 _C++98_ 的强异常安全保证的函数也是使用了相同的方式，比如：_std::vector::reserve_ 和  
- _std::deque::insert_ 等。如果 _move operations_ 被认为是不会抛出异常异常的话，那么全部的这些函数会使用 _C++11_   
-的 _move operations_ 来代替 _C++98_ 的 _copy operations_。但是这些函数如何可以知道 _move operation_ 是否不会产生  
-异常呢？答案是明显的：去检查 _move operations_ 是否被声明为了 _noexcept_。
+ _std::deque::insert_ 等。如果 _move operation_ 被认为是不会抛出异常异常的话，那么全部的这些函数会使用 _C++11_   
+的 _move operation_ 来代替 _C++98_ 的 _copy operation_。但是这些函数如何可以知道 _move operation_ 是否不会产生异  
+常呢？答案是明显的：去检查 _move operation_ 是否被声明为了 _noexcept_。
 
 _swap_ 函数包括了另一种 _noexcept_ 尤其值得拥有的场景。_swap_ 是很多 _STL_ 算法实现的关键组成部分，它通常也会  
-在 _copy assignment operators_ 中被使用。_swap_ 的广泛应用使得 _noexcept_ 所提供的优化特别地值得。有趣地是，标  
-准库的 _swaps_ 是否是 _noexcept_ 的有时是依赖于用户所定义的 _swaps_ 是否是 _noexcept_ 的。例如：_array_ 和 _std::pair_  
-所对应的标准库的 _swap_ 的声明是：  
+在 _copy assignment operator_ 中被使用。_swap_ 的广泛应用使得 _noexcept_ 所提供的优化特别地值得。有趣地是，标  
+准库的 _swap_ 是否是 _noexcept_ 的有时是依赖于用户所定义的 _swap_ 是否是 _noexcept_ 的。例如：_array_ 和 _std::pair_ 所  
+对应的标准库的 _swap_ 的声明是：  
 ```C++
   template <class T, size_t N>
   void swap(T (&a)[N],                                      // see
@@ -1663,10 +1660,10 @@ _swap_ 函数包括了另一种 _noexcept_ 尤其值得拥有的场景。_swap_ 
   };
 ```  
 
-这些函数是 **_有条件地_** _noexcept_ 的：它们是否是 _noexcept_ 的是依赖于 _noexcept clauses_ 中的表达式是否是 _noexcept_  
+这些函数是 **_有条件地_** _noexcept_ 的：它们是否是 _noexcept_ 的是依赖于 _noexcept clause_ 中的表达式是否是 _noexcept_  
 的。例如：给定两个 _Widget_ 类型的 _array_，只有当 _array_ 中的单独的元素的交换是 _noexcept_ 时，即为：_Widget_ 的  
 _swap_ 是 _noexcept_ 的时，这两个 _array_ 的交换才会是 _noexcept_ 的。因此，_Widget_ 的 _swap_ 的作者决定了 _Widget_ 的  
-_array_ 的交换是否是 _noexcept_ 的。这依次决定了其他的像 _Widget_ 的 _array_ 的 _array_ 这样的 _swaps_ 是否是 _noexcept_  
+_array_ 的交换是否是 _noexcept_ 的。这依次决定了其他的像 _Widget_ 的 _array_ 的 _array_ 这样的 _swap_ 是否是 _noexcept_  
 的。类似地，还有两个包含着 _Widget_ 的 _std::pair_ 对象的交换是否是 _noexcept_ 的是依赖于 _Widget_ 的  _swap_ 是否是  
 _noexcept_ 的。只有当低级别成分的交换是 _noexcept_ 的时，高级别的数据结构才可以是 _noexcept_ 的，这个事实激励  
 你只要可以就应该去提供 _noexcept_ 的 _swap_ 函数。
@@ -1684,9 +1681,9 @@ _noexcept_ 的。只有当低级别成分的交换是 _noexcept_ 的时，高级
 路到达更上层的调用链路的处理程序。_exception-neutral_ 的函数永远不是 _noexcept_ 的，因为它们还是可能会抛出  
 **_just passing through_** 的异常的。因此，大多数函数很恰当地缺少了 _noexcept_ 名称。
 
-然而，有些函数有着不会抛出任何异常的自然实现，对于一些函数来说，尤其是 _move operations_ 和 _swap_，声明  
-为 _noexcept_ 可以有巨大的回报，如果可能的话，值得按照 _noexcept_ 的方式去实现。当你可以确保一个函数是永远  
-不会抛出异常时，你确实应该声明这个函数为 _noexcept_。
+然而，有些函数有着不会抛出任何异常的自然实现，对于一些函数来说，尤其是 _move operation_ 和 _swap_，声明为  
+_noexcept_ 可以有巨大的回报，如果可能的话，值得按照 _noexcept_ 的方式去实现。当你可以确保一个函数是永远不  
+会抛出异常时，你确实应该声明这个函数为 _noexcept_。
 
 请注意，我说的是有些函数有着自然的 _noexcept_ 的实现。扭曲函数的实现以去让 _noexcept_ 成为可能是不合理的。  
 **_Is putting the cart before the horse. Is not seeing the forest for the trees_.** 选择你最爱的比喻。如果一个简单的函  
@@ -1705,16 +1702,16 @@ _noexcept_ 的。只有当低级别成分的交换是 _noexcept_ 的时，高级
 数是不常见的。在标准库中是没有这样的析构函数的，如果标准库所使用的对象的析构函数抛出了一个异常的话，  
 比如：这个对象是在 _container_ 中的，是被传递到算法中的，那么程序的行为是未定义的。
 
-值得注意的是：一些库接口设计者会区分 _wide contracts_ 函数和 _narrow contracts_ 函数。_wide contracts_ 函数没有前  
-置条件。这些函数不管程序状态如何都可以会被调用，没有在调用方所传递的实参上强加限制。_wide contracts_ 函  
-数永远不会出现 _undefined behavior_。
+值得注意的是：一些库接口设计者会区分 _wide contract_ 函数和 _narrow contract_ 函数。_wide contract_ 函数没有前置  
+条件。这些函数不管程序状态如何都可以会被调用，没有在调用方所传递的实参上强加限制。_wide contract_ 函数  
+永远不会出现 _undefined behavior_。
 
-没有 _wide contracts_ 的函数就是有 _narrow contracts_ 的了。对于这样的函数，如果违反了前置条件的话，那么结果  
-将是未定义的。
+没有 _wide contract_ 的函数就是有 _narrow contract_ 的了。对于这样的函数，如果违反了前置条件的话，那么结果将  
+是未定义的。
 
-如果你正在写一个 _wide contracts_ 函数，并且你知道它是不会抛出异常的话，那么遵循本 _Item_ 的建议，将它声明  
-为 _noexcept_ 是简单的。对于 _narrow contracts_ 函数来说，是狡猾的。比如，假定你正在写一个持有 _std::string_ 形参  
-的函数 _f_，而且假设这个 _f_ 的自然的实现永远不会产生异常。建议应该将 _f_ 声明为 _noexcept_。 
+如果你正在写一个 _wide contract_ 函数，并且你知道它是不会抛出异常的话，那么遵循本 _Item_ 的建议，将它声明为  
+_noexcept_ 是简单的。对于 _narrow contract_ 函数来说，是狡猾的。比如，假定你正在写一个持有 _std::string_ 形参的  
+函数 _f_，而且假设这个 _f_ 的自然的实现永远不会产生异常。建议应该将 _f_ 声明为 _noexcept_。 
 
 现在假定 _f_ 有一个前置条件：它的 _std::string_ 形参的长度不能超过 _32_ 个字符。如果使用了超过了 _32_ 个字符长度的  
 _std::string_ 来调用了 _f_ 的话，那么行为将是 _undefined behavior_，因为违反了前置条件会导致 _undefined behavior_。_f_  
@@ -1729,9 +1726,9 @@ _std::string_ 来调用了 _f_ 的话，那么行为将是 _undefined behavior_�
 条件也可能是有用的。比如：在系统测试期间。调试已经被抛出的异常通常比追踪 _undefined behavior_ 的原因要容  
 易。但是违反前置条件应该如何报告才能使测试工具或客户的错误程序能够探测它呢？一个简单的方法是去抛出一  
 个“违反了前置条件”的异常，但是如果 _f_ 被声明为了 _noexcept_ 的话，那么就不可以这样了，抛出异常将会导致程序  
-终止。所以，区分 _wide contracts_ 和 _narrow contracts_ 的库设计者通常只会为 _wide contracts_ 函数保留 _noexcept_。
+终止。所以，区分 _wide contract_ 和 _narrow contract_ 的库设计者通常只会为 _wide contract_ 函数保留 _noexcept_。
 
-最后，让我详细说明我之前的观察：编译器一般不会提供帮助去识别函数实现和它们的 _exception specifications_ 之  
+最后，让我详细说明我之前的观察：编译器一般不会提供帮助去识别函数实现和它们的 _exception specification_ 之  
 间的不一致性。考虑这个代码，是完美合法的：  
 ```C++
   void setup();               // functions defined elsewhere
@@ -1760,7 +1757,7 @@ _exception specification_ 的 _C++98_ 的库。
 
 * _noexcept_ 是函数接口的一部分，这意味着调用方可能会依赖它。
 * _noexcept_ 函数比 _non-noexcept_ 函数是更可优化的。
-* _noexcept_ 函数尤其对 _move operations_、_swap_、内存释放函数以及析构函数有价值。
+* _noexcept_ 函数尤其对 _move operation_、_swap_、内存释放函数以及析构函数有价值。
 * 大多数函数是 _exception-neutral_ 的，而不是 _noexcept_ 的。
 
 ## Item 15 只要有可能就使用 _constexpr_
@@ -1782,8 +1779,8 @@ _exception specification_ 的 _C++98_ 的库。
 在编译期间就是已知的值是被特殊对待的。例如：它们会被放到只读内存上，特别对于嵌入式系统的开发者来说，  
 这可以是一个相当重要的特性。更广泛的应用是：那些是常量的和在编译器期间就是已知的 _integral_ 值是可以被用  
 在 _C++_ 是需要 _integral_ 常量表达式的上下文中的。包括指定：_array_ 的大小、_integral_ 模板的实参、_std::array_ 对象  
-的长度、_enumerator_ 值、_alignment specifiers_ 等等。如果你想要使用变量来完成这些的话，那么你肯定会想要声  
-明这个变量为 _constexpr_ ，因为编译器会确保这个变量有一个 _compile-time_ 的值：  
+的长度、_enumerator_ 值、_alignment specifier_ 等等。如果你想要使用变量来完成这些的话，那么你肯定会想要声明  
+这个变量为 _constexpr_ ，因为编译器会确保这个变量有一个 _compile-time_ 的值：  
 ```C++
   int sz;                               // non-constexpr variable
   
@@ -1923,9 +1920,9 @@ _constexpr_ 函数被限于仅能持有和返回 _literal_ 类型，这样的类
   constexpr Point p2(28.8, 5.3);        // also fine
 ```  
 
-类似地，_getters_ 函数 _xValue_ 和 _yValue_ 也可以是 _constexpr_ 的，因为如果这些函数使用的是在编译期间就是已知的  
+类似地，_getter_ 函数 _xValue_ 和 _yValue_ 也可以是 _constexpr_ 的，因为如果这些函数使用的是在编译期间就是已知的  
 值的话，比如：_constexpr_ 的 _Point_ 对象，那么数据成员 _x_ 和 _y_ 的值也就是在编译期间就是已知的了。这样就可以  
-编写有调用了 _Point_ 的 _getters_ 函数的 _constexpr_ 函数了，并使用这些 _constexpr_ 函数的结果来初始化 _constexpr_ 对  
+编写有调用了 _Point_ 的 _getter_ 函数的 _constexpr_ 函数了，并使用这些 _constexpr_ 函数的结果来初始化 _constexpr_ 对  
 象：
 ```C++
   constexpr
@@ -1940,7 +1937,7 @@ _constexpr_ 函数被限于仅能持有和返回 _literal_ 类型，这样的类
                                                             // constexpr function
 ```  
 
-这是非常令人兴奋的。这意味着：尽管 _mid_ 的初始化涉及到了调用构造函数、_getters_ 函数和非成员函数，但是它  
+这是非常令人兴奋的。这意味着：尽管 _mid_ 的初始化涉及到了调用构造函数、_getter_ 函数和非成员函数，但是，它  
 仍然可以在只读内存中被创建。这意味着：你可以在模板的实参中或者在要指定 _enumerator_ 值的表达式中使用像  
 _mid.xValue() * 10_ 这样的的表达式了。这意味着：在编译期间所完成的工作和运行期间所完成的工作之间传统上是  
 相当严格的界限开始变得模糊了，一些传统上是在运行期间所完成的计算现在可以迁移到编译期间来进行了。迁移  
@@ -1949,7 +1946,7 @@ _mid.xValue() * 10_ 这样的的表达式了。这意味着：在编译期间所
 在 _C++11_ 中，有两个限制会阻止 _Point_ 的成员函数 _setX_ 和 _setY_ 被声明为 _constexpr_。首先，这两个函数会更改它  
 们要操作的对象，而在 _C++11_ 中 _constexpr_ 成员函数是隐式 _const_ 的。其次，这两个函数的返回类型是 _void_ 类  
 型，而在 _C++11_ 中 _void_ 不是 _literal_ 类型。全部的这些限制在 _C++14_ 中都被解除了，在 _C++14_ 中，甚至 _Point_   
-的 _setters_ 也可以是 _constexpr_ 的：  
+的 _setter_ 也可以是 _constexpr_ 的：  
 ```C++
   class Point {
   public:
@@ -2108,8 +2105,8 @@ _Polynomial_ 的附加影响是 _Polynomial_ 丢失了可以被拷贝的能力�
 
 在一些情景下，_mutex_ 太重了。例如：如果你正在做的是计算某个成员函数被调用了多少次的话，那么 _std::atomic_   
 _counter_，即为：其他的线程保证看到的是这个 _counter_ 的操作是不可分割地发生的，见 [_Item 40_](./Chapter%208.md#item-40-对于并发使用-std::atomic-对于特殊内存使用-volatile)，通常来说是成本  
-小的，是否确实是成本小的，依赖于你正在运行的硬件和你的标准库中的 _mutexes_ 的实现的。此处展示如何可以  
-利用 _std::atomic_ 来计数调用次数：  
+小的，是否确实是成本小的，依赖于你正在运行的硬件和你的标准库中的 _mutex_ 的实现的。此处展示如何可以利  
+用 _std::atomic_ 来计数调用次数：  
 ```C++
   class Point { // 2D point
   public:
@@ -2127,10 +2124,10 @@ _counter_，即为：其他的线程保证看到的是这个 _counter_ 的操作
     double x, y;
   };
 ```  
-因为像 _std::mutexes_ 一样，_std::atomic_ 也是 _move-only_ 类型，所以 _Point_ 中的 _callCount_ 的存在是意味着 _Point_ 也  
- 是 _move-only_ 的。
+因为像 _std::mutex_ 一样，_std::atomic_ 也是 _move-only_ 类型，所以 _Point_ 中的 _callCount_ 的存在是意味着 _Point_ 也是  
+_move-only_ 的。
 
-因为 _std::atomic_ 变量的操作通常比获取和释放 _mutex_ 是要成本小的，所以你可能会过度倾向于使用 _std::atomics_。  
+因为 _std::atomic_ 变量的操作通常比获取和释放 _mutex_ 是要成本小的，所以你可能会过度倾向于使用 _std::atomic_。  
 比如，在一个缓存了 _expensive-to-compute int_ 的类中，你可能会尝试使用 _std::atomic_ 变量来代替 _mutex_：  
 ```C++
   class Widget {
@@ -2222,9 +2219,9 @@ _cachedValue_，尽管第一个线程还没有对它的赋值。因此，所返�
 目前，本 _Item_ 是以这个假设为依据的：多个线程可能会同步地执行同一个对象的同一个 _const_ 成员函数。如果你  
 正在写的 _const_ 成员函数不是这种场景，可以保证永远不会有多个的线程执行同一个对象的同一个 _const_ 成员函数  
 的话，那么函数的线程安全性是不重要的。例如：专门被设计成用于单线程的类的成员函数是线程安全的。在那个  
-场景中，你可以避免 _mutexes_ 和 _std::atomics_ 所相关的成本，也可以避免将它们的类呈现为 _move-only_。然而这些   
-_threading-free_ 的情景越来越不常见了，而且会变得越来越少。可以肯定的是 _const_ 成员函数都会运行在并发执行  
-的条件下，这也是为什么你应该确保 _const_ 成员函数是线程安全的。
+场景中，你可以避免 _mutex_ 和 _std::atomic_ 所代码相关的成本，也可以避免将它们的类呈现为 _move-only_。然而这  
+些 _threading-free_ 的情景越来越不常见了，而且会变得越来越少。可以肯定的是 _const_ 成员函数都会运行在并发执  
+行的条件下，这也是为什么你应该确保 _const_ 成员函数是线程安全的。
 
 ### 需要记住的规则
 
