@@ -20,6 +20,7 @@
   - [Item 16 使 _const_ 成员函数成为线程安全的](#item-16-使-const-成员函数成为线程安全的)
     - [需要记住的规则](#需要记住的规则-9)
   - [Item 17 理解特殊成员函数的生成](#item-17-理解特殊成员函数的生成)
+    - [需要记住的规则](#需要记住的规则-10)
 
 # Chapter 3 _Moving to Modern C++_
 
@@ -1751,8 +1752,8 @@ _std::string_ 来调用了 _f_ 的话，那么行为将是 _undefined behavior_�
 声明为 _noexcept_。又或者它们是决定不使用 _C++98_ 的 _exception specification_，但还没有被修改为使用 _C++11_ 的  
 _exception specification_ 的 _C++98_ 的库。
 
-因为有着确实的理由使得 _noexcept_ 函数依赖着缺乏 _noexcept_ 保证的代码，所以 _C++_ 允许这样的代码可以通过编  
-译，而且编译器通常不会对这样的代码产生警告。
+因为有着确实的理由使得 _noexcept_ 函数依赖着缺少有 _noexcept_ 保证的代码，所以 _C++_ 允许这样的代码可以通过  
+编译，而且编译器通常不会对这样的代码产生警告。
 
 ### 需要记住的规则
 
@@ -2232,11 +2233,11 @@ _cachedValue_，尽管第一个线程还没有对它的赋值。因此，所返�
 ## Item 17 理解特殊成员函数的生成
 
 按照 _C++_ 官方的说法，特殊成员函数是 _C++_ 主动生成的。_C++98_ 有四个这样的函数：_default constructor_、析构  
-函数、_copy constructor_ 和 _copy assignment operator_。当然，这里有注解。只有当这些函数在被需要的时候，才会  
-生成这些函数，即为：一些代码使用了这些函数，但是在类中没有显式地声明这些函数。只有当在类中没有声明任  
-何的构造函数时，_default constructor_ 才会被生成。而在类中指定构造函数所需要的实参就可以去阻止编译器创建  
+函数、_copy constructor_ 和 _copy assignment operator_。当然，这里是有注解的。只有当这些函数在被需要的时候，  
+它们才会被生成，即为：一些代码使用了这些函数，但是在类中没有显式地声明这些函数。只有当在类中没有声明  
+任何的构造函数时，_default constructor_ 才会被生成。在类中指定构造函数所需要的实参就可以阻止编译器去创建   
 _default constructor_。所生成的特殊成员函数是隐式 _public_ 和 _inline_ 的，而且这些函数是 _nonvirtual_ 的，除了继承  
-自有着 _virtual_ 析构函数的 _base class_ 的 _derived class_ 中的析构函数以外。在这种情况下，编译器生成 _derived class_   
+自有着 _virtual_ 析构函数的 _base class_ 的 _derived class_ 中的析构函数以外。在这种情况下，编译器生成 _derived class_  
 的析构函数也是 _virtual_ 的。
 
 不过这些都是你已经知道的了。是的，是的，老掉牙的故事：_Mesopotamia_、_the Shang dynasty_、_FORTRAN_ 以及  
@@ -2279,3 +2280,169 @@ _move operation_ 的准确条件和 _copy operation_ 的是稍有不同的。
 为你生成 _copy assignment operator_ 的。类似地也是这样，如果你声明了 _copy assignment operator_，但没有声明   
 _copy constructor_，而且你的代码需要 _copy constructor_ 的话，编译器是会为你生成 _copy constructor_ 的。在 _C++98_  
 是这样的，在 _C++11_ 中仍然是这样的。
+
+两个 _move operation_ 是不独立的。如果你声明了其中一个的话，那么会阻止编译器生成另一个。根本原因是：如  
+果你为你的类声明了 _move constructor_ 的话，那么你就是在表明你所声明的 _move constructor_ 的实现和编译器所生  
+成的默认的 _memberwise move_ 是不相同的。如果 _memberwise move construction_ 是有问题的话，那么大概率所对  
+应的 _memberwise move assignment_ 也是有问题的。所以声明 _move constructor_ 会阻止 _move assignment operator_  
+被生成，相应地声明 _move assignment operator_ 也会阻止 _move constructor_ 被生成。
+
+此外，编译器不会为任何显式声明了 _copy operation_ 的类来生成 _move operation_。合理解释是：如果一个类声明了  
+_copy operation_ 的话，包括 _copy constructor_ 和 _copy assignment operator_，那么就表明了拷贝一个对象的普通方法  
+_memberwise copy_ 对于这个类来说是不合适的，编译器也会认为：如果 _memberwise copy_ 对于 _copy operation_ 是  
+不合适的话，那么 _memberwise move_ 对于 _move operation_ 也是不合适的。
+
+反之亦然。在一个类中声明了 _move operation_，包括 _move constructor_ 和 _move assignment operator_，会导致编译  
+器删除这个类的 _copy operation_，见 [_Item 11_](./Chapter%203.md#item-11-首选-deleted-function-而不是-private-undefined-function)。毕竟，对于移动一个对象来说，如果 _memberwise move_ 是不合适的  
+方法的话，那么对于拷贝一个对象来说，也没有理由去期待 _memberwise copy_ 是合适的方法。听起来这是可能会  
+破坏 _C++98_ 的代码的，因为 _copy operation_ 起作用的条件，在 _C++11_ 中比在 _C++98_ 中更严格了，但是不会的。  
+_C++98_ 的代码不可以有 _move operation_，因为在 _C++98_ 中没有像 **_移动_** 对象这样的事情。_legacy_ 的类可以有用户  
+声明的 _move operation_ 的唯一的方法是：如果要为 _C++11_ 添加 _move operation_ 的话，那么被更改了的要去利用  
+移动语义优势的这些类必须要遵守 _C++11_ 的特殊成员函数生成的规则。
+
+大概你已经听过了被称为是 _Rule of Three_ 的准则了。这个准则规定了：如果你声明了任意一个 _copy constructor_、  
+_copy assignment operator_ 和析构函数的话，那么你应该把这三个都声明出来。这个准则的形成源自于这样一个观  
+察：几乎总是因为需要执行某种类型的资源管理操作，我们才需要接管 _copy operation_ 的含义，这也几乎总是暗示  
+了：（1）在一个 _copy operation_ 中所完成的资源管理，大概率也需要在另一个 _copy operation_ 中完成。（2）类的  
+析构函数也需要来参与资源管理，通常是释放资源。典型的需要被管理的资源是内存，这也是为什么所有那些管理  
+资源的标准库的类，比如：执行动态内存管理的 _STL_ 容器，都声明了这三个函数：_copy operation_ 和析构函数。
+
+_Rule of Three_ 的一个结果是：用户所声明的析构函数表明了简单的  _memberwise copy_ 对于类的 _copy operation_ 来  
+说可能是不合适的。相应地，_Rule of Three_ 也建议：如果一个类声明了析构函数的话，那么 _copy operation_ 也可能  
+不应该被自动生成，因为所生成的 _copy operation_ 是不会做正确的事情的。在 _C++98_ 中，这种思路的重要性没有  
+被完全认识到，所以在 _C++98_ 中，用户声明的析构函数的存在不会影响到编译器生成 _copy operation_。在 _C++11_  
+也是这样的，但仅仅是因为对生成 _copy operation_ 的条件做限制会破坏很多 _legacy_ 代码。
+
+然而，_Rule of Three_ 背后的理由仍然是有效的。再结合声明 _copy operation_ 会阻止隐式生成 _move operation_ 的事  
+实，_Rule of Three_ 就推动出了这样的事实：_C++_ 是不会为那些析构函数是用户所声明的类来生成 _move operation_   
+的。  
+
+所以，只有当下面这三个条件都满足时，编译器才会在需要时为类生成 _move operation_：
+* 没有 _copy operation_ 在类中被声明。
+* 没有 _move operation_ 在类中被声明。
+* 没有析构函数在类中被声明。
+  
+在某个时间点，类似的规则也可能被扩展到 _copy operation_，因为 _C++11_ 也反对为声明有 _copy operation_ 或析构  
+函数的类来自动生成 _copy operation_。这意味着：如果你的代码依赖了那些声明有析构函数或 _copy operation_ 其中  
+之一的类所生成的 _copy operation_ 的话，那么你应该考虑去更新你的代码，以去减小这种依赖。如果编译器所生成  
+的函数的行为是正确的话，即为：对于类的非静态数据成员来说，如果 _memberwise copy_ 是你所想要的话，那么  
+工作就简单了，因为 _C++11_ 的 _=default_ 可以让你显式地说明：  
+```C++
+  class Widget {
+  public:
+    …
+    ~Widget();                                    // user-declared dtor
+    
+    …                                             // default copy ctor
+    Widget(const Widget&) = default;              // behavior is OK
+    
+    Widget&                                       // default copy assign
+      operator=(const Widget&) = default;         // behavior is OK
+    …
+  };
+```
+
+这个方法对于 _polymorphic base class_ 是有用的，_polymorphic base class_ 是定义有接口的类，并且可以通过这些  
+接口来操作所对应的 _derived class_ 对象。_polymorphic base class_ 一般都有 _virtual_ 析构函数，因为如果不是 _virtual_  
+的话，一些操作，比如：_delete_ 指向 _derived class_ 对象的 _base class_ 指针或引用，是会产生未定义的或错误的结果  
+的。除了一个类是继承了一个已经是 _virtual_ 的析构函数以外，只有一种方法可以使这个类的析构函数是 _virtual_ 的  
+了，那就是去显式地声明这个析构函数为 _virtual_ 的。一般情况下，默认实现是正确的，所以 _=default_ 是可以表示  
+这个的正确方法。然而，用户所声明的析构函数是会阻止 _move operation_ 的生成的，所以，如果 _movability_ 是被  
+支持的话，那么 _=default_ 是可以让编译器再次来生成 _move operation_ 的。同样地，声明 _move operation_ 是会阻止  
+_copy operation_ 的生成的，所以，如果 _copyability_ 也是被支持的话，那么可以再使用一次 _=default_ 来完成工作：  
+```C++
+  class Base {
+  public:
+    virtual ~Base() = default;                    // make dtor virtual
+    
+    Base(Base&&) = default;                       // support moving
+    Base& operator=(Base&&) = default;
+    
+    Base(const Base&) = default;                  // support copying
+    Base& operator=(const Base&) = default;
+
+  …
+};
+```
+
+事实上，即使你有一个这样的类：编译器也会主动为其生成 _copy operation_ 和 _move operation_ 并且所生成的这些  
+函数的行为是如你所愿的，你仍然需要选择这样一个方针：亲自声明这些函数，并使用 _=default_ 来做为这些函数  
+的定义。是多做了点工作，但是这可以让你的目的更加清晰，这可以帮助你规避一些非常不易察觉的 _bug_。例如：  
+假如你有一个表示了字符串表的类，即为：允许通过一个 _integer ID_ 来进行快速查找字符串值的数据结构：  
+```C++
+  class StringTable {
+  public:
+    StringTable() {}
+    …                         // functions for insertion, erasure, lookup,
+                              // etc., but no copy/move/dtor functionality
+  private:
+    std::map<int, std::string> values;
+};
+```  
+假设这个类没有声明 _copy operation_、_move operation_ 和析构函数，当这些函数被需要时，编译器是会自动生成它  
+们的。这是非常方便的。
+
+但是，假设过段时间后，决定要记录这些对象的的默认构造和析构了。增加这些功能是简单的：  
+```C++
+  class StringTable {
+  public:
+    StringTable()
+    { makeLogEntry("Creating StringTable object"); }        // added
+
+    ~StringTable()                                          // also
+    { makeLogEntry("Destroying StringTable object"); }      // added
+    …                                                       // other funcs as before
+  
+  private:
+    std::map<int, std::string> values;                      // as before
+  };
+```  
+这看起来像是合理的，但是声明析构函数会潜在地带来一个重要的副作用：析构函数会阻止 _move operation_ 的生  
+成。然而，类的 _copy operation_ 是不受影响的。因此，这个代码是可以被编译和运行的，并且是可以通过功能测试  
+的。包括测试它的移动功能，因为尽管这个代码是不支持移动的，但是移动的请求是仍然可以被编译和运行的。就  
+像在本 _Item_ 之前提过的，这些请求会导致拷贝被执行。这意味着 **_移动_** _StringTable_ 对象的代码实际上是在进行拷  
+贝此 _StringTable_ 对象，即为：拷贝 _underlying std::map&lt;int, std::string&gt;_ 对象。拷贝一个 _std::map&lt;int, std::string&gt;_  
+比移动一个 _std::map&lt;int, std::string&gt;_ 是要慢几个数量级的。因此，增加了一个析构函数到类中的这个简单动作可  
+能已经引入了一个重要的性能问题。如果有使用 _=default_ 来显式定义 _copy operation_ 和 _move operation_ 的话，那么这个错误就不会发生了。
+
+是的，我一直在絮叨 _C++11_ 的 _copy operation_ 和 _move operation_ 的操作规则，你已经受够了，你可能会好奇何时  
+我才会将注意力转移到其他两个特殊成员函数上：_default constructor_ 和析构函数。就是现在，但是其实也就一句  
+话，因为几乎没有事情为了这两个函数而改变：在 _C++11_ 中的规则和在 _C++98_ 中的规则几乎是相同。
+
+因此，_C++11_ 的操作特殊成员函数的规则是：
+* _default constructor_：和 _C++98_ 的规则相同。只有当类中没有包含用户声明的构造函数时，它才会被生成。
+* 析构函数：基本和 _C++98_ 的规则相同；唯一的不同点是默认情况下析构函数是 _noexcept_ 的，见 [_Item 14_](./Chapter%203.md#item-14-如果发出异常的话就声明函数为-noexcept)。就  
+像在 _C++98_ 中一样，只有当 _base class_ 的析构函数是  _virtual_ 的时，它才是 _virtual_ 的。
+* _copy constructor_：和 _C++98_ 相同的运行行为：非静态数据成员的 _memberwise copy construction_。只有当类  
+中没有用户声明的 _copy constructor_ 时，它才会被生成。如果一个类声明了 _move operation_ 的话，那么它会被  
+删除。在具有用户声明的
+_copy assignment operator_ 或析构函数的类中来生成它是被废弃的。
+* _move constructor_ 和 _move assignment operator_：这两个函数都对静态数据成员，执行 _memberwise move_。只  
+有当类中没有包含用户定义的 _copy operations_、_move operation_ 和析构函数时，它才会被生成。
+
+注意：成员函数模板并不会阻止编译器生成特殊成员函数。这意味着：如果 _Widget_ 看起来像下面这样的话：
+```C++
+  class Widget {
+    …
+    template<typename T>                // construct Widget
+    Widget(const T& rhs);               // from anything
+    
+    template<typename T>                // assign Widget
+    Widget& operator=(const T& rhs);    // from anything
+    …
+  };
+```  
+那么编译器仍然会生成 _Widget_ 的 _copy operation_ 和 _move operation_，假设通常的操作这些函数生成的条件是满足  
+的，尽管这些模板可以被实例化去产生出 _copy constructor_ 和 _copy assignment operator_ 的 _signature_，就是当 _T_ 是  
+_Widget_ 时的场景。很可能，这对你来说只是一个几乎不值得关注的边缘场景，但我提到它是有原因的。[_Item 26_](./Chapter%205.md#item-26-避免重载-universal-reference) 描  
+述了它可以具有重要的后果。
+
+### 需要记住的规则
+
+* 特殊成员函数是编译器能自己生成的函数：_default constructor_、析构函数、_copy operation_ 和 _move operation_。
+* 只有当类中没有显式声明的 _move operation_、_copy operation_ 和析构函数时，_move operation_ 才会被生成。
+* 只有当类中没有显式声明的 _copy constructor_ 时，_copy constructor_ 才会被生成，而如果 _move operation_ 有被  
+声明了的话，那么 _copy constructor_ 是会被删除的。只有当类中没有显式声明的 _copy assignment operator_ 时，  
+_copy assignment operator_ 才会被生成，而如果 _move operation_ 有被声明了的话，那么 _copy assignment operator_  
+会被删除。在具有用户显式声明有析构函数的类中来生成 _copy operation_ 是被废弃的。
+* 成员函数模板永远不会阻止特殊成员函数的生成。

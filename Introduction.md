@@ -58,10 +58,10 @@ _C++11_ 的最广泛的特性大概是移动语义，移动语义的基础是区
 这个代码片段描述了我通常遵循的一些惯例：  
 * 类的名字是 _Widget_。当我想要一个任意的用户定义的类型时，我就会使用 _Widget_。除非我需要展示这个类的  
   特定的细节以外，否则我就会在不声明这个类的情况下就去使用它。  
-
-* 我使用形参名 _rhs_ 来表示 **_right-hand side_**。这是我喜欢在 _move operation_，即为：移动构造函数和移动操作  
- 符函数，和 _copy operation_，即为：拷贝构造函数和拷贝操作符函数，上喜欢用的形参名，其中我也用它做为  
-二元操作符函数的右侧形参：  
+                                                                           
+* 我会使用形参名字 _rhs_ 来表示 **_right-hand side_**。这是我喜欢在 _move operation_ 上，即为：_move constructor_ 和  
+_move assignment operator_，和 _copy operation_ 上，即为：_copy constructor_ 和 _copy assignment operator_，喜欢  
+用的形参名，其中我也用它做为二元操作符函数的右侧形参：  
   ```C++
     Matrix operator+(const Matrix& lhs, const Matrix& rhs);
   ```  
