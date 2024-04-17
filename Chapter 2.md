@@ -282,8 +282,8 @@ _highPriority_ 是多少完全依赖于 _std::vector&lt;bool&gt;::reference_ 是
 _std::vector&lt;bool&gt;::reference_ 类型的对象包含着一个指针，这个指针指向一个机器字，而这个机器字是存放在一个  
 持有那个 _bit_ 和那个 _bit_ 所对应的偏移量的数据结构中的，而这个数据结构是由 _temp_ 所管理的。因为 _highPriority_  
 是这个 _std::vector&lt;bool&gt;::reference_ 类型的对象的副本，所以它也包含着一个指向 _temp_ 中的机器字的指针和 _bit 5_  
-所对应的偏移量。在这个语句结束后，因为 _temp_ 是临时对象会被销毁掉。所以，此时 _highPriority_ 就包含有一个   
-_dangling_ 指针了，那么在调用 _processWidget_ 中就会有 _undefined behavior_ 了：  
+所对应的偏移量。在这个语句结束后，因为 _temp_ 是临时对象会被销毁掉。所以，此时 _highPriority_ 就包含有一个  
+悬空指针了，那么在调用 _processWidget_ 中就会有 _undefined behavior_ 了：  
  ```C++  
   processWidget(w, highPriority);       // undefined behavior!
                                         // highPriority contains
