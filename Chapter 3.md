@@ -26,9 +26,9 @@
 
 _C++11_ 和 _C++14_ 有很多值得夸耀的特性：_auto_、智能指针、移动语义、_lambda_ 和 _concurrency_，每一个都是非常  
 重要的。我专门写了这一章来介绍它们。掌握这些特性是必不可少的，但是需要一系列更小的步骤才能变为一名高  
-效率的 _modern C++_ 的编程者。每一个步骤都回答了在 _C++98_ 转向 _modern C++_ 的过程中所产生的问题。什么时  
-候应该使用 _{}_ 代替 _()_ 来创建对象？为什么 _alias declartion_ 要比 _typedef_ 更好呢？_constexpr_ 和 _const_ 是如何的不同  
-呢？_const_ 成员函数和线程安全之间有什么关系？还有很多，本章一个接着一个来进行解答。
+效率的 _modern C++_ 的程序员。每一个步骤都回答了在 _C++98_ 转向 _modern C++_ 的过程中所产生的问题。什么时  
+候应该使用 _{}_ 代替 _()_ 来创建对象？为什么 _alias declartion_ 会比 _typedef_ 要更好呢？_constexpr_ 和 _const_ 是如何的不  
+同呢？_const_ 成员函数和线程安全之间有什么关系？还有很多，本章一个接着一个来进行解答。
 
 ## Item 7 创建对象时区分 _()_ 和 _{}_
 
@@ -650,7 +650,7 @@ _alias declaration_ 称之为 _alias template_，而 _typedef_ 是不可以被�
 建修改过的类型。例如：给定一个类型 _T_，你可能想要剥离 _T_ 所包含的 _const-qualifier_ 或者 _reference-qualifier_，比  
 如：你可能想要将 _const std::string&_ 转换为 _std::string_。或者想要在类型前添加 _const_ 或将其转换为左值引用，比  
 如：将 _Widget_ 转换为 _const Widget_ 或 _Widget&_。如果你没有接触过一点 _TMP_，那就太糟糕了，因为如果你想要  
-成为一位真正地高效率的 _C++_ 编程者的话，那么你需要至少熟悉 _C++_ 的这部分的基础。你可以去看 [_Item 23_](./Chapter%205.md#item-21-理解-std::move-和-std::forward) 和  
+成为一位真正地高效率的 _C++_ 程序员的话，那么你需要至少熟悉 _C++_ 的这部分的基础。你可以去看 [_Item 23_](./Chapter%205.md#item-21-理解-std::move-和-std::forward) 和  
 [_Item 25_](./Chapter%205.md#item-25-熟悉重载-univeral-references-的替代方法) 中的 _TMP_ 的实战例子，包括我刚才提到的那几种类型转换。
 
 _C++_ 给了你工具可以按照 _type trait_ 的形式来执行那几种类型转换，它们是在头文件 _&lt;type_trsits&gt;_ 中的一些模板。  
@@ -909,7 +909,7 @@ _std::tuples_ 的各个域时。例如：假定我们有一个持有名字、邮
   
   auto val = std::get<1>(uInfo);        // get value of field 1
 ```  
-做为一个编程者，你有很多需要关注的东西。你真需要记住域 _1_ 对应的是用户的邮箱地址吗？我不这样认为。使  
+做为一个程序员，你有很多需要关注的东西。你真需要记住域 _1_ 对应的是用户的邮箱地址吗？我不这样认为。使  
 用 _unscoped enum_ 来将名称和域号关联起来就可以避免去记住域号代表的是什么：
 ```C++
   enum UserInfoFields { uiName, uiEmail, uiReputation };
@@ -1211,7 +1211,7 @@ _virtual function_ 有这么容易出错，是令人沮丧的。语言的这部�
 
 * 函数的 _reference qualifier_ 必须一致。成员函数的 _reference qualifier_ 是 _C++11_ 中较少宣传的特性之一，所以  
 * 如果你没有听过它的话，那么也不要感到太惊讶。它可以限制成员函数只能用于左值或右值。成员函数并不  
-需要是虚函数才能使用它们：
+需要是 _virtual function_ 才能使用它们：
 ```C++
   class Widget {
   public:
