@@ -3,6 +3,8 @@
     - [需要记住的规则](#需要记住的规则)
   - [Item 19 对于 _shared-ownership_ 的资源管理使用 _std::shared\_ptr_](#item-19-对于-shared-ownership-的资源管理使用-stdshared_ptr)
     - [需要记住的规则](#需要记住的规则-1)
+  - [Item 20 对于可能会悬空的 _std::shared\_ptr-like_ 指针使用 _std::weak\_ptr_](#item-20-对于可能会悬空的-stdshared_ptr-like-指针使用-stdweak_ptr)
+    - [需要记住的规则](#需要记住的规则-2)
 
 # Chapter 4 智能指针
 
@@ -164,7 +166,8 @@ _std::unique_ptr_。为了将 _custom deleter_ _delInvmt_ 与 _pInv_ 关联起�
 使得所创建的对象的构造函数可以获取到调用方所提供的全部信息。
 * _custom deleter_ 持有一个 _Investment*_ 类型的形参。不管在 _makeInvestment_ 中所创建的对象的类型是什么，即  
 为：_Stock_、_Bond_ 或 _RealEstate_，最终在 _lambda expression_ 中都是做为一个 _Investment*_ 对象来删除的。这意  
-味着我们可以通过 _base class_ 指针来删除 _derived class_ 对象。为了可以这样，_base class_ _Investment_ 必须有一个 _virtual_ 析构函数：
+味着我们可以通过 _base class_ 指针来删除 _derived class_ 对象。为了可以这样，_base class_ _Investment_ 必须有一个   
+_virtual_ 析构函数：
 ```C++
   class Investment {
     public:
@@ -259,7 +262,7 @@ _std::unique_ptr_ 是 _C++11_ 表达 _exclusive ownership_ 的方法，但是它
 这个特性使得 _std::unique_ptr_ 非常适合做为工厂函数的返回类型。对于工厂函数所返回的对象来说，它们并不知道  
 调用方会使用 _exclusive ownership_ 语义还是 _shared ownership_ 语义，即为：_std::shared_ptr_ 是否会更合适。通过返  
 回 _std::unique_ptr_，工厂函数只是提供给了调用方一个高效的智能指针，但并不会阻碍调用方使用更灵活的其他智   
-能指针来代替它。更多关于 _std::shared_ptr_ 的信息见  [_Item 19_](./Chapter%204.md#item-19-对于-shared-ownership-的资源管理使用-std::shared_ptr)。
+能指针来代替它。更多关于 _std::shared_ptr_ 的信息见 [_Item 19_](./Chapter%204.md#item-19-对于-shared-ownership-的资源管理使用-stdshared_ptr)。
 
 ### 需要记住的规则
 
@@ -273,13 +276,14 @@ _std::unique_ptr_ 是 _C++11_ 表达 _exclusive ownership_ 的方法，但是它
 那些使用具有垃圾回收的语言的程序员会指着嘲笑 _C++_ 程序员为了避免资源泄露所做的一切。他们会嘲笑：“太原  
 始了!”，“你们难道没有收到 _1960_ 年代 _Lisp_ 的备忘录吗？机器应该管理资源的生命周期，而不是人类。” _C++_ 开发  
 者会翻翻白眼说 “只有内存是资源吗？而且你们的资源的回收时机还是不确定的。我们更喜欢析构函数的通用性和  
-可预测性。谢谢你！”但是我们的勇气中有点虚张声势的成分。垃圾回收真的是方便的，手动管理生命周期真的就像是在使用石刀和熊皮来构建一个记忆内存电路。为什么我们不可以同时拥有两者呢?：一个自动运行的系统，类  
+可预测性。谢谢你！”但是我们的勇气中有点虚张声势的成分。垃圾回收真的是方便的，手动管理生命周期真的就  
+像是在使用石刀和熊皮来构建一个记忆内存电路。为什么我们不可以同时拥有两者呢?：一个自动运行的系统，类  
 似于垃圾回收，而且它仍然适用于所有的资源且有可预测的时机，类似于析构函数。
 
 _C++11_ 的 _std::shared_ptr_ 将两者绑定在了一起。通过 _std::shared_ptr_ 所访问的对象的生命周期是由 _std::shared_ptr_  
 通过 _shared ownership_ 来进行管理的。不是特定的哪一个 _std::shared_ptr_ 会拥有这个对象。相反地是，所有的指向  
 这个对象的 _std::shared_ptr_ 都拥有这个对象，它们会相互协作来确保当这个对象不再被需要时再销毁它。当最后一  
-个指向某个对象的 _std::shared_ptr_ 不再被使用时，比如：因为 _std::shared_ptr_ 被销毁或者被指向了另一个对象时， 
+个指向某个对象的 _std::shared_ptr_ 不再被使用时，比如：因为 _std::shared_ptr_ 被销毁或者被指向了另一个对象时，  
 _std::shared_ptr_ 会销毁它所指向的那个对象。正如使用垃圾回收一样，客户不需要自己关心所指向的对象的生命周  
 期的管理，而且就像使用析构函数一样，对象的析构操作的时机是确定的。
 
@@ -378,7 +382,7 @@ _allocator deleters_ 也被指定的了的话，那么 _control black_ 还会包
 的 _ownership_，而 _unique-ownership_ 的指针指向了空。
 * 当使用原始指针来调用 _std::shared_ptr_ 的构造函数时，会创建 _control block_。如果根据已经有了 _control block_   
 的对象来创建 _std::shared_ptr_ 的话，那么你需要做的是去传递一个 _std::shared_ptr_ 或 _std::weak_ptr_ 类型的对象  
-来做为 _std::shared_ptr_ 的构造函数的实参，见 [_Item 20_](./Chapter%204.md#item-20-对于可能悬空的-std::shared_ptr-like-指针-使用-std::weak_ptr)，而不是去传递一个原始指针类型的对象来做为实参。  
+来做为 _std::shared_ptr_ 的构造函数的实参，见 [__](./Chapter%204.md#item-20-对于可能悬空的-std::shared_ptr-like-指针-使用-std::weak_ptr)，而不是去传递一个原始指针类型的对象来做为实参。  
 当传递的是 _std::shared_ptr_ 或 _std::weak_ptr_ 类型的对象来做为 _std::shared_ptr_ 的构造函数的实参时，是不会  
 创建 _control block_ 的，因为此时可以依赖所传入的智能指针所对应的 _control block_。
 
@@ -556,3 +560,154 @@ _std::shared_ptr_ 之间的 _ownership_ 约定是直到死亡才能分开的。�
 数操作。
 * 默认的资源析构是 _delete_，但是 _custom delete_ 也是支持的。_deleter_ 的类型不影响 _std::shared_ptr_ 的类型。
 * 避免使用原始指针类型的变量来创建 _std::shared_ptr_。
+
+## Item 20 对于可能会悬空的 _std::shared_ptr-like_ 指针使用 _std::weak_ptr_
+
+可以拥有一个表现地像 _std::shared_ptr_，见 [_Item 19_](./Chapter%204.md#item-19-对于-shared-ownership-的资源管理使用-stdshared_ptr)，但却又不参与所指向的资源的 _shared ownership_ 的智能指针  
+是方便的，虽然有点矛盾。换句话说，一个像是 _std::shared_ptr_ 的指针，但却不影响对象的引用计数。
+这种类型  
+的智能指针必须要面对一个对于 _std::shared_ptr_ 来说是不存在的问题：所指向的对象可能已经被销毁了。真正的智  
+能指针将会通过追踪它自己何时悬空来解决这个问题，即为：当它所指向的对象不再存在的时候。这种类型的智能  
+指针是 _std::weak_ptr_。
+
+你可能好奇 _std::weak_ptr_ 如何有用。当你看过 _std::weak_ptr_ 的 _API_ 后，你可能会更好奇。它看起来一点都不智  
+能。_std::weak_ptr_ 不可以被解引用，也不可以被测试是否为空。这是因为 _std::weak_ptr_ 不是一个独立的智能指针。  
+它是 _std::shared_ptr_ 的扩充。
+
+这种关系从出生时就开始了。_std::weak_ptr_ 通常是根据 _std::shared_ptr_ 来创建的。当使用 _std::shared_ptr_ 来初始化  
+_std::weak_ptr_ 时，它们就指向了相同的位置，但是 _std::weak_ptr_ 不影响它所指向的对象的引用计数：  
+```C++
+  auto spw =                            // after spw is constructed,
+    std::make_shared<Widget>();         // the pointed-to Widget's
+                                        // ref count (RC) is 1. (See
+                                        // Item 21 for info on
+                                        // std::make_shared.)
+  …
+  std::weak_ptr<Widget> wpw(spw);       // wpw points to same Widget
+                                        // as spw. RC remains 1
+  …
+  spw = nullptr;                        // RC goes to 0, and the
+                                        // Widget is destroyed.
+                                        // wpw now dangles
+```  
+
+悬空的 _std::weak_ptrs_ 被认为是已经过期的。你可以直接这样来测试，
+```C++
+  if (wpw.expired()) …        // if wpw doesn't point
+                              // to an object…
+```  
+但是通常想要的是这样做：去检查 _std::weak_ptr_ 是否已经过期，如果没有的话，即为：没有悬空的话，那么就去  
+访问 _std::weak_ptr_ 所指向的对象。但是这说起来容易做起来难。因为 _std::weak_ptr_ 没有解引用操作，没有办法写  
+这样的代码。即使有这样的代码，将检查和解引用分开也会引入竞争：在调用 _expired_ 和解引用操作之间，另一个  
+线程可能会 _reassign_ 或者销毁最后一个指向对象的 _std::shared_ptr_，从而导致对象被销毁。在这个场景中，你的解  
+引用操作将会导致 _undefined behavior_。
+
+你需要的是一个原子操作去检查 _std::weak_ptr_ 是否已经过期，如果没有的话，那么再去访问所指向的对象。这是  
+通过根据 _std::weak_ptr_ 所创建的 _std::shared_ptr_ 来完成的。这个操作带来了两种形式：这是依赖于当你想要尝试从  
+_std::weak_ptr_ 中来创建 _std::shared_ptr_ 而发现 _std::weak_ptr_ 已经是过期了的时，你所希望发生的事。第一种形式是  
+_std::weak_ptr::lock_，它会返回 _std::shared_ptr_。如果 _std::weak_ptr_ 已经过期了的话，那么返回的 _std::shared_ptr_ 会  
+是空的：  
+```C++
+  std::shared_ptr<Widget> spw1 = wpw.lock();      // if wpw's expired,
+                                                  // spw1 is null
+
+  auto spw2 = wpw.lock();                         // same as above,
+                                                  // but uses auto
+```  
+第二种形式是 _std::shared_ptr_ 构造函数接收一个 _std::weak_ptr_ 类型的实参。在这种场景下，如果 _std::weak_ptr_ 已经  
+过期了的话，那么会抛出一个异常：  
+```C++
+  std::shared_ptr<Widget> spw3(wpw);    // if wpw's expired,
+                                        // throw std::bad_weak_ptr
+```  
+
+但是你大概仍然在好奇 _std::weak_ptr_ 到底有什么用。考虑一个工厂函数，它生成一个指向只读对象的智能指针且  
+这个只读对象是基于一个 _unique ID_ 的。与 [_Item 18_](./Chapter%204.md#item-18-对于-exclusive-ownership-的资源管理使用-stdunique_ptr) 中关于工厂函数的返回类型的建议一致，这个工厂函数返回一  
+个 _std::unique_ptr_。
+```C++
+  std::unique_ptr<const Widget> loadWidget(WidgetID id);
+```  
+如果 _loadWidget_ 是成本高的调用，比如：执行了文件操作或者 _database IO_，并且经常会重复使用 _ID_ 话，那么一  
+个合理优化是：写一个函数去做 _loadWidget_ 所做的事情，但是会缓存下它的结果。然而，那些曾经已经请求过的  
+_Widget_ 都会堆积在缓存中，这会导致性能问题，所以另一个合理的优化是：当缓存中的那些 _Widget_ 时不再被使用  
+时，就去销毁它们。
+
+对于这个缓存类型的工厂函数来说，返回类型 _std::unique_ptr_ 就不合适了。调用方应该肯定会接收这些指向缓存对  
+象的智能指针，这样的话，调用方就控制了这些缓存对象的生命周期了，但是缓存也需要那些指向这些缓存对象的  
+指针。缓存中的指针需要能够探测它们何时才是悬空的，因为，工厂函数的客户在使用完了工厂函数所返回的对象  
+之后，这些对象就会被销毁了，相应的缓存中的指针也将会悬空了。因此缓存中的指针应该是 _std::weak_ptr_ ，因  
+为 _std::weak_ptr_ 才可以探测它们何时是悬空的。这意味着：工厂函数的返回类型应该是 _std::shared_ptr_ 的，因为只  
+有当一个对象的生命周期是由 _std::shared_ptr_ 管理时，_std::weak_ptr_ 才可以探测它们何时是悬空的。 
+
+此处是 _quick-and-dirty_  的 _loadWidget_ 的缓存版本的实现：  
+```C++
+  std::shared_ptr<const Widget> fastLoadWidget(WidgetID id)
+{
+  static std::unordered_map<WidgetID,
+    std::weak_ptr<const Widget>> cache;
+  
+  auto objPtr = cache[id].lock();       // objPtr is std::shared_ptr
+                                        // to cached object (or null
+                                        // if object's not in cache)
+  
+  if (!objPtr) {                        // if not in cache,
+    objPtr = loadWidget(id);            // load it
+    cache[id] = objPtr;                 // cache it
+  }
+  return objPtr;
+}
+```  
+这个实现使用了 _C++11_ 的一个 _hash table container_，虽然它并没有展示本应该存在的 _WidgetID_ 的  _hashing_ 函数   
+_equality-comparison_ 函数。
+
+这个 _fastLoadWidget_ 的实现忽略了以下事实：缓存可能会累积那些不再被使用的已经被销毁的
+_Widget_ 所对应的过  
+期  _std::weak_ptr_。这个实现可以优化，但是不要花时间在一个对理解 _std::weak_ptr_ 没有提供任何额外帮助的问题  
+上。让我们考虑第二种使用场景吧：观察者设计模式。这种设计模式的主要组件是 _subject_，是状态可能会改变的  
+对象，和 _observer_，是状态改变发生时将要被通知的对象。在大部分的实现中，每一个 _subject_ 都包含一个数据成  
+员，在这个数据成员中保存着指向所对应的 _observer_ 的指针。这使得 _subject_ 可以非常容易地发出状态改变的通  
+知。_subjects_ 没有兴趣去控制它们所对应的 _observer_ 的生命周期，即为：_observer_ 何时被销毁，但是 _subject_ 非常  
+有兴趣去确定某个 _observer_ 是否已经被销毁了，如果被销毁了的话，那么 _subject_ 就不会尝试去访问这个 _observer_  
+了。一个合理的设计是：对于每个 _subject_ 来说，都持有一个 _std::weak_ptr_ 的 _container_，这个 _container_ 中的每个  
+_std::weak_ptr_ 都指向一个 _observer_。这样的话，_subject_ 就可以在使用指针之前先去确认指针是否是悬空的了。 
+
+做为 _std::weak_ptr_ 的实用用法最后一个例子，考虑一个有着 _A_、_B_ 和 _C_ 三个对象的数据结构，其中 _A_ 和 _C_ _share_ _B_  
+的 _ownership_，因此持有指向 _B_ 的 _std::shared_ptr_：  
+
+![Image4](./image/image4.jpg)  
+
+假设有一个 _B_ 到 _A_ 的指针也是有用的，那这个指针的类型应该是什么呢？
+
+![Image5](./image/image5.jpg)  
+
+此处有三种选择：  
+* 原始指针，使用这种方法，如果 _A_ 被销毁了，但是 _C_ 仍然指向 _B_ 的话，那么 _B_ 将包含一个指向了悬空了的 _A_   
+的指针。_B_ 不能够检测到这个，所以 _B_ 可能会无意间解引用这个悬空的指针。这会产生 _undefined behavior_。
+* _std::shared_ptr_。在这个设计中，_A_ 和 _B_ 分别包含着指向对方的 _std::shared_ptr_。这导致了 _std::shared_ptr_ 的相  
+互嵌套：_A_ 指向 _B_，_B_ 指向 _A_，这将会阻止 _A_ 和 _B_ 被销毁。即使其他的程序数据都不再访问 _A_ 和 _B_ 了，比如：  
+_C_ 不再指向 _B_ 了， _A_ 和 _B_ 的引用计数仍然为 _1_。如果发生了这种情况，_A_ 和 _B_ 将会被泄露，事实上，程序不  
+可以访问 _A_ 和 _B_ 了，而且资源也永远不会被回收了。
+* _std::weak_ptr_。它避免了上面的问题。如果 _A_ 被销毁了的话，那么  _B_ 的指针将会悬空。但是 _B_ 可以检测到这个  
+悬空。此外，即使 _A_ 和 _B_ 都指向了对方，_B_ 的指针也不会影响 _A_ 的引用计数，所以当 _std::shared_ptr_ 不再指向   
+_A_ 时， _B_ 的指针也不会阻止去销毁 _A_。
+
+使用 _std::weak_ptr_ 明显是最好的选择。然而，值得注意的是利用 _std::weak_ptr_ 去破坏 _std::shared_ptr_ 的相互嵌套并  
+不是很常见。在像树这样的严格层级的数据结构中，子节点通常只会被它们的父节点所拥有。当销毁父节点时，子  
+节点也应该被销毁。因此，父到子的链接通常最好用 _std::unique_ptrs_ 来表示。而子到父的链接可以被安全地实现  
+为原始指针，因为子节点的生命周期永远不会比它的父节点更长。因此，不会有子节点解引用父节点指针是悬空的  
+这种风险。
+
+当然，不是所有的基于指针的数据都是严格层级的，当不是时，和当在像缓存和像 _observer_ 的列表的实现这样的  
+情境中，使用 _std::weak_ptr_ 就非常好了。
+
+在效率方面，_std::weak_ptr_ 和 _std::shared_ptr_ 本质上是相同的。_std::weak_ptr_ 对象和 _std::shared_ptr_ 对象的大小是  
+相同的，_std::weak_ptr_ 使用了和 _std::shared_ptr_ 相同的 _control block_，见 [_Item 19_](./Chapter%204.md#item-19-对于-shared-ownership-的资源管理使用-stdshared_ptr)，像构造、析构和赋值这样的操  
+作都涉及到了原子引用计数操作。这可能会让你感到惊讶，因为我在本 _Item_ 开头写过： _std::weak_ptr_ 不参与引用  
+计数。这里说的和我在本 _Item_ 开头写的不一样。我写的是 _std::weak_ptr_ 不参与对象的 _shared ownership_，因此不  
+会影响所指向对象的引用计数。实际上在 _control block_ 中是有第二个引用计数的，这个引用计数是被 _std::weak_ptr_   
+所操作的。更多的细节，见 [_Item 21_](./Chapter%204.md#item-21-首选-std::make-unique-和-std::make-shared-而不是直接使用-new)。
+
+### 需要记住的规则
+
+* 对于可能会悬空的 _std::shared_ptr-like_ 指针使用 _std::weak_ptr_。
+* _std::weak_ptr_ 的使用场景包括：缓存、_observer_ 列表和防止 _std::shared_ptr_ 互相嵌套。

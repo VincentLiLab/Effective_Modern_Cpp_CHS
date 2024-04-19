@@ -533,7 +533,7 @@ _std::nullptr_t_ 的。当 _ptr_ 被传递给 _f3_ 时，会有从 _std::nullptr
 
 ## Item 9 首选 _alias declaration_ 而不是 _typedef_
 
-我相信我们都同意使用 _STL_ 的 _container_ 是一个好注意，我也希望 [_Item 18_](./Chapter%204.md#item-18-对于-exclusive-ownership-的资源管理使用-std::unique_ptr) 可以说服你使用 _std::unique_ptr_ 是一个  
+我相信我们都同意使用 _STL_ 的 _container_ 是一个好注意，我也希望 [_Item 18_](./Chapter%204.md#item-18-对于-exclusive-ownership-的资源管理使用-stdunique_ptr) 可以说服你使用 _std::unique_ptr_ 是一个  
 好主意。而且我认为我们都不喜欢写像 _std::unique_ptr&lt;std::unordered_map&lt;std::string, std::string&gt;&gt;_ 这样的代码多  
 过于一次。仅是想想这个就会增加 _carpal tunnel syndrome_ 的风险。
 
