@@ -5,6 +5,7 @@
     - [需要记住的规则](#需要记住的规则-1)
   - [Item 20 对于可能会悬空的 _std::shared\_ptr-like_ 指针使用 _std::weak\_ptr_](#item-20-对于可能会悬空的-stdshared_ptr-like-指针使用-stdweak_ptr)
     - [需要记住的规则](#需要记住的规则-2)
+  - [Item 21 首选 _std::make\_unique_ 和 _std::make\_shared_ 而不是直接使用 _new_](#item-21-首选-stdmake_unique-和-stdmake_shared-而不是直接使用-new)
 
 # Chapter 4 智能指针
 
@@ -111,7 +112,7 @@ _ 是 _Investment_。
 默认情况下，析构是通过 _delete_ 来进行的，但是也可以在构造期间使用 _custom deleter_ 来对 _std::unique_ptr_ 对象进  
 行配置：当到了要销毁资源的时候，这些任意的函数或函数对象，包括 _lambda expression_ 所产生的 _closure_，会被  
 执行。如果 _makeInvestment_ 所创建的对象不应该直接被直接被删除，而是应该先写一个 _log_ 的话，那么可以向下  
-面这样来实现  _makeInvestment_ ，代码后面跟着解释，所以当你看到一些事情的意图不太明显时，不要担心：  
+面这样来实现  _makeInvestment_，代码后面跟着解释，所以当你看到一些事情的意图不太明显时，不要担心：  
 ```C++
   auto delInvmt = [](Investment* pInvestment)               // custom
   {                                                         // deleter
@@ -365,7 +366,7 @@ _custom deleter_ 是通过 _lambda expression_ 来指定的。
 构的一部分。对于每一个被 _std::shared_ptr_ 所管理的对象，都有一个所对应的 _control block_。除了引用计数外，如  
 果 _custom deleters_ 被指定的了的话，那么 _control black_ 还会包含有这个 _custom deleters_ 副本。同样地还有，如果  
 _allocator deleters_ 也被指定的了的话，那么 _control black_ 还会包含这个 _allocator deleters_ 副本。_control block_ 也可  
-以包含额外的数据，像 [_Item 21_](./Chapter%204.md#item-21-首选-std::make-unique-和-std::make-shared-而不是直接使用-new) 解释的那样，包括被称为是 _weak count_ 的第二引用计数，但是我们在本 _Item_ 中先  
+以包含额外的数据，像 (./Chapter%204.md#item-21-首选-std::make-unique-和-std::make-shared-而不是直接使用-new) 解释的那样，包括被称为是 _weak count_ 的第二引用计数，但是我们在本 _Item_ 中先  
 忽略这些数据。我们可以设想与 _std::shared_ptr&lt;T&gt;_ 对象相关的内存就像下面这样：  
 
 ![Image3](./image/image3.jpg)  
@@ -406,10 +407,10 @@ _allocator deleters_ 也被指定的了的话，那么 _control black_ 还会包
 指针。如果你已经忘记这个建议的意图的话，那么回顾下 [_Chapter 4_](./Chapter%204.md#chapter-4-智能指针)。但是先放在一边，创建 _pw_ 的那一行的风格  
 是令人厌恶的，但是至少不会导致 _undefined behavior_。
 
-现在，因为在调用 _spw1_ 的构造函数时使用了原始指针，所以这就为所指向的对象创建了一个 _control block_ ，也就  
+现在，因为在调用 _spw1_ 的构造函数时使用了原始指针，所以这就为所指向的对象创建了一个 _control block_，也就  
 是创建了一个引用计数。在这个场景中，所指向的对象是 _*pw_，即为：_pw_ 所指向的对象。这是可以的，但是因为  
-在调用 _spw2_ 的构造函数时使用了相同的原始指针，所以这就为 _*pw_ 又创建了一个 _control block_ ，也就是又创建  
-了一个引用计数。因此 _*pw_ 就有两个引用计数了，这两个引用计数都最终会变为 _0_，这最终会导致去销毁 _*pw_ 两  
+在调用 _spw2_ 的构造函数时使用了相同的原始指针，所以这就为 _*pw_ 又创建了一个 _control block_，也就是又创建了  
+一个引用计数。因此 _*pw_ 就有两个引用计数了，这两个引用计数都最终会变为 _0_，这最终将会导致去销毁 _*pw_ 两  
 次。第二次的析构操作会导致 _undefined behavior_。
 
 此处至少有两个关于使用 _std::shared_ptr_ 的注意事项：首选，避免传递原始指针到 _std::shared_ptr_ 的构造函数中。  
@@ -538,7 +539,7 @@ _std::enable_shared_from_this_ 的类通常会声明它们的构造函数为 _pr
 管理 _shared ownership_ 的对象的生命周期。如果你发现你正在怀疑是否可以负担得起使用 _std::shared_ptr_ 的成本的  
 话，那么你应该重新考虑是否真的需要 _shared ownership_。如果 _exclusive ownership_ 可以完成或可能完成的话，那  
 么 _std::unique_ptr_ 是一个更好的选择。它的性能接近于原始指针。从 _std::unique_ptr_ 到 _std::shared_ptr_ 的升级也是  
-简单的，因为可以根据 _std::unique_ptr_ 来创建 _std::shared_ptr_ 。
+简单的，因为可以根据 _std::unique_ptr_ 来创建 _std::shared_ptr_。
 
 反过来是不正确的。一旦你已经将资源的生命周期的管理交给了 _std::shared_ptr_，就不能再改变你的想法了。即使  
 引用计数是 _1_ 了，也不能为了让 _std::unique_ptr_ 来管理资源就收回该资源的 _ownership_。因为资源和指向该资源的   
@@ -635,7 +636,7 @@ _Widget_ 都会堆积在缓存中，这会导致性能问题，所以另一个�
 对于这个缓存类型的工厂函数来说，返回类型 _std::unique_ptr_ 就不合适了。调用方应该肯定会接收这些指向缓存对  
 象的智能指针，这样的话，调用方就控制了这些缓存对象的生命周期了，但是缓存也需要那些指向这些缓存对象的  
 指针。缓存中的指针需要能够探测它们何时才是悬空的，因为，工厂函数的客户在使用完了工厂函数所返回的对象  
-之后，这些对象就会被销毁了，相应的缓存中的指针也将会悬空了。因此缓存中的指针应该是 _std::weak_ptr_ ，因  
+之后，这些对象就会被销毁了，相应的缓存中的指针也将会悬空了。因此缓存中的指针应该是 _std::weak_ptr_，因  
 为 _std::weak_ptr_ 才可以探测它们何时是悬空的。这意味着：工厂函数的返回类型应该是 _std::shared_ptr_ 的，因为只  
 有当一个对象的生命周期是由 _std::shared_ptr_ 管理时，_std::weak_ptr_ 才可以探测它们何时是悬空的。 
 
@@ -711,3 +712,65 @@ _A_ 时， _B_ 的指针也不会阻止去销毁 _A_。
 
 * 对于可能会悬空的 _std::shared_ptr-like_ 指针使用 _std::weak_ptr_。
 * _std::weak_ptr_ 的使用场景包括：缓存、_observer_ 列表和防止 _std::shared_ptr_ 互相嵌套。
+  
+## Item 21 首选 _std::make_unique_ 和 _std::make_shared_ 而不是直接使用 _new_
+
+我们首先为 _std::make_unique_ 和 _std::make_shared_ 创建一个公平竞争的平台。_std::make_shared_ 是 _C++11_ 的一部  
+分，但糟糕地是，_std::make_unique_ 却不是，它在 _C++14_ 中才被加入到标准库中的。如果你正在使用的是 _C++11_ 的  
+话，那么也不要害怕，因为你自己也能轻松的写出 _make_unique_ 的基础版本。见下面：
+```C++
+  template<typename T, typename... Ts>
+  std::unique_ptr<T> make_unique(Ts&&... params)
+  {
+    return std::unique_ptr<T>(new T(std::forward<Ts>(params)...));
+  }
+```
+正如你看到的，_make_unique_ 首先完美转发它的形参到了正在被创建的对象的构造函数中，然后根据 _new_ 生成的  
+原始指针构造出了一个 _std::unique_ptr_，最后返回了这个所创建的 _std::unique_ptr_。这种形式的函数不支持数组和  
+_custom deleters_，见 [_Item 18_](./Chapter%204.md#item-18-对于-exclusive-ownership-的资源管理使用-stdunique_ptr)。但是它证明了：如果你需要的话，那么只需要一点努力就可以创建 _make_unique_。  
+记住不要将你的版本放在 _namespace std_ 中，因为你不想当更新到 _C++14_ 标准库实现时，你的版本和厂商提供的  
+版本有冲突。
+
+_std::make_unique_ 和 _std::make_shared_ 是三个 _make function_ 中的两个。_make function_ 是这样的函数：它持有任意  
+一组实参，它可以把这些实参完美转发到动态分配的对象的构造函数中，它返回了指向这个对象的智能指针。第三  
+个 _make function_ 是 _std::allocate_shared_，除了它的第一个参数是被用于动态内存分配的 _allocator_ 对象外，其余和   
+_std::make_shared_ 都是一样的。
+
+即使对有无使用 _make functiom_ 来创建智能指针来做一个最简单的比较，也能显示出首选 _make function_  的第一个  
+原因。考虑：
+```C++
+  auto upw1(std::make_unique<Widget>());          // with make func
+  std::unique_ptr<Widget> upw2(new Widget);       // without make func
+  
+  auto spw1(std::make_shared<Widget>());          // with make func
+  std::shared_ptr<Widget> spw2(new Widget);       // without make func
+```
+
+我已经高亮了本质的区别：使用 _new_ 的版本需要重复被创建的类型，但是 _make function_ 则不需要。重复违背了  
+软件工程师的核心原则：应该避免代码重复。代码中的重复会增加编译时间，会导致目标代码臃肿，还通常会使得  
+代码更难处理。这通常会演变成不一致的代码，而代码中的不一致性通常会导致出现 _bug_。另外，敲两次会比敲一  
+次更累，谁不想减少打字的负担呢？
+
+首选 _make function_ 的第二个理由是与异常安全相关的。假定我们有一个函数，它会根据 _priority_ 来处理 _Widget_：  
+```C++
+  void processWidget(std::shared_ptr<Widget> spw, int priority);
+```  
+按 _by-value_ 形式来传递 _std::shared_ptr_ 可能会有点可疑，但是  [_Item 41_](./Chapter%208.md#item-41-对于移动成本低且总是会被复制的可拷贝形参-考虑-pass-by-value) 解释了：如果 "processWidget" 总是会构造   
+_std::shared_ptr_ 的副本的话，比如，将已经处理过的 _std::shared_ptr_ 存储到一个数据结构中，那么这就是一个合理  
+的设计选择了。
+
+现在，假设我们有一个函数用于计算相关的优先级，
+```C++
+  int computePriority();
+```  
+然后，我们会在 _processWidget_ 调用中使用 _computePriority_，并使用 _new_ 来代替 _std::make_shared_：  
+```C++
+  processWidget(std::shared_ptr<Widget>(new Widget),        // potential
+    computePriority());                                     // resource
+                                                            // leak!
+```  
+正如注释说明的，这个代码可能会泄露 _new_ 所创建的 _Widget_。但是是如何泄露的呢？调用的代码和被调用的函数  
+都使用了 _std::shared_ptr_，而 _std::shared_ptr_ 是被设计来避免资源泄露的，当最后一个指向对象的 _std::shared_ptr_ 消  
+失时，它会自动销毁它所指向的对象。如果每个人都都使用了 _std::shared_ptrs_ 的话，那么这个代码是如何发生泄  
+露的呢？
+
