@@ -755,7 +755,7 @@ _std::make_shared_ 都是一样的。
 ```C++
   void processWidget(std::shared_ptr<Widget> spw, int priority);
 ```  
-按 _by-value_ 形式来传递 _std::shared_ptr_ 可能会有点可疑，但是  [_Item 41_](./Chapter%208.md#item-41-对于移动成本低且总是会被复制的可拷贝形参-考虑-pass-by-value) 解释了：如果 "processWidget" 总是会构造   
+按 _by-value_ 形式来传递 _std::shared_ptr_ 可能会有点可疑，但是  [_Item 41_](./Chapter%208.md#item-41-对于移动成本低且总是会被复制的可拷贝形参-考虑-pass-by-value) 解释了：如果 _processWidget_ 总是会构造   
 _std::shared_ptr_ 的副本的话，比如，将已经处理过的 _std::shared_ptr_ 存储到一个数据结构中，那么这就是一个合理  
 的设计选择了。
 
@@ -774,3 +774,177 @@ _std::shared_ptr_ 的副本的话，比如，将已经处理过的 _std::shared_
 失时，它会自动销毁它所指向的对象。如果每个人都都使用了 _std::shared_ptrs_ 的话，那么这个代码是如何发生泄  
 露的呢？
 
+答案是和编译器将源代码转换为目标代码的过程有关，运行时，函数的实参必须在函数执行之前被求值，所以，在    
+_processWidget_ 的调用中，下面的事情必须要在 _processWidget_ 开始执行之前先发生：  
+* 表达式 _new Widget_ 必须被求值，即为：一个 _Widget_ 被在堆上被创建。
+* 负责管理 _new_ 所生成的指针的 _std::shared_ptr&lt;Widget&gt;_ 的构造函数必须被执行。 
+* _computePriority_ 必须被运行。
+
+编译器不需要按照这个顺序来生成执行代码。_new Widget_ 必须在 _std::shared_ptr_ 的构造函数被调用前先执行，因  
+为 _new_ 的结果是被用来做为构造函数的实参的，但是 _computePriority_ 可以在这两个调用之前、之后或关键地之间  
+被执行。也就是编译器可能按照下面这样的顺序来执行操作：  
+* 执行 _new Widget_。
+* 执行 _computePriority_。
+* 执行 _std::shared_ptr_ 的构造函数。
+
+ 如果生成了这样的代码，并在运行时 _computePriority_ 产生了一个异常的话，那么动态分配的 _Widget_ 将会被泄  
+ 露，因为它永远不会被存储到那个应该管理它的 _std::shared_ptr_ 中。
+
+ 使用 _std::make_shared_ 避免了这种问题。调用代码看起来像是这样：  
+ ```C++
+  processWidget(std::make_shared<Widget>(),       // no potential
+                  computePriority());             // resource leak
+ ```  
+在运行时，_std::make_shared_ 或 _computePriority_ 都可以先被调用。如果 _std::make_shared_ 先被调用了的话，那么指  
+向动态分配的 _Widget_ 的原始指针是可以在 _computePriority_ 被调用之前，就被安全存储到所返回的 _std::shared_ptr_  
+中的。如果 _computePriority_ 随后产生了一个异常的话，那么 _std::shared_ptr_ 的析构函数会销毁它拥有的 _Widget_。  
+如果 _computePriority_ 先被调用了，并产生了一个异常的话，那么 _std::make_shared_ 不会被执行，因此是不用担心  
+动态所分配的 _Widget_ 的。
+
+如果使用 _std::unique_ptr_ 和 _std::make_unique_ 来分别代替 _std::shared_ptr_ 和  _std::make_shared_ 的话，那么推理过程  
+是完全相同的。因此在写异常安全代码上，使用 _std::make_unique_ 来代替 _new_ 的重要性和使用 _std::make_shared_  
+来代替 _new_ 是一样的。
+  
+相比于直接使用 _new_，_std::make_shared_ 的一个特性是提高了效率。使用 _std::make_shared_ 允许
+编译器生成小而快  
+的代码，因为这些代码利用了更简洁的数据结构的代码。考虑下面直接使用 _new_ 的方法：  
+```C++
+  std::shared_ptr<Widget> spw(new Widget);
+```
+
+很明显这个代码需要内存分配，但是实际上是执行了两次内存分配的。[_Item 19_](./Chapter%204.md#item-19-对于-shared-ownership-的资源管理使用-stdshared_ptr) 解释了：每个 _std::shared_ptr_ 都指  
+向有一个 _control block_，而这个 _control block_ 包含有所指向对象的引用计数，当然它还包含有其它的东西。而这个  
+_control block_ 的内存是在 _std::shared_ptr_ 的构造函数中被分配的。直接使用 _new_ 需要一次 _Widget_ 的分配，还需要  
+一次 _control block_ 的分配。
+
+如果使用 _std::make_shared_ 来代替的话，
+```C++
+  auto spw = std::make_shared<Widget>();
+```  
+那么一次分配就足够了。这是因为 _std::make_shared_ 分配了一块可以同时保存 _control block_ 和 _Widget_ 的内存。这  
+个优化减小了程序的静态大小，因为代码只包含了一次内存分配调用，也提升了代码的执行速度，因为内存只被分  
+配了一次，此外，使用 _std::make_shared_ 可以避免一些在 _control block_ 中所需要的 _bookkeeping information_，这  
+潜在地减少了程序的 _memory footprint_ 总量。 
+
+对于 _std::make_shared_ 的效率分析同样适用于 _std::allocate_shared_，所以 _std::make_shared_ 的性能优势也扩展到了  
+_std::allocate_shared_。
+
+首选 _make_ 函数而不是直接使用 _new_ 的论点是很有说服力的。然而，尽管 _make_ 函数在软件工程、异常安全和效  
+率方面都有优势，但是 本 _Item_ 也说的是：首选 _make_ 函数，而不是就完全依赖 _make_ 函数。这是因为存在 _make_  
+函数不可以被使用或者不应该被使用的的场景。
+
+例如：_make_ 函数都不允许指定 _custom deleters_，见 [_Item 18_](./Chapter%204.md#item-18-对于-exclusive-ownership-的资源管理使用-stdunique_ptr) 和 [_Item 19_](./Chapter%204.md#item-19-对于-shared-ownership-的资源管理使用-stdshared_ptr)，但是 _std::unique_ptr_ 和 _std::shared_ptr_ 的  
+构造函数都可以完成指定。给定 _Windet_ 一个 _custom deleter_：
+```C++
+auto widgetDeleter = [](Widget* pw) { … };
+```  
+使用 _new_ 来创建一个使用 _widgetDeleter_ 的智能指针是简单的：
+```C++
+std::unique_ptr<Widget, decltype(widgetDeleter)>
+    upw(new Widget, widgetDeleter);
+
+std::shared_ptr<Widget> spw(new Widget, widgetDeleter);
+```  
+使用 _make_ 函数没有办法完成这个事情。
+
+_make_ 函数的第二个限制来自于它们的实现的语法细节。[_Item 7_](./Chapter%203.md#item-7-创建对象时区分--和-) 解释了：当一个对象有 _std::initializer_list_ 构造函数  
+也有 _non-std::initializer_list_ 构造函数时，使用 _{}_ 来创建对象会首选 _std::initializer_list_ 构造函数，而使用 _()_ 来创建  
+对象会首选 _non-std::initializer_list_ 构造函数。_make_ 函数会将它们的形参完美转发到一个对象的构造函数中，但是  
+使用的是 _()_ 还是 _{}_ 呢？对于一些类型，问题的答案会有很大的不同，例如：在下面的调用中：
+```C++
+    auto upv = std::make_unique<std::vector<int>>(10, 20);
+
+    auto spv = std::make_shared<std::vector<int>>(10, 20);
+```  
+是生成有着 _10_ 个元素，每个元素都是 _20_ 的 _std::vectors_ 所对应的智能指针呢？还是生成有着 _2_ 个元素，一个元素  
+是 _10_，另一个元素是 _20_ 的 _std::vectors_ 所对应的智能指针呢？或者说结果是不确定的？
+
+好消息是结果是确定的。两个调用都是创建了有着 _10_ 个元素，每个元素都是 _20_ 的 _std::vectors_。这也意味着：在  
+_make_ 函数中，完美转发的代码使用的是 _()_ 而不是 _{}_ 。坏消息是：如果你想要使用 _braced initializer_ 来构造你所指  
+向的对象的话，那么你必须要直接去使用 _new_。使用 _make_ 函数需要能够完美转发 _braced initializer_ 的能力，但是  
+正如 [_Item 30_](./Chapter%205.md#item-30-熟悉完美转发的失败场景) 所解释的，_braced initializer_ 不能被完美转发。而  [_Item 30_](./Chapter%205.md#item-30-熟悉完美转发的失败场景) 也有描述了一个替代方案：使用 _auto_ 的类  
+型推导，根据 _braced initializer_ 来创建 _std::initializer_list_ 对象，见 [_Item 2_](./Chapter%201.md#item-2-理解-auto-的类型推导)，然后传递 _auto_ 所创建的对象到 _make_  
+函数中：
+```C++
+  // create std::initializer_list
+  auto initList = { 10, 20 };
+  
+  // create std::vector using std::initializer_list ctor
+  auto spv = std::make_shared<std::vector<int>>(initList);
+```  
+对于 _std::unique_ptr_ 来说，它的 _custom deleters_ 和 _braced initializer_ 只是 _make_ 函数是会有问题的两个情景。对于  
+_std::shared_ptr_ 和它的 _make_ 函数来说，还存在另外两个 _make_ 是会有问题的情景。但是都是边缘场景，只有一些  
+开发者会遇到这两种边缘场景，不过你也可能是其中一个。
+
+一些类定义有私有版本的 _operator new_ 和 _operator delete_。这些函数的存在说明了：全局版本的 _operator new_ 和 _operator delete_ 对于这些类的对象来说是不合适的。私有版本的 _operator new_ 和 _operator delete_ 只是被设计来分  
+配和释放特定大小的内存块的，比如， _Widget_ 有私有版本的 _operator new_ 和 _operator delete_ 只是被设计来分配和  
+释放 _sizeof(Widget)_ 大小的的内存块的。私有版本的 _operator new_ 和 _operator delete_ 不适合于处理 _std::shared_ptr_  
+所对应的 _custom allocation_ 和 _custom deallocation_，它们分别是通过 _std::allocate_shared_ 和 _custom deleter_ 来完成  
+的，因为 _std::allocate_shared_ 所需要的内存的大小是不等于动态分配的对象的大小的，而是等于动态分配的对象的  
+大小再加上 _control block_ 的大小的。所以使用 _make_ 函数去创建有着私有版本的 _operator new_ 和 _operator delete_   
+的类的对象通常不是一个好主意。
+
+相比于直接使用 _new_，_std::make_shared_ 
+
+使用 _std::make_shared_ 相比于直接使用 _new_ 存在有内存大小和速度上的优势，因为 _std::shared_ptr_ 的 _control block_  
+和它所管理的对象被放在了同一块内存中了。当对象的引用计数成为了 _0_ 时，这个对象就会被销毁，即为：这个  
+对象的析构函数就会被调用。但是，这个对象所占用的内存直到这个对象所对应的 _control block_ 被销毁后才能被  
+释放，这是因为同一个动态分配的内存块中同时包含了该对象和该对象所对应的 _control block_。 
+
+我在前面说过，_control block_ 除了包含着引用计数外还包含着 _bookkeeping information_。引用计数记录着有多少个  
+_std::shared_ptrs_ 引用了这个 _control block_，但是 _control block_ 还包含着第二引用计数，这个引用计数记录着有多少  
+个 _std::weak_ptr_ 引用了这个 _control block_。这个引用计数被称为 _weak count_。当 _std::weak_ptr_ 检查它自己是否过  
+期时，是通过检查它所指向的 _control block_ 中的引用计数而不是通过 _weak count_ 来完成的。如果一个对象所对应  
+的引用计数是为 _0_ 了的话，即为：如果没有 _std::shared_ptr_ 指向这个对象了，也就是这个对象已经被销毁了的话，  
+那么 _std::weak_ptr_ 是已经过期了的，否则，是没有过期的。
+
+只要有 _std::weak_ptr_ 引用着 _control block_ 的话，即为：_weak count_ 大于 _0_，那么这个 _control block_ 就必须保持存  
+在。只要这个 _control block_ 存在，包含着这个 _control block_ 的内存也就必须存在。_std::shared_ptr_ 所对应的 _make_  
+函数所分配的内存只有当引用着这个内存的最后一个 _std::shared_ptr_ 和最后一个 _std::weak_ptr_ 都被销毁后，才能被  
+释放。
+
+如果对象是非常大的，并且此对象所对应的最后一个 _std::shared_ptr 和最后一个 _std::shared_ptr_ 之间的析构时间  
+又是非常重要的话，那么在销毁这个对象和释放这个对象所占用的内存之间会有延迟：  
+```C++
+  class ReallyBigType { … };
+  
+  auto pBigObj =                        // create very large
+    std::make_shared<ReallyBigType>();  // object via
+                                        // std::make_shared
+  
+  …                                     // create std::shared_ptrs and std::weak_ptrs to
+                                        // large object, use them to work with it
+  
+  …                                     // final std::shared_ptr to object destroyed here,
+                                        // but std::weak_ptrs to it remain
+  
+  …                                     // during this period, memory formerly occupied
+                                        // by large object remains allocated
+ 
+  …                                     // final std::weak_ptr to object destroyed here;
+                                        // memory for control block and object is released
+
+```  
+而直接使用 _new_ 的话，只要最后一个指向 _ReallyBigType_ 对象的 _std::shared_ptr_ 被销毁，这个 _ReallyBigType_ 对象  
+的内存就会被释放：  
+```C++
+  class ReallyBigType { … };  // as before
+
+  std::shared_ptr<ReallyBigType> pBigObj(new ReallyBigType);
+                                        // create very large
+                                        // object via new
+
+  …                                     // as before, create std::shared_ptrs and
+                                        // std::weak_ptrs to object, use them with it
+  
+  …                                     // final std::shared_ptr to object destroyed here,
+                                        // but std::weak_ptrs to it remain;
+                                        // memory for object is deallocated
+
+  …                                     // during this period, only memory for the
+                                        // control block remains allocated
+  
+  …                                     // final std::weak_ptr to object destroyed here;
+                                        // memory for control block is released
+
+```
