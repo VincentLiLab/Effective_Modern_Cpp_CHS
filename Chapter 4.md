@@ -6,6 +6,7 @@
   - [Item 20 对于可能会悬空的 _std::shared\_ptr-like_ 指针使用 _std::weak\_ptr_](#item-20-对于可能会悬空的-stdshared_ptr-like-指针使用-stdweak_ptr)
     - [需要记住的规则](#需要记住的规则-2)
   - [Item 21 首选 _std::make\_unique_ 和 _std::make\_shared_ 而不是直接使用 _new_](#item-21-首选-stdmake_unique-和-stdmake_shared-而不是直接使用-new)
+    - [需要记住的规则](#需要记住的规则-3)
 
 # Chapter 4 智能指针
 
@@ -715,9 +716,9 @@ _A_ 时， _B_ 的指针也不会阻止去销毁 _A_。
   
 ## Item 21 首选 _std::make_unique_ 和 _std::make_shared_ 而不是直接使用 _new_
 
-我们首先为 _std::make_unique_ 和 _std::make_shared_ 创建一个公平竞争的平台。_std::make_shared_ 是 _C++11_ 的一部  
-分，但糟糕地是，_std::make_unique_ 却不是，它在 _C++14_ 中才被加入到标准库中的。如果你正在使用的是 _C++11_ 的  
-话，那么也不要害怕，因为你自己也能轻松的写出 _make_unique_ 的基础版本。见下面：
+我们首先为 _std::make_unique_ 和 _std::make_shared_ 来创建一个公平竞争的平台。_std::make_shared_ 是 _C++11_ 的一  
+部分，但糟糕地是，_std::make_unique_ 却不是的，它是在 _C++14_ 中才被加入到标准库中的。如果你正在使用的是   
+_C++11_ 的话，那么也不要害怕，因为你自己也可以轻松地写出 _make_unique_ 的基础版本。见下面：
 ```C++
   template<typename T, typename... Ts>
   std::unique_ptr<T> make_unique(Ts&&... params)
@@ -799,15 +800,14 @@ _processWidget_ 的调用中，下面的事情必须要在 _processWidget_ 开�
 向动态分配的 _Widget_ 的原始指针是可以在 _computePriority_ 被调用之前，就被安全存储到所返回的 _std::shared_ptr_  
 中的。如果 _computePriority_ 随后产生了一个异常的话，那么 _std::shared_ptr_ 的析构函数会销毁它拥有的 _Widget_。  
 如果 _computePriority_ 先被调用了，并产生了一个异常的话，那么 _std::make_shared_ 不会被执行，因此是不用担心  
-动态所分配的 _Widget_ 的。
+动态分配的 _Widget_ 的。
 
 如果使用 _std::unique_ptr_ 和 _std::make_unique_ 来分别代替 _std::shared_ptr_ 和  _std::make_shared_ 的话，那么推理过程  
 是完全相同的。因此在写异常安全代码上，使用 _std::make_unique_ 来代替 _new_ 的重要性和使用 _std::make_shared_  
 来代替 _new_ 是一样的。
   
-相比于直接使用 _new_，_std::make_shared_ 的一个特性是提高了效率。使用 _std::make_shared_ 允许
-编译器生成小而快  
-的代码，因为这些代码利用了更简洁的数据结构的代码。考虑下面直接使用 _new_ 的方法：  
+相比于直接使用 _new_，_std::make_shared_ 的一个特性是提高了效率。使用 _std::make_shared_ 允许编译器生成小而快  
+的代码，因为这些代码利用了更简洁的数据结构。考虑下面直接使用 _new_ 的方法：  
 ```C++
   std::shared_ptr<Widget> spw(new Widget);
 ```
@@ -830,11 +830,11 @@ _control block_ 的内存是在 _std::shared_ptr_ 的构造函数中被分配的
 _std::allocate_shared_。
 
 首选 _make_ 函数而不是直接使用 _new_ 的论点是很有说服力的。然而，尽管 _make_ 函数在软件工程、异常安全和效  
-率方面都有优势，但是 本 _Item_ 也说的是：首选 _make_ 函数，而不是就完全依赖 _make_ 函数。这是因为存在 _make_  
-函数不可以被使用或者不应该被使用的的场景。
+率方面都有优势，但是 本 _Item_ 也说的是：首选 _make_ 函数，而不是就完全依赖 _make_ 函数。这是因为 _make_  函数  
+存在不可以被使用或者不应该被使用的的场景。
 
 例如：_make_ 函数都不允许指定 _custom deleters_，见 [_Item 18_](./Chapter%204.md#item-18-对于-exclusive-ownership-的资源管理使用-stdunique_ptr) 和 [_Item 19_](./Chapter%204.md#item-19-对于-shared-ownership-的资源管理使用-stdshared_ptr)，但是 _std::unique_ptr_ 和 _std::shared_ptr_ 的  
-构造函数都可以完成指定。给定 _Windet_ 一个 _custom deleter_：
+构造函数都可以进行指定。给定 _Widget_ 一个 _custom deleter_：
 ```C++
 auto widgetDeleter = [](Widget* pw) { … };
 ```  
@@ -852,12 +852,12 @@ _make_ 函数的第二个限制来自于它们的实现的语法细节。[_Item 
 对象会首选 _non-std::initializer_list_ 构造函数。_make_ 函数会将它们的形参完美转发到一个对象的构造函数中，但是  
 使用的是 _()_ 还是 _{}_ 呢？对于一些类型，问题的答案会有很大的不同，例如：在下面的调用中：
 ```C++
-    auto upv = std::make_unique<std::vector<int>>(10, 20);
+  auto upv = std::make_unique<std::vector<int>>(10, 20);
 
-    auto spv = std::make_shared<std::vector<int>>(10, 20);
+  auto spv = std::make_shared<std::vector<int>>(10, 20);
 ```  
-是生成有着 _10_ 个元素，每个元素都是 _20_ 的 _std::vectors_ 所对应的智能指针呢？还是生成有着 _2_ 个元素，一个元素  
-是 _10_，另一个元素是 _20_ 的 _std::vectors_ 所对应的智能指针呢？或者说结果是不确定的？
+是生成有着 _10_ 个元素，每个元素都是 _20_ 的 _std::vector_ 所对应的智能指针呢？还是生成有着 _2_ 个元素，一个元素  
+是 _10_，另一个元素是 _20_ 的 _std::vector_ 所对应的智能指针呢？或者说结果是不确定的？
 
 好消息是结果是确定的。两个调用都是创建了有着 _10_ 个元素，每个元素都是 _20_ 的 _std::vectors_。这也意味着：在  
 _make_ 函数中，完美转发的代码使用的是 _()_ 而不是 _{}_ 。坏消息是：如果你想要使用 _braced initializer_ 来构造你所指  
@@ -876,20 +876,19 @@ _make_ 函数中，完美转发的代码使用的是 _()_ 而不是 _{}_ 。坏�
 _std::shared_ptr_ 和它的 _make_ 函数来说，还存在另外两个 _make_ 是会有问题的情景。但是都是边缘场景，只有一些  
 开发者会遇到这两种边缘场景，不过你也可能是其中一个。
 
-一些类定义有私有版本的 _operator new_ 和 _operator delete_。这些函数的存在说明了：全局版本的 _operator new_ 和 _operator delete_ 对于这些类的对象来说是不合适的。私有版本的 _operator new_ 和 _operator delete_ 只是被设计来分  
-配和释放特定大小的内存块的，比如， _Widget_ 有私有版本的 _operator new_ 和 _operator delete_ 只是被设计来分配和  
-释放 _sizeof(Widget)_ 大小的的内存块的。私有版本的 _operator new_ 和 _operator delete_ 不适合于处理 _std::shared_ptr_  
-所对应的 _custom allocation_ 和 _custom deallocation_，它们分别是通过 _std::allocate_shared_ 和 _custom deleter_ 来完成  
-的，因为 _std::allocate_shared_ 所需要的内存的大小是不等于动态分配的对象的大小的，而是等于动态分配的对象的  
-大小再加上 _control block_ 的大小的。所以使用 _make_ 函数去创建有着私有版本的 _operator new_ 和 _operator delete_   
-的类的对象通常不是一个好主意。
-
-相比于直接使用 _new_，_std::make_shared_ 
+一些类定义有私有版本的 _operator new_ 和 _operator delete_。这些函数的存在说明了：全局版本的 _operator new_ 和   
+_operator delete_ 对于这些类的对象是不合适的。类所对应的私有版本的 _operator new_ 和 _operator delete_ 是被用于  
+分配和释放特定大小的内存块的，比如：_Widget_ 的私有版本的 _operator new_ 和 _operator delete_ 是被用于分配和释  
+放 _sizeof(Widget)_ 大小的内存块的。私有版本的 _operator new_ 和 _operator delete_ 不适合于处理 _std::shared_ptr_ 所对  
+应的 _custom allocation_ 和 _custom deallocation_，它们分别是通过 _std::allocate_shared_ 和 _custom deleter_ 来完成的，  
+因为 _std::allocate_shared_ 所需要的内存的大小是不等于动态分配的对象的大小的，而是等于动态分配的对象的大小  
+再加上 _control block_ 的大小的。所以使用 _make_ 函数去创建有着私有版本的 _operator new_ 和 _operator delete_ 的类  
+的对象通常不是一个好主意。
 
 使用 _std::make_shared_ 相比于直接使用 _new_ 存在有内存大小和速度上的优势，因为 _std::shared_ptr_ 的 _control block_  
 和它所管理的对象被放在了同一块内存中了。当对象的引用计数成为了 _0_ 时，这个对象就会被销毁，即为：这个  
-对象的析构函数就会被调用。但是，这个对象所占用的内存直到这个对象所对应的 _control block_ 被销毁后才能被  
-释放，这是因为同一个动态分配的内存块中同时包含了该对象和该对象所对应的 _control block_。 
+对象的析构函数就会被调用。但是，这个对象所占用的内存是直到这个对象所对应的 _control block_ 被销毁后才能  
+被释放的，这是因为同一个动态分配的内存块中同时包含了该对象和该对象所对应的 _control block_。 
 
 我在前面说过，_control block_ 除了包含着引用计数外还包含着 _bookkeeping information_。引用计数记录着有多少个  
 _std::shared_ptrs_ 引用了这个 _control block_，但是 _control block_ 还包含着第二引用计数，这个引用计数记录着有多少  
@@ -898,10 +897,9 @@ _std::shared_ptrs_ 引用了这个 _control block_，但是 _control block_ 还�
 的引用计数是为 _0_ 了的话，即为：如果没有 _std::shared_ptr_ 指向这个对象了，也就是这个对象已经被销毁了的话，  
 那么 _std::weak_ptr_ 是已经过期了的，否则，是没有过期的。
 
-只要有 _std::weak_ptr_ 引用着 _control block_ 的话，即为：_weak count_ 大于 _0_，那么这个 _control block_ 就必须保持存  
-在。只要这个 _control block_ 存在，包含着这个 _control block_ 的内存也就必须存在。_std::shared_ptr_ 所对应的 _make_  
-函数所分配的内存只有当引用着这个内存的最后一个 _std::shared_ptr_ 和最后一个 _std::weak_ptr_ 都被销毁后，才能被  
-释放。
+只要有 _std::weak_ptr_ 引用着 _control block_，即为：_weak count_ 大于 _0_，这个 _control block_ 就必须保持存在。只要  
+这个 _control block_ 存在，包含着这个 _control block_ 的内存也就必须存在。_std::shared_ptr_ 所对应的 _make_ 函数所分  
+配的内存只有当引用着这个内存的最后一个 _std::shared_ptr_ 和最后一个 _std::weak_ptr_ 都被销毁后，才能被释放。
 
 如果对象是非常大的，并且此对象所对应的最后一个 _std::shared_ptr 和最后一个 _std::shared_ptr_ 之间的析构时间  
 又是非常重要的话，那么在销毁这个对象和释放这个对象所占用的内存之间会有延迟：  
@@ -947,4 +945,72 @@ _std::shared_ptrs_ 引用了这个 _control block_，但是 _control block_ 还�
   …                                     // final std::weak_ptr to object destroyed here;
                                         // memory for control block is released
 
-```
+```  
+如果你发现你处在不可能或者不适合使用 _std::make_shared_ 的情景时，你要确保自己不会受到我们之前看到的那种  
+异常安全问题。完成这个的最好方法是确保：当你直接使用 _new_ 时，要按照一条语句而不多做其他事情的原则来  
+立即将 _new_ 的结果传递到智能指针的构造函数中。这可以避免编译器生成可能会抛出异常的代码，这个异常是在  
+_new_ 操作和 _new_ 操作的对象所对应的智能指针的构造函数的调用之间发生成的。
+
+做为一个例子，我们对之前已经检查过的那个非异常安全调用 _processWidget_ 函数做个调整。这次，我们来指定一  
+个 _custom deleter_：  
+```C++
+  void processWidget(std::shared_ptr<Widget> spw, // as before
+                      int priority);
+
+  void cusDel(Widget *ptr);                       // custom
+                                                  // deleter
+```  
+
+这是非异常安全的调用：  
+```C++
+  processWidget(                                  // as before,
+    std::shared_ptr<Widget>(new Widget, cusDel),  // potential
+    computePriority()                             // resource
+  );                                              // leak!
+```  
+回忆一下：如果 _computePriority_ 是在 _new Widget_ 之后，但是又是在 _std::shared_ptr_ 的构造函数之前被调用，并且  
+_computePriority_ 会产生一个异常的话，那么动态分配的 _Widget_ 就会被资源泄露了。
+
+此处，使用了 _custom deleter_ 就不能使用 _std::make_shared_ 了，所以避免这个问题的方法就是将 _Widget_ 的分配和  
+_std::shared_ptr_ 的构造放到它们自己的语句中来生成，然后使用生成的 _std::shared_ptr_ 来调用 _processWidget_。这是  
+这种技巧的本质，马上就可以看到，我们可以稍作调整来提高性能：  
+```C++
+  std::shared_ptr<Widget> spw(new Widget, cusDel);
+  
+  processWidget(spw, computePriority());          // correct, but not
+                                                  // optimal; see below
+```  
+这没问题，因为 _std::shared_ptr_ 拥有所传递给它的构造函数的原始指针的 _ownership_，即使它的构造函数产生了一  
+个异常，在这个例子中，如果 _spw_ 的构造函数抛出了一个异常的话，比如：不能为 _control block_ 动态分配的内存  
+了，那么它仍然可以保证在 _new Widget_ 所生成的指针上执行 _cusDel_。
+
+这里存在的微小的性能问题是：在非异常安全调用中，我们传递了一个右值到了 _processWidget_ 中，  
+```C++
+  processWidget(
+    std::shared_ptr<Widget>(new Widget, cusDel),  // arg is rvalue
+    computePriority()
+);
+```  
+但是在异常安全调用中，我们传递的是一个左值：
+```C++
+  processWidget(spw, computePriority());          // arg is lvalue
+```  
+因为 _processWidget_ 的 _std::shared_ptr_ 形参是按 _by-value_ 形式传递的，根据右值进行构造只需要一次移动，而根据  
+左值进行的构造则需要一次拷贝。对于 _std::shared_ptr_ 来说，这有非常大的不同，因为拷贝一个 _std::shared_ptr_ 需  
+要引用计数的原子增加。而移动一个 _std::shared_ptr_ 则完全不需要引用计数的操作。为了可以让异常安全代码达到  
+非异常安全代码的性能水平，我们需要应用 _std::move_ 到 _spw_ 上，以将 _spw_ 转换为右值，见 [_Item 23_](./Chapter%205.md#item-23-理解-std::move-和-std::forward)：  
+```C++
+  processWidget(std::move(spw),         // both efficient and
+                  computePriority());   // exception safe
+```  
+
+这很有趣值得了解，但通常也无关紧要，因为你很少有理由不去使用 _make_ 函数。除非你有足够的理由不这么做，  
+否则使用 _make_ 函数去做你应该做的。
+
+### 需要记住的规则
+
+* 相对于直接使用 _new_，_make_ 函数有以下优势：消除了代码重复、提高了异常安全，并且对于 _std::make_shared_   
+和 _std::allocate_shared_ 来说，生成了小而快的代码。
+* _make_ 函数是不合适的情景包括需要指定 _custom deleter_ 时和需要传递 _braced initializer_ 时。
+* 对于 _std::make_shared_ 来说，_make_ 函数是不合适的额外情景还包括：当一些类有私有版本的 _operator new_ 和   
+_operator delete_ 和系统内存紧张、对象非常大并且 _std::weak_ptr_ 比所对应的 _std::shared_ptr_ 存在的更久。
