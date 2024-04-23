@@ -95,6 +95,7 @@
 * _exclusive-ownership_
 * _exclusive ownership_ 
 * _weak count_
+* _complete type_
 > 比如 container 可以翻译为容器，也可以使用 _container_，大部分都使用的是 _container_。
 
 译者注  
