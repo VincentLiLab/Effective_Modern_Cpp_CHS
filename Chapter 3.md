@@ -68,7 +68,8 @@ _C++11_ 和 _C++14_ 有很多值得夸耀的特性：_auto_、智能指针、移
 
 为了解决这么多个初始化语法的所带来困惑和这些初始化语法并不能覆盖全部初始化情况的事实，_C++11_ 引入了  
 _uniform initialization_：一个可以，至少概念上可以，被用在任意地方和表达任意事情的单一的初始化语法。它是  
-基于 _{}_ 的，所以我更喜欢 _braced initialization_ 这个术语。**_uniform initialization_** 是思想，**_braced initialization_** 是语法构成。
+基于 _{}_ 的，所以我更喜欢 _braced initialization_ 这个术语。**_uniform initialization_** 是思想，**_braced initialization_** 是  
+语法构成。
             
 _braced initialization_ 让你能表达之前不能被表达出的内容，使用 _{}_，非常容易指定一个 _container_ 的初始化内容：  
 ```C++
@@ -140,7 +141,7 @@ _braced initialization_ 的另一个值得关注的特性是它对于 _C++_ 的 
 避免 _implicit narrowing conversion_，并且它对于 _C++_ 的 _most vexing parse_ 是免疫的。三连冠！那为什么本 _Item_  
 不命名为“首选 _braced initialization_ 语法”呢？
 
-_braced initialization_ 的缺点是有时会出现令人惊讶的行为。这些行为源自于 _braced initializer_、_std::initializer_list_ 和
+_braced initialization_ 的缺点是有时会出现令人惊讶的行为。这些行为源自于 _braced initializer_、_std::initializer_list_ 和  
 构造函数重载决议之间的异常复杂的关系。它们的相互作用可能会导致代码看起来像是在做一件事，但实际上却是  
 在做另一件事。例如：[_Item 2_](./Chapter%201.md#item-2-理解-auto-的类型推导) 解释了：当 _auto_ 声明的变量有 _braced initializer_ 时，所推导出的这个变量的类型应  
 该是 _std::initializer_list_ 的，尽管用其他方式声明带有相同 _initializer_ 的变量可能会产生更直观的类型。结果就是你  
@@ -361,7 +362,7 @@ _go-parentheses-go_ 派则将 _()_ 做为其默认。_()_ 和 _C++98_ 的语法�
 _doSomeWork_ 使用了 _{}_ 的话，那么 _std::vector_ 就是有 _2_ 个元素。哪一个是正确的？_doSomeWork_ 的作者是不知道  
 的，只有调用方知道。
 
-这是标准库函数 _std::make_unique_ 和 _std::make_shared_ 面对的问题，见 [_Item 21_](./Chapter%204.md#item-21-首选-std::make-unique-和-std::make-shared-而不是直接使用-new)。这些函数通过内部使用 _()_ 和记录  
+这是标准库函数 _std::make_unique_ 和 _std::make_shared_ 面对的问题，见 [_Item 21_](./Chapter%204.md#item-21-首选-stdmake_unique-和-stdmake_shared-而不是直接使用-new)。这些函数通过内部使用 _()_ 和记录  
 这个决定做为接口的一部分来解决这个问题。
 
 ### 需要记住的规则
@@ -375,7 +376,7 @@ _doSomeWork_ 使用了 _{}_ 的话，那么 _std::vector_ 就是有 _2_ 个元�
 
 ## Item 8 首选 _nullptr_ 而不是 _0_ 和 _NULL_
 
-是这样的：字面上的 _0_ 是 _int_，而不是一个指针。如果 _C++_ 是在只有指针被使用的环境下看到了 _0_ 的话，那么是
+是这样的：字面上的 _0_ 是 _int_，而不是一个指针。如果 _C++_ 是在只有指针被使用的环境下看到了 _0_ 的话，那么是  
 会勉强将 _0_ 解释为空指针的，但这是一个次选方案。_C++_ 的主要方针是 _0_ 是 _int_，而不是指针。
 
 实际上，对于 _NULL_ 也是这样的。在 _NULL_ 的场景中是存在有一些细节上的不确定性的，这是因为实现允许 _NULL_  
@@ -393,7 +394,7 @@ _doSomeWork_ 使用了 _{}_ 的话，那么 _std::vector_ 就是有 _2_ 个元�
   f(NULL);                    // might not compile, but typically calls
                               // f(int). Never calls f(void*)
 ```
-_f(NULL)_ 的行为的不确定性反映出了在执行 _NULL_ 的类型时所给予的余地。如果 _NULL_ 被定义为是 _0L_ 的话，比如： 
+_f(NULL)_ 的行为的不确定性反映出了在执行 _NULL_ 的类型时所给予的余地。如果 _NULL_ 被定义为是 _0L_ 的话，比如：  
 _0_ 是 _long_，那么这个调用是具有二义性的，因为从 _long_ 到 _int_、从 _long_ 到 _bool_ 以及从 _0L_ 到 _void*_ 的 _conversion_  
 都被认为是一样地好的。关于这个调用的有意思的地方是在于这个调用 _表面上的_ 含义和 _实际上的_ 含义是不一致  
 的：使用 _NULL_ 来调用 _f_ 时是空指针，而使用 _integer_ 来调用 _f_ 则不是空指针。这种违反直觉的行为产生了 _C++98_  
@@ -464,7 +465,7 @@ _nullptr_ 的优势是它不是 _integral_ 类型。老实说，它也不是指�
   }
 ```  
 在这个代码中的前两个调用中没有使用 _nullptr_ 是糟糕的，但是代码是可以工作的。这是重要的。在所调用的代码  
-中的所重复的 _pattern_：锁定 _mutex_、调用函数、解锁 _mutex_，是更糟糕的。这样的复用代码是要去设计模板去避
+中的所重复的 _pattern_：锁定 _mutex_、调用函数、解锁 _mutex_，是更糟糕的。这样的复用代码是要去设计模板去避  
 免的事情之一，所以让我们模板化这个 _pattern_：  
 ```C++
   template<typename FuncType,
@@ -510,7 +511,7 @@ _nullptr_ 的优势是它不是 _integral_ 类型。老实说，它也不是指�
 所以 _int_ 是 _lockAndCall_ 调用的实例化的形参 _ptr_ 的类型。不幸地是，这意味着在 _lockAndCall_ 中的 _func_ 调用中所  
 传递的是 _int_ ，这和 _f1_ 所期待的 _std::shared_ptr&lt;Widget&gt;_ 形参是不兼容的。在 _lockAndCall_ 调用中的所传递的 _0_  
 原本想要表示的是空指针，但是实际上所传递却是 _run-of-the-mill_ _int_。尝试将 _int_ 做为 _std::shared_ptr&lt;Widget&gt;_  
-来传递到 _f1_ 是类型错误的。使用 _0_ 来调用 _lockAndCall_ 是会失败的，因为在模板中，_int_ 是被传递给 _func_ 函数的， 
+来传递到 _f1_ 是类型错误的。使用 _0_ 来调用 _lockAndCall_ 是会失败的，因为在模板中，_int_ 是被传递给 _func_ 函数的，  
 而 _func_ 函数所需要的却是 _std::shared_ptr&lt;Widget&gt;_。
 
 对于涉及到 _NULL_ 的调用的分析本质上也是一样的。当 _NULL_ 被传递给 _lockAndCall_ 时，对于形参 _ptr_ 来说，所推  
@@ -571,7 +572,7 @@ _std::nullptr_t_ 的。当 _ptr_ 被传递给 _f3_ 时，会有从 _std::nullptr
 _alias declaration_ 称之为 _alias template_，而 _typedef_ 是不可以被模板化的。这为 _C++11_ 的程序员提供了一个直接  
 的机制来表达那些在 _C++98_ 中必须通过嵌套在模板化的 _struct_ 中的 _typedef_ 才能拼凑出来的东西。例如：考虑一  
 个使用了定制 _allocator_ _MyAlloc_ 的 _linked list_ 的同义词的定义。使用 _alias template_ 时，这就是小菜一碟：
-```C
+```C++
   template<typename T>                            // MyAllocList<T>
   using MyAllocList = std::list<T, MyAlloc<T>>;   // is synonym for
                                                   // std::list<T,
@@ -650,8 +651,8 @@ _alias declaration_ 称之为 _alias template_，而 _typedef_ 是不可以被�
 建修改过的类型。例如：给定一个类型 _T_，你可能想要剥离 _T_ 所包含的 _const-qualifier_ 或者 _reference-qualifier_，比  
 如：你可能想要将 _const std::string&_ 转换为 _std::string_。或者想要在类型前添加 _const_ 或将其转换为左值引用，比  
 如：将 _Widget_ 转换为 _const Widget_ 或 _Widget&_。如果你没有接触过一点 _TMP_，那就太糟糕了，因为如果你想要  
-成为一位真正地高效率的 _C++_ 程序员的话，那么你需要至少熟悉 _C++_ 的这部分的基础。你可以去看 [_Item 23_](./Chapter%205.md#item-21-理解-std::move-和-std::forward) 和  
-[_Item 25_](./Chapter%205.md#item-25-熟悉重载-univeral-references-的替代方法) 中的 _TMP_ 的实战例子，包括我刚才提到的那几种类型转换。
+成为一位真正地高效率的 _C++_ 程序员的话，那么你需要至少熟悉 _C++_ 的这部分的基础。你可以去看 [_Item 23_](./Chapter%205.md#item-23-理解-stdmove-和-stdforward) 和  
+[_Item 27_](./Chapter%205.md#item-27-熟悉重载-univeral-references-的替代方法) 中的 _TMP_ 的实战例子，包括我刚才提到的那几种类型转换。
 
 _C++_ 给了你工具可以按照 _type trait_ 的形式来执行那几种类型转换，它们是在头文件 _&lt;type_trsits&gt;_ 中的一些模板。  
 在这个头文件中有很多 _type trait_，它们都提供了预期的接口，但不都是执行的是类型转换。给定一个类型 _T_，你想  
@@ -672,7 +673,7 @@ _typedef_ 来实现的。是的，是使用我一直试图说服你的比 _alias
 
 这是有历史原因的，但是我们不谈论这个历史原因，因为非常傻，我保证，因为 _Standardization Committee_ 后来  
 意识到了 _alias template_ 是更好的方式，并在 _C++14_ 中为 _C++11_ 的类型转换提供了相应的模板。_alias_ 有通用的  
-形式：对每一个 _C++11_ 的转换 _std::transformation<T>::type_ 都有所对应的被命名为 _std::transformation_t_ 的 _C++14_  
+形式：对每一个 _C++11_ 的转换 _std::transformation&lt;T&gt;::type_ 都有对应的被命名为 _std::transformation_t_ 的 _C++14_   
 的 _alias template_。例子会说明我的意思： 
 ```C++
   std::remove_const<T>::type            // C++11: const T → T
@@ -2188,9 +2189,9 @@ _move-only_ 的。
 * 此时，第二个线程调用了 _Widget::magicValue_，然后会检查 _cacheValid_。看到的它为 _true_ 后，这个线程会返回  
 _cachedValue_，尽管第一个线程还没有对它的赋值。因此，所返回的值是错误的。
 
-这里有一个教训。对于单个要求同步的变量或内存区域来说，使用 _std::atomic_ 是适当的，但是一旦你有两个或多  
-个要求做为整体来进行操作的变量或内存区域的话，那么你应该去使用 _mutex_。对于 _Widget::magicValue_，看起来  
-像是这样：  
+这里有一个注意事项。对于单个要求同步的变量或内存区域来说，使用 _std::atomic_ 是适当的，但是一旦你有两个  
+或多个要求做为整体来进行操作的变量或内存区域的话，那么你应该去使用 _mutex_。对于 _Widget::magicValue_，看  
+起来像是这样：  
 ```C++
   class Widget {
   public:
@@ -2403,7 +2404,8 @@ _copy operation_ 的生成的，所以，如果 _copyability_ 也是被支持的
 像在本 _Item_ 之前提过的，这些请求会导致拷贝被执行。这意味着 **_移动_** _StringTable_ 对象的代码实际上是在进行拷  
 贝此 _StringTable_ 对象，即为：拷贝 _underlying std::map&lt;int, std::string&gt;_ 对象。拷贝一个 _std::map&lt;int, std::string&gt;_  
 比移动一个 _std::map&lt;int, std::string&gt;_ 是要慢几个数量级的。因此，增加了一个析构函数到类中的这个简单动作可  
-能已经引入了一个重要的性能问题。如果有使用 _=default_ 来显式定义 _copy operation_ 和 _move operation_ 的话，那么这个错误就不会发生了。
+能已经引入了一个重要的性能问题。如果有使用 _=default_ 来显式定义 _copy operation_ 和 _move operation_ 的话，那  
+么这个错误就不会发生了。
 
 是的，我一直在絮叨 _C++11_ 的 _copy operation_ 和 _move operation_ 的操作规则，你已经受够了，你可能会好奇何时  
 我才会将注意力转移到其他两个特殊成员函数上：_default constructor_ 和析构函数。就是现在，但是其实也就一句  

@@ -343,8 +343,8 @@ _spec_：
     };
   }
 ```  
-假设你知道 _std::vector<T>_ 的 _operator[]_ 通常返回的是 _T&_，则在这个场景中的 _operator[]_ 的非常规的返回类型就是一  
-个提醒：正在使用 _proxy class_。仔细注意你正在使用的接口通常可以发现 _proxy class_ 的存在。  
+假设你知道 _std::vector&lt;T&gt;_ 的 _operator[]_ 通常返回的是 _T&_，则在这个场景中的 _operator[]_ 的非常规的返回类型就是  
+一个提醒：正在使用 _proxy class_。仔细注意你正在使用的接口通常可以发现 _proxy class_ 的存在。  
 
 实际上，很多开发者只有当尝试追踪困惑的编译问题或调试错误的单元测试结果时，才发现使用了 _proxy class_。不  
 管是如何发现它们的，只要确定 _auto_ 推导的是 _proxy class_ 的类型而不是 _proxied_ 的类型，解决方案都不需要放弃  
@@ -386,10 +386,11 @@ _float_ 和 _double_ 之间的大小差异的。你可能会声明一个 _float_
 带有 _random access itertor_ 的 _container_ 中的元素的索引时，比如：_std::vector_、std::deque 或
 _std::array_，然后给了  
 你一个 _0.0_ 和 _1.0_ 之间的 _double_，这个 _double_ 表明了所要求的元素的位置距离 _container_ 的开头有多远，_0.5_ 表明  
-是在 _container_ 的中间。再假定你确定所生成的索引是适合 _int_ 的。如果 _container_ 是 _c_ 而 _double_ 是 _d_ 的话，你可以这样来计算索引，  
- ```C++
+是在 _container_ 的中间。再假定你确定所生成的索引是适合 _int_ 的。如果 _container_ 是 _c_ 而 _double_ 是 _d_ 的话，你可  
+以这样来计算索引，  
+```C++
   int index = d * c.size();
- ```  
+```  
 你是故意将右侧的 _double_ 转换为 _int_ 的，但这样的写法却模糊了这个事实。而 _the explicitly typed initializer idiom_  
 会让事情变得清晰：  
 ```C++

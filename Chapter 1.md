@@ -74,7 +74,7 @@ _T_ 被推导为 _int_，而 _ParamType_ 被推导为 _const int&_。
 景：_x_ 是 _int_，_T_ 被推导为了 _int_，但并不总是会这样。_T_ 不仅依赖于 _expr_ 的类型，还依赖于 _ParamType_ 的格式。共  
 有三种场景：  
  
-* _ParamType_ 是一个指针类型或者引用类型，但不是 _universal reference_，_universal reference_ 会在 [_Item 24_](./Chapter%205.md#item-24-区分通用引用和右值引用) 中进  
+* _ParamType_ 是一个指针类型或者引用类型，但不是 _universal reference_，_universal reference_ 会在 [_Item 24_](./Chapter%205.md#item-24-区分-universal-reference-和右值引用) 中进  
   行描述。现在你只需要知道是 _universal reference_ 是存在的，而且和左值引用或右值引用是不相同的。
 * _ParamType_ 是一个 _universal reference_。
 * _ParamType_ 既不是指针类型也不是引用类型。
@@ -168,7 +168,7 @@ _param_ 对应的推导的类型和各种调用中的 _T_ 是像下面的的这�
 
 对于持有 _univeral reference_ 类型的形参的模板来说就没有那么明显了。这样的形参被声明为像右值引用那样，即  
 为：在持有一个类型形参 _T_ 的函数模板中，_univeral reference_ 的声明的类型为 _T&&_，但是当左值实参被传入时，  
-会有不同的行为。完整的故事会在 [_Item 24_](./Chapter%205.md#item-24-区分通用引用和右值引用) 中陈述，这里只有大纲版本：  
+会有不同的行为。完整的故事会在 [_Item 24_](./Chapter%205.md#item-24-区分-universal-reference-和右值引用) 中陈述，这里只有大纲版本：  
 * 如果 _expr_ 是一个左值的话，_T_ 和 _ParamType_ 都会被推导为左值引用。这就更不寻常了。首先，这是唯一一种  
 在模板的类型推导中 _T_ 会被推导为引用的情景。其次，尽管 _ParamType_ 是使用右值引用的语法来声明的，但  
 是所推导出的类型却是左值引用。
@@ -195,7 +195,7 @@ _param_ 对应的推导的类型和各种调用中的 _T_ 是像下面的的这�
   f(27);                      // 27 is rvalue, so T is int,
                               // param's type is therefore int&& 
 ```
-[_Item 24_](./Chapter%205.md#item-24-区分通用引用和右值引用) 解释了为什么这些例子会按照它们做的那样来进行。关键点是 _univeral reference_ 类型的形参所对应的类型  
+[_Item 24_](./Chapter%205.md#item-24-区分-universal-reference-和右值引用) 解释了为什么这些例子会按照它们做的那样来进行。关键点是 _univeral reference_ 类型的形参所对应的类型  
 推导规则和左值引用类型或右值引用类型的形参所对应的类型推导规则是不相同的。尤其当 _univeral reference_ 在  
 使用时，类型推导会区分左值实参和右值实参。这对于 _non-univeral reference_ 来说是永远不会发生的。
 
@@ -512,8 +512,8 @@ _auto_ 来代替 _int_。直接的文本替换生成了以下代码：
   auto x3 = { 27 };
   auto x4{ 27 };
 ```  
-这些声明全部都能编译，但是有着不同的含义。首先前两个语句实际上声明了一个初始值是 _27_ 的 _int_ 类型的变量。
-然而后两个语句却是声明了一个包含有一个值是 _27_ 的元素的 _std::initializer_list<int>_ 类型的变量。  
+这些声明全部都能编译，但是有着不同的含义。首先前两个语句实际上声明了一个初始值是 _27_ 的 _int_ 类型的变  
+量。然而后两个语句却是声明了一个包含有一个值是 _27_ 的元素的 _std::initializer_list<int>_ 类型的变量。  
 ```C++
   auto x1 = 27;               // type is int, value is 27
   
@@ -768,7 +768,7 @@ to-const_，这里并不是这种场景。
 ```  
 支持这样的用法意味着我们需要去修改 _authAndAccess_ 的声明以去接受右值和左值。重载将会起作用，一个重载  
 声明左值引用类型的形参，另一个声明右值引用类型的形参，但是我们就有了两个函数需要维护。避免重载的方法  
-是让 _authAndAccess_ 利用可以同时绑定左值和右值的引用类型的形参，[_Item 24_](./Chapter%205.md#item-24-区分通用引用和右值引用) 也解释了那正是 _univeral reference_  
+是让 _authAndAccess_ 利用可以同时绑定左值和右值的引用类型的形参，[_Item 24_](./Chapter%205.md#item-24-区分-universal-reference-和右值引用) 也解释了那正是 _univeral reference_  
 的作用。因此 _authAndAccess_ 可以声明为下面这样：  
 ```C+++
   template<typename Container, typename Index>    // c is now a
@@ -846,9 +846,9 @@ _x_ 是变量的名字，所以 _decltype(x)_ 是 _int_。但是是使用 _paren
 行为的快车，一辆你确定不想上车的快车。  
 > 译者注：脑残规则，后续不修复的话，更是智障。
 
-最重要的教训是：当使用 _decltype(auto)_ 时，要非常小心。正在推导其类型的表达式中的看起来是微不足道的细节  
-就可以影响 _decltype(auto)_ 所报告的类型。为了确保正在被推导的类型是你所期待的类型，使用  [_Item 4_](./Chapter%201.md#item-4-了解如何查看所推导的类型) 所描述的技  
-术。
+最重要的注意事项是：当使用 _decltype(auto)_ 时，要非常小心。正在推导其类型的表达式中的看起来是微不足道的  
+细节就可以影响 _decltype(auto)_ 所报告的类型。为了确保正在被推导的类型是你所期待的类型，使用  [_Item 4_](./Chapter%201.md#item-4-了解如何查看所推导的类型) 所描述  
+的技术。
 
 与此同时，不要忽视大局。_decltype_ 单独使用和结合 _auto_ 一起使用确实偶尔可能会产生类型推导的惊喜，但那不  
 是常见的场景。一般情况下，_decltype_ 是会产生你所期待的类型的。当 _decltype_ 被应用到名字上时，尤其如此，因  
@@ -990,7 +990,7 @@ _param_ 应该是 _const int&_，不应该是相同的。
 是不正确的。此外，它们是被要求出错的，因为 _std::type_info::name_ 的规范要求这些类型是按照 _by-value_ 的形式  
 传递给模板函数的。参考 [_Item 1_](./Chapter%201.md#item-1-理解模板的类型推导)，如果这些类型是引用的话，那么它们的 _reference-ness_ 是会被忽略的，如果忽略  
 后还有 _const_ 或 _volatile_ 的话，那么它们的 _constness_ 或 _volatileness_ 也是会被忽略的。这也是为什么 _param_ 的类  
-型实际上是 _const Widget * const &_ 但却会被报告为 _const Widget *_ 的原因。它们的 _reference-ness_ 首先会被忽略， 
+型实际上是 _const Widget * const &_ 但却会被报告为 _const Widget *_ 的原因。它们的 _reference-ness_ 首先会被忽略，  
 然后所生成的指针的 _constness_ 也会被忽略。
 
 同样不幸地是，_IDE_ 所显示的类型信息也是不可靠的，或者至少是不能可靠地被使用的。对于相同的实例，一个我  

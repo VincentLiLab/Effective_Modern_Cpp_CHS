@@ -41,8 +41,8 @@ _C++11_ 有 _4_ 种智能指针：_std::auto_ptr_、_std::unique_ptr_ 、_std::s
 
 _std::auto_ptr_ 是 _C++98_ 遗留下来的一个被废弃的类型，它是对后来成为标准化 _C++11_ 的 _std::unique_ptr_ 的尝试。  
 想要正确的完成这个工作是需要移动语义的，但是 _C++98_ 并没有移动语义。做为一种解决方法，_std::auto_ptr_ 利  
-用了它的 _copy operation_ 来完成移动操作。这会产生令人惊讶的代码：拷贝 _std::auto_ptr_ 会将它设置为空，这也会  
-导致令人沮丧的使用限制，比如：不能在 _container_ 中存储 _std::auto_ptr_ 类型的对象。
+用了它的 _copy operation_ 来完成移动。这会产生令人惊讶的代码：拷贝 _std::auto_ptr_ 会将它设置为空，这也会导致  
+令人沮丧的使用限制，比如：不能在 _container_ 中存储 _std::auto_ptr_ 类型的对象。
 
 _std::unique_ptr_ 可以做 _std::auto_ptr_ 可以做的所有事情，而且更多。_std::unique_ptr_ 可以高效率地完成工作，而且是  
 在不改变复制对象含义的情况下完成的工作。无论哪个方面，_std::unique_ptr_ 都比 _std::auto_ptr_ 要好。 唯一合理的  
@@ -158,7 +158,7 @@ _ 是 _Investment_。
 们很快会看到的，使用 _lambda expression_ 比使用常规的函数是要高效的。
 * 当一个 _custom deleter_ 被使用时，它的类型是被用来做为 _std::unique_ptr_ 的第二个类型实参的。在这个场景中，  
 是 _delInvmt_ 的类型，_makeInvestment_ 所返回的类型必须是 _std::unique_ptr&lt;Investment, decltype(delInvmt)&gt;_。  
-更多关于 _decltype_ 的信息见  [_Item 3_](./Chapter%201.md#item-3-理解-decltype)。
+更多关于 _decltype_ 的信息见 [_Item 3_](./Chapter%201.md#item-3-理解-decltype)。
 * _makeInvestment_ 的基本策略是创建一个空的 _std::unique_ptr_ 并使它指向一个合适类型的对象，然后再返回这个  
 _std::unique_ptr_。为了将 _custom deleter_ _delInvmt_ 与 _pInv_ 关联起来，我们将 _delInvmt_ 来做为 _std::unique_ptr_ 的  
 构造函数的第二个实参。
@@ -292,18 +292,18 @@ _std::shared_ptr_ 会销毁它所指向的那个对象。正如使用垃圾回�
 
 _std::shared_ptr_ 可以通过查询资源的引用计数来知道它是否是最后一个指向所对应资源的 _std::shared_ptr_，资源的引  
 用计数是一个值，它表明了有多少个 _std::shared_ptr_ 指向了这个资源。_std::shared_ptr_ 的构造函数 **_通常_** 都会增加引  
-用计数，_std::shared_ptr_ 的析构函数会减少引用计数，而 _std::shared_ptr_ 的 _copy assignment operators_ 会同时增加  
-和减少引用计数。如果 _sp1_ 和 _sp2_ 是指向不同对象的 _std::shared_ptr_ 的话，那么 _sp1 = sp2;_ 会更改 _sp1_，因为 _sp1_  
-现在指向 _sp2_ 所指向的对象了。这个操作的结果是 _sp1_ 原先指向的对象的引用计数会减少，而 _sp2_ 所指向的对象  
-的引用计数会增加。如果 _std::shared_ptr_ 在执行一次减少操作后，看到了引用计数成为 _0_ 了的话，那么就是已经没  
-有 _std::shared_ptr_ 指向这个资源了，所以 _std::shared_ptr_ 会去销毁这个资源。
+用计数，_std::shared_ptr_ 的析构函数会减少引用计数，而 _std::shared_ptr_ 的 _copy assignment operator_ 会同时增加和  
+减少引用计数。如果 _sp1_ 和 _sp2_ 是指向不同对象的 _std::shared_ptr_ 的话，那么 _sp1 = sp2;_ 会更改 _sp1_，因为 _sp1_ 现  
+在指向 _sp2_ 所指向的对象了。这个操作的结果是 _sp1_ 原先指向的对象的引用计数会减少，而 _sp2_ 所指向的对象的  
+引用计数会增加。如果 _std::shared_ptr_ 在执行一次减少操作后，看到了引用计数成为 _0_ 了的话，那么就是已经没有  
+_std::shared_ptr_ 指向这个资源了，所以 _std::shared_ptr_ 会去销毁这个资源。
 
 引用计数的存在会带来性能影响：  
 * _std::shared_ptr_ 是原始指针的两倍大小，因为它内部包含了指向资源的原始指针和指向资源的引用计数的原始  
 指针。
 * 引用计数的内存必须被动态分配。在概念上，引用计数是和所指向的对象相关的，但是所指向的对象是不知道  
 这些的。因此，所指向的对象是没有地方去存储引用计数的，令人愉快的是：任何的对象，甚至是那些内建类  
-型的对象，都可以被 _std::shared_ptr_ 所管理。[_Item 21_](./Chapter%204.md#item-21-首选-std::make-unique-和-std::make-shared-而不是直接使用-new) 解释了：当 _std::shared_ptr_ 是被 _std::make_shared_ 所创建  
+型的对象，都可以被 _std::shared_ptr_ 所管理。[_Item 21_](./Chapter%204.md#item-21-首选-stdmake_unique-和-stdmake_shared-而不是直接使用-new) 解释了：当 _std::shared_ptr_ 是被 _std::make_shared_ 所创建  
 时，动态分配的成本是可以被避免的。但是 _std::make_shared_ 不可以在一些场景中使用。不管怎样，引用计数  
 是做为动态分配的数据来存储的。
 * 引用计数的增加和减少必须是原子的，因为在不同线程中可以同时进行读写。例如：在一个线程中，指向某个  
@@ -315,7 +315,7 @@ _std::shared_ptr_ 可以通过查询资源的引用计数来知道它是否是�
 创建一个指向一个对象的 _std::shared_ptr_ 总是会产生另一个指向同一个对象的 _std::shared_ptr_，那为什么不是 **_总是_**  
 增加引用计数呢？
 
-是因为移动操作。移动构造新的 _std::shared_ptr_ 会使旧的 _std::shared_ptr_ 指向空，这意味着，在新的 _std::shared_ptr_  
+是因为移动构造。移动构造新的 _std::shared_ptr_ 会使旧的 _std::shared_ptr_ 指向空，这意味着，在新的 _std::shared_ptr_  
 开始时，旧的 _std::shared_ptr_ 就不再指向资源了。因此，不需要对引用计数进行操作。移动 _std::shared_ptr_ 是比拷  
 贝 _std::shared_ptr_ 要快的：拷贝需要增加引用计数，而移动则不需要。构造和赋值都是这样，_move constructor_ 是  
 比 _copy constructor_ 快的，_move assignment operator_ 是比 _copy assignment operator_ 快的。
@@ -368,7 +368,7 @@ _custom deleter_ 是通过 _lambda expression_ 来指定的。
 构的一部分。对于每一个被 _std::shared_ptr_ 所管理的对象，都有一个所对应的 _control block_。除了引用计数外，如  
 果 _custom deleters_ 被指定的了的话，那么 _control black_ 还会包含有这个 _custom deleters_ 副本。同样地还有，如果  
 _allocator deleters_ 也被指定的了的话，那么 _control black_ 还会包含这个 _allocator deleters_ 副本。_control block_ 也可  
-以包含额外的数据，像 (./Chapter%204.md#item-21-首选-std::make-unique-和-std::make-shared-而不是直接使用-new) 解释的那样，包括被称为是 _weak count_ 的第二引用计数，但是我们在本 _Item_ 中先  
+以包含额外的数据，像 [_Item 21_](./Chapter%204.md#item-21-首选-stdmake_unique-和-stdmake_shared-而不是直接使用-new) 解释的那样，包括被称为是 _weak count_ 的第二引用计数，但是我们在本 _Item_ 中先  
 忽略这些数据。我们可以设想与 _std::shared_ptr&lt;T&gt;_ 对象相关的内存就像下面这样：  
 
 ![Image3](./image/image3.jpg)  
@@ -377,7 +377,7 @@ _allocator deleters_ 也被指定的了的话，那么 _control black_ 还会包
 创建指向一个对象的 _std::shared_ptr_ 的函数是不可能知道是否有其他的 _std::shared_ptr_ 已经指向了这个对象的，所  
 以下面的创建 _control block_ 的规则会被使用到：  
 
-* _std::make_shared_，见 [_Item 21_](./Chapter%204.md#item-21-首选-std::make-unique-和-std::make-shared-而不是直接使用-new)，总是创建一个 _control block_。它会生成一个所指向的新对象，所以，当调用它  
+* _std::make_shared_，见 [_Item 21_](./Chapter%204.md#item-21-首选-stdmake_unique-和-stdmake_shared-而不是直接使用-new)，总是创建一个 _control block_。它会生成一个所指向的新对象，所以，当调用它  
 时，这个新对象所对应的 _control block_ 肯定是不存在的。
 * 当 _std::shared_ptr_ 是根据 _unique-ownership_ 的指针，即为：_std::unique_ptr_ 或 _std::auto_ptr_，所构造出的时，  
 一个 _control block_ 就被创建了。_unique-ownership_ 的指针是不会使用 _control block_ 的，所以它们所指向的对  
@@ -416,7 +416,7 @@ _allocator deleters_ 也被指定的了的话，那么 _control black_ 还会包
 次。第二次的析构操作会导致 _undefined behavior_。
 
 此处至少有两个关于使用 _std::shared_ptr_ 的注意事项：首选，避免传递原始指针到 _std::shared_ptr_ 的构造函数中。  
-常用的替代方法是去使用 _std::make_shared_，见 [_Item 21_](./Chapter%204.md#item-21-首选-std::make-unique-和-std::make-shared-而不是直接使用-new)，但在上面的例子中，我们使用了 _custom deleter_，这就不  
+常用的替代方法是去使用 _std::make_shared_，见 [_Item 21_](./Chapter%204.md#item-21-首选-stdmake_unique-和-stdmake_shared-而不是直接使用-new)，但在上面的例子中，我们使用了 _custom deleter_，这就不  
 能使用 _std::make_shared_ 了。其次，如果你必须要传递一个原始指针到 _std::shared_ptr_ 的构造函数中的话，那么应  
 该直接传递 _new_ 的结果来代替原始指针变量。如果上面的代码被重写成了下面这样：  
 ```C++
@@ -531,7 +531,7 @@ _std::enable_shared_from_this_ 的类通常会声明它们的构造函数为 _pr
 理问题都是最好的解决方案。但是对于  _std::shared_ptr_ 所提供的功能来说，这些成本还算合理。在一般的条件下：  
 使用 _default deleter_ 和 _default allocator_，并且 _std::shared_ptr_ 是由 _std::make_shared_ 所生成的，_control block_ 就只  
 有 3 个字那么大，并且它的分配几乎是无成本的。因为这些成本被并入到了它所指向的对象所对应的内存分配操  
-作中了。见 [_Item 21_](./Chapter%204.md#item-21-首选-std::make-unique-和-std::make-shared-而不是直接使用-new)。解引用 _std::shared_ptr_ 的成本并不会比解引用原始指针的成本高太多。执行那些需要引用计  
+作中了。见 [_Item 21_](./Chapter%204.md#item-21-首选-stdmake_unique-和-stdmake_shared-而不是直接使用-new)。解引用 _std::shared_ptr_ 的成本并不会比解引用原始指针的成本高太多。执行那些需要引用计  
 数的操作时，比如：_copy constructor_、_copy assignment operator_ 和析构函数，是需要一个或两个原子操作的，但  
 是这些操作一般都会映射到独立的机器指令上，所以，虽然相对于非原子指令来说是有成本的，但是仍然是单一指  
 令的。_control block_ 中的虚函数机制通常只会在每个由 _std::shared_ptr_ 管理的对象上使用一次：就是当对象被销毁  
@@ -708,7 +708,7 @@ _A_ 时， _B_ 的指针也不会阻止去销毁 _A_。
 作都涉及到了原子引用计数操作。这可能会让你感到惊讶，因为我在本 _Item_ 开头写过： _std::weak_ptr_ 不参与引用  
 计数。这里说的和我在本 _Item_ 开头写的不一样。我写的是 _std::weak_ptr_ 不参与对象的 _shared ownership_，因此不  
 会影响所指向对象的引用计数。实际上在 _control block_ 中是有第二个引用计数的，这个引用计数是被 _std::weak_ptr_   
-所操作的。更多的细节，见 [_Item 21_](./Chapter%204.md#item-21-首选-std::make-unique-和-std::make-shared-而不是直接使用-new)。
+所操作的。更多的细节，见 [_Item 21_](./Chapter%204.md#item-21-首选-stdmake_unique-和-stdmake_shared-而不是直接使用-new)。
 
 ### 需要记住的规则
 
@@ -1191,10 +1191,10 @@ _complete type_ 就可以了。当能看到 _Widget::Impl_ 的定义时，_Widge
 ```C++
   Widget::~Widget() = default;          // same effect as above
 ```  
-使用了 _Pimpl Idiom_ 的类，自然支持移动操作，因为编译器所生成的移动操作完全符合预期：在 _std::unique_ptr_ 上  
-执行移动操作。正如 [_Item 17_](./Chapter%203.md#item-17-理解特殊成员函数的生成) 解释的，声明 _Widget_ 的析构函数会阻止编译器生成移动操作，所以，如果你想要支  
-持移动操作的话，那么你必须自己声明相关函数。鉴于编译器所生成的移动操作就有着正确的行为，所以你可能尝  
-试如下实现：  
+使用了 _Pimpl Idiom_ 的类，自然支持移动，因为编译器所生成的 _move operation_ 完全符合预期：在 _std::unique_ptr_   
+上执行移动。正如 [_Item 17_](./Chapter%203.md#item-17-理解特殊成员函数的生成) 解释的，声明 _Widget_ 的析构函数会阻止编译器生成 _move operation_，所以，如果你想  
+要支持移动的话，那么你必须自己声明相关函数。鉴于编译器所生成的 _move operation_ 就有正确的行为，所以你  
+可能尝试如下实现：  
 ```C++
   class Widget {                                  // still in
   public:                                         // "widget.h"
@@ -1216,7 +1216,7 @@ _complete type_ 就可以了。当能看到 _Widget::Impl_ 的定义时，_Widge
 的头文件中，_pImpl_ 却指向了一个 _incomplete type_。移动构造函数则又是不同的情况。它的问题是：编译器通常会  
 在 _move constructor_ 中的抛出异常的事件中生成销毁 _pImpl_ 的代码，而销毁 _pImpl_ 是需要 _Impl_ 是完整的。
 
-因为问题和之前是一样的，所以也是这样来修复：将移动操作移动到源文件中：  
+因为问题和之前是一样的，所以也是这样来修复：将 _move operation_ 移动到源文件中：  
 ```C++
   class Widget {                        // still in "widget.h"
   public:
@@ -1290,13 +1290,14 @@ _std::string_ 和 std::vector_ 一样，是可以被拷贝的，让 _Widget_ 支
 这两个函数的实现都是符合常规的。在每个函数中，我们都只是将 _Impl_ 的域从源对象 _rhs_ 拷贝到目标对象 _*this_ 中  
 的。编译器会生成 _Impl_ 所对应的 _copy operation_，而这个 _copy operation_ 会自动拷贝每一个域，我们利用了这个  
 事实，而不是一个一个地去拷贝域，因此，我们可以通过调用 _Widget::Impl_ 所对应的编译器生成的 _copy operation_  
-来实现 _Widget_ 的 _copy operation_。需要注意的是：在拷贝构造函数中，我们仍然遵循 [_Item 21_](./Chapter%204.md#item-21-首选-std::make-unique-和-std::make-shared-而不是直接使用-new) 的建议去首选使用  
+来实现 _Widget_ 的 _copy operation_。需要注意的是：在拷贝构造函数中，我们仍然遵循 [_Item 21_](./Chapter%204.md#item-21-首选-stdmake_unique-和-stdmake_shared-而不是直接使用-new) 的建议去首选使用  
  _std::make_unique_，而不是直接使用 _new_。
 
 为了实现 _Pimpl Idiom_，_std::unique_ptr_ 是可以使用的智能指针，因为在一个对象中的，比如：_Widget_，_pImpl_ 指针  
 拥有着所对应的实现对象，比如：_Widget::Impl_ 对象，的 _exclusive ownership_。值得注意的是：对于 _pImpl_，如果  
 我们使用 _std::shared_ptr_ 来代替 _std::unique_ptr_ 的话，那么我们会发现不需要再遵循本 _Item_ 的建议了。不需要在  
-_Widget_ 中声明析构函数了，在没有用户声明析构函数的情况下，编译器会生成符合我们预期的 _move operation_。在 _widget.h_ 中给定的代码如下：  
+_Widget_ 中声明析构函数了，在没有用户声明析构函数的情况下，编译器会生成符合我们预期的 _move operation_。  
+在 _widget.h_ 中给定的代码如下：  
 ```C++
   class Widget {                        // in "widget.h"
   public:
