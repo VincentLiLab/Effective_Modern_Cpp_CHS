@@ -305,7 +305,7 @@ _const_ 和 _volatile_ 只有对于 _by-value_ 的形参才能被忽略，记住
 
 ### 需要记住的规则
 
-* 在模板的类型推导期间，引用实参是被当作是非引用的，即为：实参的 _reference-ness_ 是被忽略的。
+* 在模板的类型推导期间，引用实参是被当作是 _non-reference_ 的，即为：实参的 _reference-ness_ 是被忽略的。
 * 当推导 _universal reference_ 类型的形参的类型时，左值实参是需要特殊对待的。
 * 当推导 _by-value_ 的形参的类型时，_const_ 和 _volatile_ 的实参是被当作是 _non-const_ 和 _non-volatile_ 的。 
 * 在模板的类型推导期间，数组名或函数名的实参是会退化为指针的，除非它们是被用于初始化引用的。
