@@ -1,0 +1,1 @@
+## _Item 34_ 首选 _lambda_ 而不是 _std::bind_
