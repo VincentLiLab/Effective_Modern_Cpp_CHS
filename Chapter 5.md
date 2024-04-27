@@ -2,6 +2,7 @@
   - [_Item 23_ 理解 _std::move_ 和 _std::forward_](#item-23-理解-stdmove-和-stdforward)
     - [需要记住的规则](#需要记住的规则)
   - [_Item 24_ 区分 _universal reference_ 和右值引用](#item-24-区分-universal-reference-和右值引用)
+    - [需要记住的规则](#需要记住的规则-1)
   - [_Item 25_ _std::move_ 用于右值引用 _std::forward_ 用于 _univeral reference_](#item-25-stdmove-用于右值引用-stdforward-用于-univeral-reference)
   - [_Item 26_ 避免重载 _univeral reference_](#item-26-避免重载-univeral-reference)
   - [_Item 27_ 熟悉重载 _univeral reference_ 的替代方法](#item-27-熟悉重载-univeral-reference-的替代方法)
@@ -113,7 +114,7 @@ _std::move_ 和 _std::forward_ 只是执行转换的函数，它们实际上是�
 
 从这个例子中得出两个注意事项。首先，如果想要让一个对象是可以被移动的话，那么就不要将它声明为 _const_。在 _const_ 对象上的移动请求都会被悄悄地转换为拷贝。其次，实际上，_std::move_ 不仅不移动任何东西，甚至都不能保证它转换后的结果是可以被移动的。对于应用 _std::move_ 到一个对象上所产生的结果，你唯一可以确定的是这个结果肯定是一个右值。
 
-_std::forward_ 和 _std::move_ 的故事是相似的，_std::move_ 会无条件地将它的实参转换为一个右值，而 _std::forward_ 只有在满足特定条件时才会将它的实参转换为一个右值。所以 _std::forward_ 是条件转换。为了了解 _std::forward_ 何时会执行转换何时不执行转换，回忆一下通常是如何使用 _std::forward_ 的。最常见的情景就是：持有一个通用引用形参的函数模板，这个函数模板会将这个形参传递给另一个函数：  
+_std::forward_ 和 _std::move_ 的故事是相似的，_std::move_ 会无条件地将它的实参转换为一个右值，而 _std::forward_ 只有在满足特定条件时才会将它的实参转换为一个右值。所以 _std::forward_ 是条件转换。为了了解 _std::forward_ 何时会执行转换何时不执行转换，回忆一下通常是如何使用 _std::forward_ 的。最常见的情景就是：持有一个 _universal references_ 形参的函数模板，这个函数模板会将这个形参传递给另一个函数：  
 ```C++
   void process(const Widget& lvalArg);            // process lvalues
   void process(Widget&& rvalArg);                 // process rvalues
@@ -183,6 +184,139 @@ _std::move_ 的吸引力在于使用方便、可以减少错误发生的可能�
 
 
 ## _Item 24_ 区分 _universal reference_ 和右值引用
+
+据说：真理使人自由，但是在适当的情况下，一个恰到好处的谎言也同样可以让你感到解脱。本 _Item_ 就是这样的谎言。因为我们面对的是软件，所以让我们避开 _谎言_ 这个词，而去说本 _Item_ 包含了一个 _抽象_。
+        
+为了声明类型 _T_ 的右值引用，你写了 _T&&_。因此这样的假设似乎也是合理的：如果你在代码中看到了 _T&&_ 的话，那么你正在看到的是右值引用。但是，没有那么简单：
+```C++
+  void f(Widget&& param);               // rvalue reference
+
+  Widget&& var1 = Widget();             // rvalue reference
+
+  auto&& var2 = var1;                   // not rvalue reference
+
+  template<typename T>
+  void f(std::vector<T>&& param);       // rvalue reference
+  
+  template<typename T>
+  void f(T&& param);                    // not rvalue reference
+```
+
+事实上， _T&&_ 有两个不同的含义。当然，第一种含义是表示它是右值引用。这样的引用表现地完全如你所愿：只可以绑定右值。右值引用的作用就是识别那些可以移动的对象。
+
+_T&&_ 的第二种含义是表示它可以是右值引用或左值引用。这样的引用看起来像是代码中的右值引用，即为：_T&&_ ，但是它又表现地好像是左值引用一样，即为：_T&_ 。这样的双重特性允许 _T&&_ 可以像右值引用那样绑定右值，也可以像左值引用那样绑定左值。此外，_T&&_ 可以绑定 _const_ 对象或 _non-const_ 对象，也可以绑定 _volatile_ 对象或 _non-volatile_ 对象，甚至可以绑定 _const_ _volatile_ 的对象。几乎可以绑定所有东西。这样空前灵活的引用值得有它们所拥有的的名字。我称他们为 _universal references_。
+
+ _universal references_ 在出现在两种场景下。第一种最常见，是函数模板的形参，例如上面代码中的例子：  
+```C++
+  template<typename T>
+  void f(T&& param);          // param is a universal reference
+```  
+第二种场景是是 _auto_ 声明，包括来自上面简单代码的例子：
+```C++
+  auto&& var2 = var1;         // var2 is a universal reference
+```  
+这两种场景的共同之处是都存在类型推导。在函数模板 _f_ 中， _param_ 的类型是被推导出的，而在 _var2_ 的声明中， _var2_ 的类型也是被推导出的。比较此处的例子和下面的例子，会发现下面的例子中是没有类型推导的。如果你在没有类型推导的情况下看到了 _T&&_ 的话，那么你看到的是右值引用：  
+```C++
+  void f(Widget&& param);               // no type deduction;
+                                        // param is an rvalue reference
+  
+  Widget&& var1 = Widget();             // no type deduction;
+                                        // var1 is an rvalue reference
+```  
+因为 _universal references_ 是引用，所以它们必须要进行初始化。 _universal references_ 所对应的 _initializer_ 决定了这个 _universal references_ 表示的是右值引用还是左值引用。如果 _initializer_ 是个右值的话，那么 _universal references_ 对应的是右值引用。如果 _initializer_ 是个左值的话，那么 _universal references_ 对应的是左值引用。对于函数形参是 _universal references_ 的情况，_initializer_ 是在调用处被提供的： 
+```C++
+  template<typename T>
+  void f(T&& param);                    // param is a universal reference
+  
+  Widget w;
+  f(w);                                 // lvalue passed to f; param's type is
+                                        // Widget& (i.e., an lvalue reference)
+  
+  f(std::move(w));                      // rvalue passed to f; param's type is
+                                        // Widget&& (i.e., an rvalue reference)
+```
+
+若想成为 _universal references_，类型推导是必须的，但这还不够。引用声明的 _形式_ 也要必须正确，而且这种形式是非常严格的。必须严格是 _T&&_ 才可以。再看一次我们之前看的简单代码的例子：  
+```C++
+  template<typename T>
+  void f(std::vector<T>&& param);       // param is an rvalue reference
+```
+当 _f_ 被执行时，类型 _T_ 将会被推导。除非调用方显式指明了它，我们不关心这种边缘场景。但是 _param_ 的类型声明的形式不是 _T&&_，而是 _std::vector&lt;T&gt;&&_。这就排除了 _param_ 是 _universal references_ 的可能性。因此，_param_ 是一个右值引用。如果你尝试传递一个左值给 _f_ 的话，编译器将会很乐意去为你确认一些事情：  
+```C++
+  std::vector<int> v;
+  f(v);                       // error! can't bind lvalue to
+                              // rvalue reference
+```  
+即使存在简单的 _const_ _qualifier_ 也足够取消引用成为 _universal references_ 的资格：  
+```C++
+  template<typename T>
+  void f(const T&& param);    // param is an rvalue reference
+```  
+如果你在模板中看到一个函数的形参的类型是 _T&&_ 的话，那么你可能会认为你可以假设 _T&&_ 是 _universal references_ 了。你不可以。因为在模板中并不能保证存在有类型推导。考虑 _std::vector_ 的 _push_back_ 成员函数：  
+```C++
+  template<class T, class Allocator = allocator<T>>         // from C++
+  class vector {                                            // Standards
+  public:
+    void push_back(T&& x);
+    …
+  };
+```  
+_push_back_ 的形参的类型肯定是 _universal references_ 的正确形式，但是在这种场景下没有类型推导。这是因为 _push_back_ 是做为 _vector_ 的一部分的，如果特定的 _vector_ 实例化不存在，那么 _push_back_ 也不可能存在，这个实例化的类型完全决定了 _push_back_ 的声明。也就是说：  
+```C++
+  std::vector<Widget> v;
+```  
+导致了 _std::vector_ 模板将会被实例化为下面这样：  
+```c++
+  class vector<Widget, allocator<Widget>> {
+  public:
+    void push_back(Widget&& x);          // rvalue reference
+    …
+  };
+```  
+
+现在，你可以清晰地看到 _push_back_ 没有应用类型推导。 _vector&lt;T&gt;_ 的 _push_back_ 总是声明了 _rvalue-reference-to-T_ 类型的形参，共有两个函数，是函数重载。
+
+相比之下，概念上类似地 _std::vector_ 的 _emplace_back_ 成员函数却应用了类型推导：  
+```C++
+  template<class T, class Allocator = allocator<T>>         // still from
+  class vector {                                            // C++
+  public:                                                   // Standards
+    template <class... Args>
+    void emplace_back(Args&&... args);
+    …
+  };
+```  
+此处，类型形参 _Args_ 和 _vector_ 的类型形参 _T_ 是无关的，每当 _emplace_back_ 被调用时，_Args_ 都是会被推导的。好吧，_Args_ 是类型形参包，而不是类型形参，但是此处只是为了讨论，我们可以认为它就是类型形参。
+
+_emplace_back_ 的类型形参被命名为了 _Args_，但它却仍然是 _universal references_，这个事实强化了我之前的论点：_universal references_ 的形式必须是 _T&&_ 。但没有必要非得使用 _T_ 。例如：下面的函数持有 _universal references_，因为形式 _type&&_ 是正确的，而且 _param_ 的类型是会被推导的，再次强调，排除那种调用方会显式指明类型的极端情况：  
+```C++
+  template<typename MyTemplateType>               // param is a
+  void someFunc(MyTemplateType&& param);          // universal reference
+```
+
+我之前就提到过：_auto_ 声明的变量也可以是 _universal references_。更精确的说，使用类型 _auto&&_ 所声明的变量是 _universal references_，因为发生了类型推导，并且有正确的形式 _T&&_。_auto_ 所对应的 _universal references_ 没有函数模板的形参所对应的 _universal references_ 那么常见，但是在 _C++11_ 中偶尔还是存在的。但是在 _C++14_ 中就非常多了，因为 _lambda expression_ 可以声明 _auto&&_ 形参了。例如：如果你想写一个 _C++14_ 的 _lambda_ 去记录调用任意函数所花费的时间的话，那么你可以这样写：
+```C++
+  auto timeFuncInvocation =
+  [](auto&& func, auto&&... params) // C++14
+  {
+    start timer;
+    std::forward<decltype(func)>(func)(           // invoke func
+    std::forward<decltype(params)>(params)...     // on params
+    );
+    stop timer and record elapsed time;
+  };
+```
+
+如果你对于 _lambda_ 中的 _std::forward&lt;decltype(blah blah blah)&gt;_ 的反应是 _What the fuck?!_ 的话，
+那么很可能是你还没有读 [_Item 33_](Chapter%206.md#item-33-在-auto-形参上使用-decltype-来进行完美转发)。别担心，本 _Item_ 的重点是 _lambda_ 所声明的 _auto&&_ 形参。_func_ 是可以绑定可调用对象、左值或右值的 _universal references_。_args_ 是可以绑定任意数量的任意类型的对象的 _universal references_ 形参包。由于 _auto_ 所对应的 _universal references_ 的存在， _timeFuncInvocation_ 才可以计时几乎任何函数的执行时间。对于 _几乎任何_ 和 _任何_ 之间的差别，请看 [_Item 30_](#item-30-熟悉完美转发失败的场景)。
+
+牢牢记住本 _Item_，也就是 _universal references_ 的基础，是一个 _谎言_ ，不，是一个 _抽象_。底层真相被称为引用折叠，[_Item 28_](#item-28-理解引用折叠) 会专门来探讨这个主题。但是，真相不会降低这种抽象的实用性。区分右值引用和 _universal references_ 可以帮助更加精确地阅读代码，我看到的 _T&&_ 是只能绑定右值呢？还是可以绑定所有？它还可以避免在你和你同事沟通时产生歧义，我在这里使用的是 _universal references_，而不是右值引用。它能帮助你理解 [_Item 25_](#item-25-stdmove-用于右值引用-stdforward-用于-univeral-reference) 和 [_Item 26_](#item-26-避免重载-univeral-reference)，它们依赖于这个区分。所以拥抱 _抽象_ 吧。享受 _抽象_ 吧。严格来说牛顿运动定律是不正确的，而爱因斯坦广义相对论则是正确的，但是前者和后者一样有用，并且更容易应用，同样地，掌握 _universal references_ 的概念比掌握引用折叠的细节要更好。
+        
+### 需要记住的规则
+
+* 如果函数模板的形参有类型 _T&&_ 且 _T_ 是会被推导的话，或者如果一个对象是使用 _auto&&_ 所声明的话，那么这个形参或者这个对象是 _universal references_。
+* 如果类型声明的形式并不是严格为 _type&&_ 的话，或者如果并没有发生类型推导的话，那么 _type&&_ 表示的是右值引用。
+* 如果 _universal references_ 是被右值所初始化的话，那么 _universal references_ 对应的是右值引用。如果 _universal references_ 是被左值所初始化的话，那么 _universal references_ 对应的是左值引用。
 
 ## _Item 25_ _std::move_ 用于右值引用 _std::forward_ 用于 _univeral reference_
 

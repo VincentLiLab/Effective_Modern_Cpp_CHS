@@ -30,6 +30,8 @@ Of course, the translation is not perfect and not standard for some people, beca
 * null pointer 空指针
 * transformation 转换
 * emit 抛出
+* callable 可调用
+*  reference collapsing 引用折叠
 *  _braced initializer_ 花括号初始化表达式
 *  _cast_ 转换
 * _initializer_ 表达式
@@ -44,7 +46,6 @@ Of course, the translation is not perfect and not standard for some people, beca
 * _exception safe_
 * _basic guarantee_
 * _strong guarntee_
-* _callable_
 *  _signature_
 *  _universal reference_
 * _constness_
@@ -93,6 +94,7 @@ Of course, the translation is not perfect and not standard for some people, beca
 * _exclusive ownership_ 
 * _weak count_
 * _complete type_
+* _initializer_
 > 比如 container 可以翻译为容器，也可以使用 _container_，大部分都使用的是 _container_。
 
 译者注  
