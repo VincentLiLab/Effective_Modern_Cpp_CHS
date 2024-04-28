@@ -4,9 +4,11 @@
   - [_Item 24_ 区分 _universal reference_ 和右值引用](#item-24-区分-universal-reference-和右值引用)
     - [需要记住的规则](#需要记住的规则-1)
   - [_Item 25_ _std::move_ 用于右值引用 _std::forward_ 用于 _univeral reference_](#item-25-stdmove-用于右值引用-stdforward-用于-univeral-reference)
+    - [需要记住的规则](#需要记住的规则-2)
   - [_Item 26_ 避免重载 _univeral reference_](#item-26-避免重载-univeral-reference)
   - [_Item 27_ 熟悉重载 _univeral reference_ 的替代方法](#item-27-熟悉重载-univeral-reference-的替代方法)
   - [_Item 28_ 理解引用折叠](#item-28-理解引用折叠)
+  - [_Item 29_ 假设 _move operation_ 是不存在的、成本大的和未使用的](#item-29-假设-move-operation-是不存在的成本大的和未使用的)
   - [_Item 30_ 熟悉完美转发失败的场景](#item-30-熟悉完美转发失败的场景)
 
 
@@ -65,9 +67,9 @@ _std::move_ 和 _std::forward_ 只是执行转换的函数，它们实际上是�
 
 因为 _std::move_ 除了会将实参转换为右值外，不会再做其他的事情，所以有一个建议：_std::move_ 的更好的名字可能是像 _rvalue_cast_ 这样的名字。尽管有此建议，但是最后定下来的名字还是 _std::move_，所以，重要的是去记住 _std::move_ 会做什么和不会做什么。_std::move_ 会做转换。_std::move_ 不会做移动。
 
-当然，右值支持移动，所以，应用 _std::move_ 到一个对象上是在告诉编译器这个对象是可以被移动的。这也是取名为 _std::move_ 的原因：为了方便指定可以被移动的对象。
+当然，右值适合移动，所以，应用 _std::move_ 到一个对象上是在告诉编译器这个对象是可以被移动的。这也是取名为 _std::move_ 的原因：为了方便指定可以被移动的对象。
 
-事实上，右值只在通常情况下才支持移动。假定有一个表示注解的类。这个类所对应的构造函数持有包含有注解的 _std::string_ 类型的形参，这个类的构造函数会将这个形参拷贝到数据成员中。 根据 [_Item 41_](Chapter%208.md#item-41-对于移动成本低且总是会被复制的可拷贝形参考虑-pass-by-value) 的解释，你按  _by-value_ 的形式来声明形参：
+事实上，右值只在通常情况下适合移动。假定有一个表示注解的类。这个类所对应的构造函数持有包含有注解的 _std::string_ 类型的形参，这个类的构造函数会将这个形参拷贝到数据成员中。 根据 [_Item 41_](Chapter%208.md#item-41-对于移动成本低且总是会被复制的可拷贝形参考虑-pass-by-value) 的解释，你按 _by-value_ 的形式来声明形参：
 ```C++
   class Annotation {
   public:
@@ -114,7 +116,7 @@ _std::move_ 和 _std::forward_ 只是执行转换的函数，它们实际上是�
 
 从这个例子中得出两个注意事项。首先，如果想要让一个对象是可以被移动的话，那么就不要将它声明为 _const_。在 _const_ 对象上的移动请求都会被悄悄地转换为拷贝。其次，实际上，_std::move_ 不仅不移动任何东西，甚至都不能保证它转换后的结果是可以被移动的。对于应用 _std::move_ 到一个对象上所产生的结果，你唯一可以确定的是这个结果肯定是一个右值。
 
-_std::forward_ 和 _std::move_ 的故事是相似的，_std::move_ 会无条件地将它的实参转换为一个右值，而 _std::forward_ 只有在满足特定条件时才会将它的实参转换为一个右值。所以 _std::forward_ 是条件转换。为了了解 _std::forward_ 何时会执行转换何时不执行转换，回忆一下通常是如何使用 _std::forward_ 的。最常见的情景就是：持有一个 _universal references_ 形参的函数模板，这个函数模板会将这个形参传递给另一个函数：  
+_std::forward_ 和 _std::move_ 的故事是相似的，_std::move_ 会无条件地将它的实参转换为一个右值，而 _std::forward_ 只有在满足特定条件时才会将它的实参转换为一个右值。所以 _std::forward_ 是条件转换。为了了解 _std::forward_ 何时会执行转换何时不执行转换，回忆一下通常是如何使用 _std::forward_ 的。最常见的情景就是：持有一个 _universal reference_ 形参的函数模板，这个函数模板会将这个形参传递给另一个函数：  
 ```C++
   void process(const Widget& lvalArg);            // process lvalues
   void process(Widget&& rvalArg);                 // process rvalues
@@ -204,9 +206,9 @@ _std::move_ 的吸引力在于使用方便、可以减少错误发生的可能�
 
 事实上， _T&&_ 有两个不同的含义。当然，第一种含义是表示它是右值引用。这样的引用表现地完全如你所愿：只可以绑定右值。右值引用的作用就是识别那些可以移动的对象。
 
-_T&&_ 的第二种含义是表示它可以是右值引用或左值引用。这样的引用看起来像是代码中的右值引用，即为：_T&&_ ，但是它又表现地好像是左值引用一样，即为：_T&_ 。这样的双重特性允许 _T&&_ 可以像右值引用那样绑定右值，也可以像左值引用那样绑定左值。此外，_T&&_ 可以绑定 _const_ 对象或 _non-const_ 对象，也可以绑定 _volatile_ 对象或 _non-volatile_ 对象，甚至可以绑定 _const_ _volatile_ 的对象。几乎可以绑定所有东西。这样空前灵活的引用值得有它们所拥有的的名字。我称他们为 _universal references_。
+_T&&_ 的第二种含义是表示它可以是右值引用或左值引用。这样的引用看起来像是代码中的右值引用，即为：_T&&_ ，但是它又表现地好像是左值引用一样，即为：_T&_ 。这样的双重特性允许 _T&&_ 可以像右值引用那样绑定右值，也可以像左值引用那样绑定左值。此外，_T&&_ 可以绑定 _const_ 对象或 _non-const_ 对象，也可以绑定 _volatile_ 对象或 _non-volatile_ 对象，甚至可以绑定 _const_ _volatile_ 的对象。几乎可以绑定所有东西。这样空前灵活的引用值得有它们所拥有的的名字。我称他们为 _universal reference_。
 
- _universal references_ 在出现在两种场景下。第一种最常见，是函数模板的形参，例如上面代码中的例子：  
+ _universal reference_ 在出现在两种场景下。第一种最常见，是函数模板的形参，例如上面代码中的例子：  
 ```C++
   template<typename T>
   void f(T&& param);          // param is a universal reference
@@ -223,7 +225,7 @@ _T&&_ 的第二种含义是表示它可以是右值引用或左值引用。这�
   Widget&& var1 = Widget();             // no type deduction;
                                         // var1 is an rvalue reference
 ```  
-因为 _universal references_ 是引用，所以它们必须要进行初始化。 _universal references_ 所对应的 _initializer_ 决定了这个 _universal references_ 表示的是右值引用还是左值引用。如果 _initializer_ 是个右值的话，那么 _universal references_ 对应的是右值引用。如果 _initializer_ 是个左值的话，那么 _universal references_ 对应的是左值引用。对于函数形参是 _universal references_ 的情况，_initializer_ 是在调用处被提供的： 
+因为 _universal reference_ 是引用，所以它们必须要进行初始化。 _universal reference_ 所对应的 _initializer_ 决定了这个 _universal reference_ 表示的是右值引用还是左值引用。如果 _initializer_ 是个右值的话，那么 _universal reference_ 对应的是右值引用。如果 _initializer_ 是个左值的话，那么 _universal reference_ 对应的是左值引用。对于函数形参是 _universal reference_ 的情况，_initializer_ 是在调用处被提供的： 
 ```C++
   template<typename T>
   void f(T&& param);                    // param is a universal reference
@@ -236,23 +238,23 @@ _T&&_ 的第二种含义是表示它可以是右值引用或左值引用。这�
                                         // Widget&& (i.e., an rvalue reference)
 ```
 
-若想成为 _universal references_，类型推导是必须的，但这还不够。引用声明的 _形式_ 也要必须正确，而且这种形式是非常严格的。必须严格是 _T&&_ 才可以。再看一次我们之前看的简单代码的例子：  
+若想成为 _universal reference_，类型推导是必须的，但这还不够。引用声明的 _形式_ 也要必须正确，而且这种形式是非常严格的。必须严格是 _T&&_ 才可以。再看一次我们之前看的简单代码的例子：  
 ```C++
   template<typename T>
   void f(std::vector<T>&& param);       // param is an rvalue reference
 ```
-当 _f_ 被执行时，类型 _T_ 将会被推导。除非调用方显式指明了它，我们不关心这种边缘场景。但是 _param_ 的类型声明的形式不是 _T&&_，而是 _std::vector&lt;T&gt;&&_。这就排除了 _param_ 是 _universal references_ 的可能性。因此，_param_ 是一个右值引用。如果你尝试传递一个左值给 _f_ 的话，编译器将会很乐意去为你确认一些事情：  
+当 _f_ 被执行时，类型 _T_ 将会被推导。除非调用方显式指明了它，我们不关心这种边缘场景。但是 _param_ 的类型声明的形式不是 _T&&_，而是 _std::vector&lt;T&gt;&&_。这就排除了 _param_ 是 _universal reference_ 的可能性。因此，_param_ 是一个右值引用。如果你尝试传递一个左值给到 _f_ 的话，编译器将会很乐意去为你确认一些事情：  
 ```C++
   std::vector<int> v;
   f(v);                       // error! can't bind lvalue to
                               // rvalue reference
 ```  
-即使存在简单的 _const_ _qualifier_ 也足够取消引用成为 _universal references_ 的资格：  
+即使存在简单的 _const_ _qualifier_ 也足够取消引用成为 _universal reference_ 的资格：  
 ```C++
   template<typename T>
   void f(const T&& param);    // param is an rvalue reference
 ```  
-如果你在模板中看到一个函数的形参的类型是 _T&&_ 的话，那么你可能会认为你可以假设 _T&&_ 是 _universal references_ 了。你不可以。因为在模板中并不能保证存在有类型推导。考虑 _std::vector_ 的 _push_back_ 成员函数：  
+如果你在模板中看到一个函数的形参的类型是 _T&&_ 的话，那么你可能会认为你可以假设 _T&&_ 是 _universal reference_ 了。你不可以。因为在模板中并不能保证存在有类型推导。考虑 _std::vector_ 的 _push_back_ 成员函数：  
 ```C++
   template<class T, class Allocator = allocator<T>>         // from C++
   class vector {                                            // Standards
@@ -261,7 +263,7 @@ _T&&_ 的第二种含义是表示它可以是右值引用或左值引用。这�
     …
   };
 ```  
-_push_back_ 的形参的类型肯定是 _universal references_ 的正确形式，但是在这种场景下没有类型推导。这是因为 _push_back_ 是做为 _vector_ 的一部分的，如果特定的 _vector_ 实例化不存在，那么 _push_back_ 也不可能存在，这个实例化的类型完全决定了 _push_back_ 的声明。也就是说：  
+_push_back_ 的形参的类型肯定是 _universal reference_ 的正确形式，但是在这种场景下没有类型推导。这是因为 _push_back_ 是做为 _vector_ 的一部分的，如果特定的 _vector_ 实例化不存在，那么 _push_back_ 也不可能存在，这个实例化的类型完全决定了 _push_back_ 的声明。也就是说：  
 ```C++
   std::vector<Widget> v;
 ```  
@@ -288,13 +290,13 @@ _push_back_ 的形参的类型肯定是 _universal references_ 的正确形式�
 ```  
 此处，类型形参 _Args_ 和 _vector_ 的类型形参 _T_ 是无关的，每当 _emplace_back_ 被调用时，_Args_ 都是会被推导的。好吧，_Args_ 是类型形参包，而不是类型形参，但是此处只是为了讨论，我们可以认为它就是类型形参。
 
-_emplace_back_ 的类型形参被命名为了 _Args_，但它却仍然是 _universal references_，这个事实强化了我之前的论点：_universal references_ 的形式必须是 _T&&_ 。但没有必要非得使用 _T_ 。例如：下面的函数持有 _universal references_，因为形式 _type&&_ 是正确的，而且 _param_ 的类型是会被推导的，再次强调，排除那种调用方会显式指明类型的极端情况：  
+_emplace_back_ 的类型形参被命名为了 _Args_，但它却仍然是 _universal reference_，这个事实强化了我之前的论点：_universal reference_ 的形式必须是 _T&&_ 。但没有必要非得使用 _T_ 。例如：下面的函数持有 _universal reference_，因为形式 _type&&_ 是正确的，而且 _param_ 的类型是会被推导的，再次强调，排除那种调用方会显式指明类型的极端情况：  
 ```C++
   template<typename MyTemplateType>               // param is a
   void someFunc(MyTemplateType&& param);          // universal reference
 ```
 
-我之前就提到过：_auto_ 声明的变量也可以是 _universal references_。更精确的说，使用类型 _auto&&_ 所声明的变量是 _universal references_，因为发生了类型推导，并且有正确的形式 _T&&_。_auto_ 所对应的 _universal references_ 没有函数模板的形参所对应的 _universal references_ 那么常见，但是在 _C++11_ 中偶尔还是存在的。但是在 _C++14_ 中就非常多了，因为 _lambda expression_ 可以声明 _auto&&_ 形参了。例如：如果你想写一个 _C++14_ 的 _lambda_ 去记录调用任意函数所花费的时间的话，那么你可以这样写：
+我之前就提到过：_auto_ 声明的变量也可以是 _universal reference_。更精确的说，使用类型 _auto&&_ 所声明的变量是 _universal reference_，因为发生了类型推导，并且有正确的形式 _T&&_。_auto_ 所对应的 _universal reference_ 没有函数模板的形参所对应的 _universal reference_ 那么常见，但是在 _C++11_ 中偶尔还是存在的。但是在 _C++14_ 中就非常多了，因为 _lambda expression_ 可以声明 _auto&&_ 形参了。例如：如果你想写一个 _C++14_ 的 _lambda_ 去记录调用任意函数所花费的时间的话，那么你可以这样写：
 ```C++
   auto timeFuncInvocation =
   [](auto&& func, auto&&... params) // C++14
@@ -308,22 +310,258 @@ _emplace_back_ 的类型形参被命名为了 _Args_，但它却仍然是 _unive
 ```
 
 如果你对于 _lambda_ 中的 _std::forward&lt;decltype(blah blah blah)&gt;_ 的反应是 _What the fuck?!_ 的话，
-那么很可能是你还没有读 [_Item 33_](Chapter%206.md#item-33-在-auto-形参上使用-decltype-来进行完美转发)。别担心，本 _Item_ 的重点是 _lambda_ 所声明的 _auto&&_ 形参。_func_ 是可以绑定可调用对象、左值或右值的 _universal references_。_args_ 是可以绑定任意数量的任意类型的对象的 _universal references_ 形参包。由于 _auto_ 所对应的 _universal references_ 的存在， _timeFuncInvocation_ 才可以计时几乎任何函数的执行时间。对于 _几乎任何_ 和 _任何_ 之间的差别，请看 [_Item 30_](#item-30-熟悉完美转发失败的场景)。
+那么很可能是你还没有读 [_Item 33_](Chapter%206.md#item-33-在-auto-形参上使用-decltype-来进行完美转发)。别担心，本 _Item_ 的重点是 _lambda_ 所声明的 _auto&&_ 形参。_func_ 是可以绑定可调用对象、左值或右值的 _universal reference_。_args_ 是可以绑定任意数量的任意类型的对象的 _universal reference_ 形参包。由于 _auto_ 所对应的 _universal reference_ 的存在， _timeFuncInvocation_ 才可以计时几乎任何函数的执行时间。对于 _几乎任何_ 和 _任何_ 之间的差别，请看 [_Item 30_](#item-30-熟悉完美转发失败的场景)。
 
-牢牢记住本 _Item_，也就是 _universal references_ 的基础，是一个 _谎言_ ，不，是一个 _抽象_。底层真相被称为引用折叠，[_Item 28_](#item-28-理解引用折叠) 会专门来探讨这个主题。但是，真相不会降低这种抽象的实用性。区分右值引用和 _universal references_ 可以帮助更加精确地阅读代码，我看到的 _T&&_ 是只能绑定右值呢？还是可以绑定所有？它还可以避免在你和你同事沟通时产生歧义，我在这里使用的是 _universal references_，而不是右值引用。它能帮助你理解 [_Item 25_](#item-25-stdmove-用于右值引用-stdforward-用于-univeral-reference) 和 [_Item 26_](#item-26-避免重载-univeral-reference)，它们依赖于这个区分。所以拥抱 _抽象_ 吧。享受 _抽象_ 吧。严格来说牛顿运动定律是不正确的，而爱因斯坦广义相对论则是正确的，但是前者和后者一样有用，并且更容易应用，同样地，掌握 _universal references_ 的概念比掌握引用折叠的细节要更好。
+牢牢记住本 _Item_，也就是 _universal reference_ 的基础，是一个 _谎言_ ，不，是一个 _抽象_。底层真相被称为引用折叠，[_Item 28_](#item-28-理解引用折叠) 会专门来探讨这个主题。但是，真相不会降低这种抽象的实用性。区分右值引用和 _universal reference_ 可以帮助你更加精确地阅读代码，我看到的 _T&&_ 是只能绑定右值呢？还是可以绑定所有？它还可以避免在你和你同事沟通时产生歧义，我在这里使用的是 _universal reference_，而不是右值引用。它能帮助你理解 [_Item 25_](#item-25-stdmove-用于右值引用-stdforward-用于-univeral-reference) 和 [_Item 26_](#item-26-避免重载-univeral-reference)，它们依赖于这个区分。所以拥抱 _抽象_ 吧。享受 _抽象_ 吧。严格来说牛顿运动定律是不正确的，而爱因斯坦广义相对论则是正确的，但是前者和后者一样有用，并且更容易应用，同样地，掌握 _universal reference_ 的概念比掌握引用折叠的细节要更好。
         
 ### 需要记住的规则
 
-* 如果函数模板的形参有类型 _T&&_ 且 _T_ 是会被推导的话，或者如果一个对象是使用 _auto&&_ 所声明的话，那么这个形参或者这个对象是 _universal references_。
+* 如果函数模板的形参有类型 _T&&_ 且 _T_ 是会被推导的话，或者如果一个对象是使用 _auto&&_ 所声明的话，那么这个形参或者这个对象是 _universal reference_。
 * 如果类型声明的形式并不是严格为 _type&&_ 的话，或者如果并没有发生类型推导的话，那么 _type&&_ 表示的是右值引用。
-* 如果 _universal references_ 是被右值所初始化的话，那么 _universal references_ 对应的是右值引用。如果 _universal references_ 是被左值所初始化的话，那么 _universal references_ 对应的是左值引用。
+* 如果 _universal reference_ 是被右值所初始化的话，那么 _universal reference_ 对应的是右值引用。如果 _universal reference_ 是被左值所初始化的话，那么 _universal reference_ 对应的是左值引用。
 
 ## _Item 25_ _std::move_ 用于右值引用 _std::forward_ 用于 _univeral reference_
+
+右值引用只绑定那些适合移动的对象。如果你有一个右值引用形参的话，那么你就是知道了这个形参所绑定的对象是可以被移动的。
+```C++
+  class Widget {
+    Widget(Widget&& rhs);     // rhs definitely refers to an
+
+    …                         // object eligible for moving
+};
+```  
+既然如此，你可能希望将这样的对象传递给其他函数，以允许其他函数可以利用这些对象的右值性。完成这个的方法是将绑定这些对象的形参转换为右值。正如 [_Item 23_](#item-23-理解-stdmove-和-stdforward) 解释的，这不仅是 _std::move_ 的作用，也是它被创造出的原因：  
+```C++
+  class Widget {
+  public:
+    Widget(Widget&& rhs)                // rhs is rvalue reference
+    : name(std::move(rhs.name)),
+      p(std::move(rhs.p))
+    { … }
+    …
+
+  private:
+    std::string name;
+    std::shared_ptr<SomeDataStructure> p;
+  };
+```
+另一方面，见 [_Item 24_](#item-24-区分-universal-reference-和右值引用)，_universal reference_ 只是可能会绑定一个是适合移动的对象了。只有当 _universal reference_ 是被右值所初始化时，这个 _universal reference_ 对应的才是右值引用。[_Item 23_](#item-23-理解-stdmove-和-stdforward) 解释了这真是 _std::forward_ 所做的：  
+```C++
+  class Widget {
+  public:
+    template<typename T>
+    void setName(T&& newName)                     // newName is
+    { name = std::forward<T>(newName); }          // universal reference
+
+    …
+  }; 
+```
+
+简而言之，当转发右值引用给其他函数时，应该通过 _std::move_ 将右值引用无条件地转换为右值，因为右值引用总是绑定着右值，而当转发 _universal reference_ 给其他函数时，应该通过 _std::forward_ 将 _universal reference_ 有条件地转换为右值，因为 _universal reference_ 只是有时绑定着右值。
+
+[_Item 23_](#item-23-理解-stdmove-和-stdforward) 解释了在右值引用上使用 _std::forward_ 可以表现出正确的行为，但是代码是冗长的、易错的和不符合语言习惯的，所以你应该避免在右值引用上使用 _std::forward_。在 _universal reference_ 上使用 _std::move_ 是更糟糕的，因为这可能会意外地修改了左值，比如：局部变量：
+```C++
+  class Widget {
+  public:
+    template<typename T>
+    void setName(T&& newName)           // universal reference
+    { name = std::move(newName); }      // compiles, but is
+    …                                   // bad, bad, bad!
+
+  private:
+    std::string name;
+    std::shared_ptr<SomeDataStructure> p;
+  };
+
+  std::string getWidgetName();          // factory function
+
+  Widget w;
+
+  auto n = getWidgetName();             // n is local variable
+调用方
+  w.setName(n);                         // moves n into w!
+
+  …                                     // n's value now unknown
+```  
+此处，局部变量 _n_ 被传递给了 _w.setName_，调用方如果假设这对于 _n_ 来说应该只是只读操作也是可以被原谅的。但是，因为在 _setName_ 中使用了 _std::move_，这会将它的形参无条件地转换为一个右值，所以 _n_ 的值将会被移动到 _w.name_ 中，在 _setName_ 调用结束后，_n_ 的值将会是不确定的。这种行为让调用方感到绝望，甚至可能会去打人。
+
+你可能会争辩说 _setName_ 不应该声明它的形参为 _universal reference_。这样的引用不能是 _const_ 的，见 [_Item 24_](#item-24-区分-universal-reference-和右值引用)，但是 _setName_ 确实不应该修改它的形参。你可能还会指出：如果 _setName_ 简单地能为 _const_ 左值和右值进行重载的话，那么这个问题就可以被避免了。就像这样：
+```C++
+  class Widget {
+  public:
+    void setName(const std::string& newName)      // set from
+    { name = newName; }                           // const lvalue
+
+    void setName(std::string&& newName)           // set from
+    { name = std::move(newName); }                // rvalue
+    
+    …
+  };
+```
+这样肯定可以工作，但是有缺点。首先，需要写和维护更多的代码，因为两个函数代替了一个模板。其次，这也是低效的。例如：考虑下面这种 _setName_ 的用法：
+```C++
+  w.setName("Adela Novak");
+```
+在 _setName_ 的 _universal reference_ 版本中，_string literal_ _Adela Novak_ 会被传递给 _setName_，然后在 _setName_ 中，_string literal_ _Adela Novak_ 会被传递给 _w_ 中的 _std::string_ 的 _move assignment operator_。因此，_w_ 的 _name_ 数据成员将直接根据这个 _string literal_ 来赋值；此期间没有 _std::string_ 类型的临时对象产生。然而在 _setName_ 的重载版本中，_std::string_ 类型的临时对象则会被创建出，用于绑定 _setName_ 的形参，然后这个临时对象会被移动到 _w_ 的数据成员中。调用 _setName_ 一次将会需要：执行一次 _std::string_ 的构造函数，它用于创建临时对象；执行一次 _std::string_ 的 _move assignment operator_，它用于将 _newName_ 移动到 _w.name_ 中；执行一次 _std::string_ 的析构函数，它用于销毁这个临时变量。相对于只会执行持有 _const char*_ 指针的 _std::string_ 的 _move assignment operator_ 的前者，后者几乎肯定是代价更大的执行序列。额外的成本因实现的不同而不同 ，这个额外的成本是否值得担忧因应用和库的不同而不同，但是事实就是：使用一对重载了左值引用和右值引用的函数来代替 _universal reference_ 可能会在一些场景下带来运行成本。如果我们泛化这个例子，使 _Widget_ 的数据成员的类型为任意类型，而不是已知的 _std::string_ 类型，那么性能差距可能会非常地大，因为不是所有的类型在移动时都像 _std::string_ 一样成本小，见 [_Item 29_](#item-29-假设-move-operation-是不存在的成本大的和未使用的)。
+
+然而，关于左值和右值重载，最严重的问题不在于代码的体积和语言习惯，也不是代码的运行性能。最严重的问题是这种设计的可扩展性很差。_Widget::setName_ 只持有一个形参，所以只要两个重载函数就可以，但是对于持有多个形参的函数来说，每一个形参都要有其所对应的左值和右值，重载函数的数量将会几何级数式地增长：_n_ 个形参需要 2<sup>n</sup> 个重载函数。这也不是最糟糕的，一些函数，实际是函数模板，可以持有无限个形参，每一个形参都要有其所对应的左值和右值。这样的函数的典型例子是 _std::make_shared_ 和 _C++14_ 的 _std::make_unique_，见 [_Item 21_](Chapter%204.md#item-21-首选-stdmake_unique-和-stdmake_shared-而不是直接使用-new)。看看它们最常用的重载的声明：  
+```C++
+template<class T, class... Args>                // from C++11
+shared_ptr<T> make_shared(Args&&... args);      // Standard
+
+template<class T, class... Args>                // from C++14
+unique_ptr<T> make_unique(Args&&... args);      // Standard
+```
+
+对于像这些函数的函数来说，重载左值和右值是不可行的：只有 _universal reference_ 才是唯一可行的方法。我向你保证，在这些函数内部，当 _universal reference_ 类型的形参被传递给其他函数时，在这些形参上应用的是 _std::forward_ 的。这正是你应该做的。
+
+好吧，通常应该这样做，最后也应该这样做，但是刚开始时并不是必须就要这样。在一些场景下，你想要在一个函数中多次使用绑定着右值引用或者 _universal reference_ 的对象，并且你需要确保这个对象直到你用完它后它才可以被移动。在这样的场景下，你只能在最后一次使用完这个引用后，对于右值引用再去应用 _std::move_ 或者对于 _universal reference_ 再去应用 _std::forward_。比如：  
+```C++
+  template<typename T>                  // text is
+  void setSignText(T&& text)            // univ. reference
+  {
+    sign.setText(text);                 // use text, but
+                                        // don't modify it
+    auto now =                          // get current time
+    std::chrono::system_clock::now();
+
+    signHistory.add(now,
+      std::forward<T>(text));           // conditionally cast
+  }                                     // text to rvalue
+```
+此处，我们想要确保 _text_ 的值不会被 _sign.setText_ 所改变，因为还要在调用 _signHistory_ 时使用 _text_，因此只在最后使用 _universal reference_ 时才使用 _std::forward_。
+
+对于 _std::move_ 来说，也是相同的想法，即为：只在最后使用右值引用时才使用 _std::move_，需要注意的是：在一些罕见场景中，你想要使用 _std::move_if_noexcept_ 来代替 _std::move_。为了弄清楚何时和为何应该这样，请查询 [_Item 14_](Chapter%203.md#item-14-当函数不会抛出异常时声明函数为-noexcept)。
+
+如果一个 _return-by-value_ 的函数返回了一个右值引用或者 _universal reference_ 的话，那么你想要的是在返回这个引用的时去应用 _std::move_ 或 _std::forward_。为了弄清楚这是为什么，考虑一个 _operator+_ 函数，它将两个 _matrix_ 做加法，其中左侧的 _matrix_ 被认为是右值，它被用来储存两个 _matrix_ 的和：  
+```C++
+  Matrix                                          // by-value return
+  operator+(Matrix&& lhs, const Matrix& rhs)
+  {
+    lhs += rhs;
+
+    return std::move(lhs);                        // move lhs into
+  }                                               // return value
+```
+通过在 _return_ 语句中通过 _std::move_ 将 _lhs_ 转换为一个右值，_lhs_ 将会被移动到函数的返回值的位置。如果省略了调用 _std::move_ 的话：  
+```C++
+  Matrix                                          // as above
+  operator+(Matrix&& lhs, const Matrix& rhs)
+  {
+    lhs += rhs;
+    return lhs;                                   // copy lhs into
+  }                                               // return value 
+```
+_lhs_ 是一个左值的事实将会强迫编译器将它拷贝到函数的返回值的位置。假设 _Matrix_ 支持移动构造且它的移动构造比拷贝构造要高效，那么在 _return_ 语句中使用 _std::move_ 会产生高效率的代码。
+
+如果 _Matrix_ 不支持移动的话，那么将 _lhs_ 转换为右值也不会有任何伤害，因为这个右值也只是会被 _Matrix_ 的 _copy constructor_ 所拷贝而已，见 [_Item 23_](#item-23-理解-stdmove-和-stdforward)。如果 _Matrix_ 后续被修改支持了移动的话，那么 _operator+_ 在下次编译之后就能自动获得益处了。既然如此，那么应用 _std::move_ 到 _return-by-value_ 的函数所返回的右值引用上是不会有任何损失的，反而可能还会有很多益处。
+
+这种情况对于 _universal reference_ 和 _std::forward_ 都是类似的。现在考虑一个函数模板 _reduceAndCopy_，它持有一个可能是未约分的 _Fraction_ 对象，它会去约分这个 _Fraction_ 对象，并返回这个已约分的值的副本。如果实参是个右值的话，那么实参的值应该被移动到返回值中，这样可以避免执行拷贝所产生的成本，但是如果实参是个左值的话，那么实际的拷贝必须产生。因此：
+```C++
+  template<typename T> 
+  Fraction                              // by-value return
+  reduceAndCopy(T&& frac)               // universal reference param
+  {
+    frac.reduce();
+    return std::forward<T>(frac);       // move rvalue into return
+  }                                     // value, copy lvalue
+```
+如果省略了调用 _std::forward_ 的话，那么 _frac_ 将会被无条件地拷贝到 _reduceAndCopy_ 的返回值中。
+
+一些开发者获取到了上面的信息，然后就尝试将这些信息到扩展到一些不适合的场景中。“如果在会被拷贝到返回值的右值引用形参上使用 _std::move_ 可以将拷贝构造转换为移动构造的话，那么我也可以在我返回的局部变量上执行这种优化”。换句话说，它们认为给定一个会返回局部变量的 _return-by-value_ 的函数，就像这样：
+```C++
+  Widget makeWidget()                   // _Copying_ version of makeWidget
+  {
+    Widget w;                           // local variable
+    
+    …                                   // configure w
+    
+    return w;                           // _copy_ w into return value
+}
+```
+它们可以通过将 _拷贝_ 转换为移动来 _优化_ 它：
+```C++
+  Widget makeWidget()         // Moving version of makeWidget
+  {
+    Widget w;
+    …
+    return std::move(w);      // move w into return value
+  }                           // (don't do this!)
+```
+我的特殊标记的使用应该会让你觉察到这种推理方式是有缺陷的。但是为什么是有缺陷的呢？
+
+是有缺陷的，因为对于这种优化 _Standardization Committee_ 是远远领先于这些程序员的。_Standardization Committee_ 在很早之前就意识到了： _makeWidget_ 的 _拷贝版本_ 可以通过在为函数的返回值所分配的内存中构建这个局部变量 _w_ 来避免拷贝这个局部变量 _w_。这被称为 _RVO_ _return value optimization_，自从 _C++_ 标准存在后，_RVO_ 就得到了明确支持。
+
+写这样的支持要非常的严谨，因为你想要的是只有当不影响软件的可观测行为时才去允许拷贝省略。转述标准中的那种法律表达简直就是有毒，这种特定的支持说的是：当满足下面条件时，编译器可以省略是 _return-by-value_ 的函数中的局部对象的拷贝或移动：（1）局部对象的类型和函数返回值的类型是相同的，（2）函数返回了这个局部对象。现在，再看下 _makeWidget_ 的拷贝版本：
+```C++
+  Widget makeWidget()         // _Copying_ version of makeWidget
+  {
+  
+    Widget w;
+    …
+    return w;                 // _copy_ w into return value
+}
+```
+这个代码满足所有的条件，当我告诉你，对于这个代码来说，每个合格的 _C++_ 编译器都会应用 _RVO_ 去避免拷贝 _w_ 时，你要相信我。这意味着：_makeWidget_ 的 _拷贝版本_ 实际上不会拷贝任何东西。
+
+假设 _Widget_ 提供了 _move constructor_，_makeWidget_ 的移动版本就会这样做：将 _w_ 的内容移动到 _makeWidget_ 的返回值空间。但是为什么编译器不使用 _RVO_ 去消除移动呢？为什么要再一次地在为函数的返回值所分配的内存中构建 _w_ 呢？答案非常简单：不可以。条件规定了：只有当函数返回的是局部对象时，_RVO_ 才可以被执行，但是 _makeWidget_ 的移动版本并不是这样的。再看一次 _return_ 语句：  
+```C++
+return std::move(w);
+```  
+这里所返回的并不是局部对象 _w_，而是 _w_ 的引用，也就是 _std::move_ 的结果。因为返回局部对象的引用没有满足 _RVO_ 所需要的条件，所以编译器必须将 _w_ 移动到函数返回值空间中。开发者尝试通过在所返回的局部变量上应用 _std::move_ 来帮助编译器进行优化，但这却反而限制了编译器可用的优化选项。
+
+但是 _RVO_ 是一种优化。编译器不需要去省略拷贝和移动，即使允许这样做。可能你是偏执的，你担心你的编译器会使用拷贝来惩罚你，因为这是可能的。或者你可能有足够洞察力，已经识别到了存在有编译器很难实现 _RVO_ 的情况，比如，当函数的不同的路径返回不同的局部变量时。编译器必须要生成代码在为函数的返回值所分配的内存中构建合适的局部变量，但是编译器如何确定哪个局部变量是合适的呢？如果是这样的话，你可能愿意付出移动的成本来做为对拷贝成本的保险。也就是说，你可能仍然认为应用 _std::move_ 到你正在返回的局部对象是合理的，仅仅因为你知道你永远都不想付出拷贝的成本。
+
+在这种情况下，应用 _std::move_ 到一个局部变量上仍然是一个坏主意。支持 _RVO_ 的标准继续说了：如果满足了 _RVO_ 的条件，但是编译器没有选择去执行拷贝省略的话，那么所返回的对象必须被做为右值。实际上，标准要求：当 _RVO_ 被允许时，要么发生拷贝省略，要么隐式应用 _std::move_ 到所返回的局部对象上。所以在 _makeWidget_ 的拷贝版本中，  
+```C++
+  Widget makeWidget() // as before
+  {
+    Widget w;
+    …
+    return w;
+  }
+```
+编译器必须省略 _w_ 的拷贝或必须将函数做为下面这样：
+```C++
+  Widget makeWidget()
+  {
+    Widget w;
+    …
+    return std::move(w);      // treat w as rvalue, because
+  }                           // no copy elision was performed
+```
+
+函数的  _by-value_ 的形参也是这种情况。当这样的形参做为函数返回值时，是符合拷贝省略的，但是编译器必须把这样的形参做为右值处理。因此，如果你的代码看起来像是这样，  
+```C++
+  Widget makeWidget(Widget w)           // by-value parameter of same
+  {                                     // type as function's return
+    …
+    return w;
+  }
+```
+编译器必须将这个代码做为下面这样：
+```C++
+  Widget makeWidget(Widget w)
+  {
+    …
+    return std::move(w);                // treat w as rvalue
+  }
+```
+
+这意味着：如果你在 _return-by-value_ 的函数所返回的局部对象上使用 _std::move_ 的话，那么这样并不能帮助你的编译器，因为如果编译器不能执行拷贝省略的话，那么编译器必然会把局部对象做为右值，这样反而肯定可以帮倒忙，因为可以排除 _RVO_ 的执行。应用 _std::move_ 到局部变量也有合理的场景，比如：当你传递这个局部变量到一个函数中，并且你知道你将不会再使用使用这个局部变量了，但做为 _return_ 语句的一部分，要么符合 _RVO_，要么返回 _by-value_ 的形参，都不属于上属于场景。
+
+### 需要记住的规则
+
+* 在右值引用上应用 _std::move_，在 _universal reference_ 上应用 _std::forward_，但都必须是在最后一次使用这些引用后。
+* 对于 _return-by-value_ 的函数所返回的右值引用和 _universal reference_ 也是按照上述情况处理。
+* 如果局部对象符合返回值优化的条件的话，永远不要应用 _std::move_ 或 _std::forward_ 到局部对象上。
 
 ## _Item 26_ 避免重载 _univeral reference_
 
 ## _Item 27_ 熟悉重载 _univeral reference_ 的替代方法
 
 ## _Item 28_ 理解引用折叠
+
+## _Item 29_ 假设 _move operation_ 是不存在的、成本大的和未使用的
 
 ## _Item 30_ 熟悉完美转发失败的场景

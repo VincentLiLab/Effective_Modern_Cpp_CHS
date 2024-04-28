@@ -829,7 +829,7 @@ _Pimpl Idiom_ 的第一部分是声明指向 _incomplete type_ 的指针数据�
 ```C++
   Widget::~Widget() = default;          // same effect as above
 ```  
-使用了 _Pimpl Idiom_ 的类自然支持移动，因为编译器所生成的 _move operation_ 完全符合预期：在 _std::unique_ptr_ 上执行移动。正如 [_Item 17_](Chapter%203.md#item-17-理解特殊成员函数的生成) 解释的，声明 _Widget_ 的析构函数会阻止编译器生成 _move operation_，所以，如果你想要支持移动的话，那么你必须自己声明相关函数。鉴于编译器所生成的 _move operation_ 就有正确的行为，所以你可能尝试如下实现：  
+使用了 _Pimpl Idiom_ 的类自然适合支持移动，因为编译器所生成的 _move operation_ 完全符合预期：在 _underlying_ _std::unique_ptr_ 上执行移动。正如 [_Item 17_](Chapter%203.md#item-17-理解特殊成员函数的生成) 解释的，声明 _Widget_ 的析构函数会阻止编译器生成 _move operation_，所以，如果你想要支持移动的话，那么你必须自己声明相关函数。鉴于编译器所生成的 _move operation_ 就有正确的行为，所以你可能尝试如下实现：  
 ```C++
   class Widget {                                  // still in
   public:                                         // "widget.h"
