@@ -558,6 +558,112 @@ return std::move(w);
 
 ## _Item 26_ 避免重载 _univeral reference_
 
+假定你要写一个函数，这个函数持有一个形参 _name_，然后会记录当前的日期和时间并将 _name_ 添加到全局数据结构中。你提出一个像下面这样的函数：  
+```C++
+  std::multiset<std::string> names;               // global data structure
+  void logAndAdd(const std::string& name)
+  {
+    auto now =                                    // get current time
+    std::chrono::system_clock::now();
+    log(now, "logAndAdd");                        // make log entry
+    names.emplace(name);                          // add name to global data
+  }                                               // structure; see Item 42
+                                                  // for info on emplace
+```
+
+这是合理的代码，但是没有达到应有的高效。考虑三个潜在的调用：  
+```C++
+  std::string petName("Darla");
+  
+  logAndAdd(petName);                   // pass lvalue std::string
+  
+  logAndAdd(std::string("Persephone")); // pass rvalue std::string
+  
+  logAndAdd("Patty Dog");               // pass string literal
+
+```
+在第一个调用中，_logAndAdd_ 的形参 _name_ 绑定着的变量 _petName_。在 _logAndAdd_ 中，_name_ 最终被传递到了 _names.emplace_ 中。因为 _name_ 是一个左值，所以 _name_ 是被拷贝到 _names_ 中的。没有方法可以避免拷贝，因为左值 _petName_ 是被传递给 _logAndAdd_ 的。
+
+在第二个调用中，_logAndAdd_ 的形参 _name_ 绑定着的是一个右值，这个右值是根据 _"Persephone"_ 显式创建的 _std::string_ 类型的临时对象。因为 _name_ 本身是一个左值，所以 _name_ 是被拷贝到 _names_ 中的，但是我们知道原则上 _name_ 的值是可以被移动到 _names_ 中的。在这个调用中，我们付出了拷贝的成本，但是我们应该能够只通过一次移动来完成。
+
+在第三个调用中，_logAndAdd_ 的形参 _name_ 绑定着的是一个右值，这个右值是根据 _"Patty Dog"_ 显式创建的 _std::string_ 类型的临时对象。在第二个调用中， _name_ 是被拷贝到 _names_ 中的，但是在这个场景下，最初传递给 _logAndAdd_ 的实参是个 _string literal_。如果这个 _string literal_ 是直接传递给 _emplace_ 的话，那么就不需要创建 _std::string_ 类型的临时对象了。相反，_emplace_ 将会使用这个 _string literal_ 直接在 _std::multiset_ 中来创建 _std::string_ 类型的对象。在第三个调用中，我们付出的是拷贝一个 _std::string_ 的成本，实际上，甚至没有理由付出移动成本，更不用说拷贝了。
+
+我们可以通过重写 _logAndAdd_ 来持有 _universal reference_，见 [_Item 24_](#item-24-区分-universal-reference-和右值引用)，并依据 [_Item 25_](#item-25-stdmove-用于右值引用-stdforward-用于-univeral-reference) 来将这个 _universal reference_ 完美转发到 _emplace_ 中，以去消除第二个调用和第三个调用中的低效。结果不言自明：  
+```C++
+  template<typename T>
+  void logAndAdd(T&& name)
+  {
+    auto now = std::chrono::system_clock::now();
+    log(now, "logAndAdd");
+    names.emplace(std::forward<T>(name));
+  }
+  std::string petName("Darla");                   // as before
+  logAndAdd(petName);                             // as before, copy
+                                                  // lvalue into multiset
+  logAndAdd(std::string("Persephone"));           // move rvalue instead
+                                                  // of copying it
+  logAndAdd("Patty Dog");                         // create std::string
+                                                  // in multiset instead
+                                                  // of copying a temporary
+                                                  // std::string
+```
+
+完美的优化！
+
+如果这就是故事的结局的话，我们现在可以停下来骄傲地退休了，但是我还没有告诉过你客户并不是总能直接访问 _logAndAdd_ 所需要的 _name_。有些客户只有一个索引，_logAndAdd_ 可以使用这个索引到表中去查找相应的 _name_。为了支持这些客户，重载了 _logAndAdd_：
+```C++
+  std::string nameFromIdx(int idx);               // return name
+                                                  // corresponding to idx
+
+  void logAndAdd(int idx)                         // new overload
+  {
+      auto now = std::chrono::system_clock::now();
+      log(now, _logAndAdd_);
+      names.emplace(nameFromIdx(idx));
+  }
+```
+对于这两个函数的重载决议像所期待地那样工作：
+```C++
+  std::string petName(_Darla_);                   // as before
+
+  logAndAdd(petName);                             // as before, these
+  logAndAdd(std::string("Persephone"));           // calls all invoke
+  logAndAdd("Patty Dog");                         // the T&& overload
+
+  logAndAdd(22);                                  // calls int overload
+
+实际上，只有当你没有太多期待的时候，重载决议才会像所期待地那样工作。假设有一个客户使用 _short_ 来持有索引，然后会传递这个 _short_ 到 _logAndAdd_ 中：  
+```C++
+  short nameIdx;
+  …                                               // give nameIdx a value
+
+  logAndAdd(nameIdx);                             // error!
+```  
+因为最后一行的注释不是很明显，所以让我来解释此处发生了什么。
+
+存在两个 _logAndAdd_ 重载函数。持有 _universal reference_ 的重载函数可以推导 _T_ 为 _short_  ，因此产生一个精确匹配。持有 _int_ 形参的重载函数只能在 _promotion_ 后才能匹配 _short_ 实参。根据一般的重载决议规则，精确匹配优于 _promotion_ 匹配，所以 _universal reference_ 的重载函数会被调用。
+
+在 _universal reference_ 的重载函数中，形参 _name_ 绑定的是所传入的 _short_。_name_ 会被完美转发到 _names_ 的成员函数 _emplace_ 中，_names_ 是一个 _std::multiset&lt;std::string&gt;_，然后这个 _emplace_ 负责轮流将 _name_ 转发到 _std::string_ 的构造函数中。因为 _std::string_ 没有持有 _short_ 的构造函数，所以在 _logAndAdd_ 中的 _multiset::emplace_ 中的 _std::string_ 的构造函数会失败。这都是因为对于 _short_ 实参来说，_universal reference_ 比 _int_ 是更精确的匹配。
+
+持有 _universal reference_ 的函数是 _C++_ 中最贪婪的函数。在这个函数实例化时，可以几乎为所有类型的实参创建精确匹配，只有几种类型不可以，会在 [_Item 30_](#item-30-熟悉完美转发失败的场景) 中描述。这也是为什么将重载和 _universal reference_ 做组合几乎总是一个糟糕的想法：_universal reference_ 的重载函数可以接受很多的实参类型，远远比写重载函数的开发者期待地要多。
+
+填上这个坑的简单方法是去写一个完美转发构造函数。对 _logAndAdd_ 例子做个小改动来演示这个问题。先不去写一个持有 _std::string_ 的或者持有用来查找 _std::string_ 的索引的 _free_ 函数，而是去写一个类 _Person_ 它的构造函数有着相同功能：  
+```C++
+  class Person {
+  public:
+    template<typename T> 
+    explicit Person(T&& n)                        // perfect forwarding ctor;
+    : name(std::forward<T>(n)) {}                 // initializes data member
+
+    explicit Person(int idx)                      // int ctor
+    : name(nameFromIdx(idx)) {}
+    …
+    
+    private:
+    std::string name;
+  };
+```
+
 ## _Item 27_ 熟悉重载 _univeral reference_ 的替代方法
 
 ## _Item 28_ 理解引用折叠
