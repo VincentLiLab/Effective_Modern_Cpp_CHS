@@ -6,6 +6,7 @@
   - [_Item 25_ _std::move_ 用于右值引用 _std::forward_ 用于 _univeral reference_](#item-25-stdmove-用于右值引用-stdforward-用于-univeral-reference)
     - [需要记住的规则](#需要记住的规则-2)
   - [_Item 26_ 避免重载 _univeral reference_](#item-26-避免重载-univeral-reference)
+    - [需要记住的规则](#需要记住的规则-3)
   - [_Item 27_ 熟悉重载 _univeral reference_ 的替代方法](#item-27-熟悉重载-univeral-reference-的替代方法)
   - [_Item 28_ 理解引用折叠](#item-28-理解引用折叠)
   - [_Item 29_ 假设 _move operation_ 是不存在的、成本大的和未使用的](#item-29-假设-move-operation-是不存在的成本大的和未使用的)
@@ -561,11 +562,14 @@ return std::move(w);
 假定你要写一个函数，这个函数持有一个形参 _name_，然后会记录当前的日期和时间并将 _name_ 添加到全局数据结构中。你提出一个像下面这样的函数：  
 ```C++
   std::multiset<std::string> names;               // global data structure
+  
   void logAndAdd(const std::string& name)
   {
     auto now =                                    // get current time
-    std::chrono::system_clock::now();
+      std::chrono::system_clock::now();
+    
     log(now, "logAndAdd");                        // make log entry
+    
     names.emplace(name);                          // add name to global data
   }                                               // structure; see Item 42
                                                   // for info on emplace
@@ -582,13 +586,13 @@ return std::move(w);
   logAndAdd("Patty Dog");               // pass string literal
 
 ```
-在第一个调用中，_logAndAdd_ 的形参 _name_ 绑定着的变量 _petName_。在 _logAndAdd_ 中，_name_ 最终被传递到了 _names.emplace_ 中。因为 _name_ 是一个左值，所以 _name_ 是被拷贝到 _names_ 中的。没有方法可以避免拷贝，因为左值 _petName_ 是被传递给 _logAndAdd_ 的。
+在第一个调用中，_logAndAdd_ 的形参 _name_ 绑定着的是变量 _petName_。在 _logAndAdd_ 中，_name_ 最终被传递到了 _names.emplace_ 中。因为 _name_ 是一个左值，所以 _name_ 是被拷贝到 _names_ 中的。没有方法可以避免拷贝，因为是左值 _petName_ 被传递给了 _logAndAdd_。
 
-在第二个调用中，_logAndAdd_ 的形参 _name_ 绑定着的是一个右值，这个右值是根据 _"Persephone"_ 显式创建的 _std::string_ 类型的临时对象。因为 _name_ 本身是一个左值，所以 _name_ 是被拷贝到 _names_ 中的，但是我们知道原则上 _name_ 的值是可以被移动到 _names_ 中的。在这个调用中，我们付出了拷贝的成本，但是我们应该能够只通过一次移动来完成。
+在第二个调用中，_logAndAdd_ 的形参 _name_ 绑定着的是一个右值，这个右值是根据 _"Persephone"_ 所显式创建的 _std::string_ 类型的临时对象。因为 _name_ 本身是一个左值，所以 _name_ 是被拷贝到 _names_ 中的，但是我们知道原则上 _name_ 的值是可以被移动到 _names_ 中的。在这个调用中，我们付出了拷贝的成本，但是我们应该能够只通过一次移动来完成。
 
-在第三个调用中，_logAndAdd_ 的形参 _name_ 绑定着的是一个右值，这个右值是根据 _"Patty Dog"_ 显式创建的 _std::string_ 类型的临时对象。在第二个调用中， _name_ 是被拷贝到 _names_ 中的，但是在这个场景下，最初传递给 _logAndAdd_ 的实参是个 _string literal_。如果这个 _string literal_ 是直接传递给 _emplace_ 的话，那么就不需要创建 _std::string_ 类型的临时对象了。相反，_emplace_ 将会使用这个 _string literal_ 直接在 _std::multiset_ 中来创建 _std::string_ 类型的对象。在第三个调用中，我们付出的是拷贝一个 _std::string_ 的成本，实际上，甚至没有理由付出移动成本，更不用说拷贝了。
+在第三个调用中，_logAndAdd_ 的形参 _name_ 绑定着的是一个右值，这个右值是根据 _"Patty Dog"_ 所隐式创建的 _std::string_ 类型的临时对象。在第二个调用中，_name_ 是被拷贝到 _names_ 中的，但在本场景下，最初传递给 _logAndAdd_ 的实参是个 _string literal_。如果这个 _string literal_ 是直接传递给 _emplace_ 的话，那么就不需要创建 _std::string_ 类型的临时对象了。相反，_emplace_ 会使用这个 _string literal_ 直接在 _std::multiset_ 中来创建 _std::string_ 类型的对象。在第三个调用中，我们付出的是拷贝一个 _std::string_ 的成本，实际上，甚至没有理由付出移动成本，更不用说拷贝了。
 
-我们可以通过重写 _logAndAdd_ 来持有 _universal reference_，见 [_Item 24_](#item-24-区分-universal-reference-和右值引用)，并依据 [_Item 25_](#item-25-stdmove-用于右值引用-stdforward-用于-univeral-reference) 来将这个 _universal reference_ 完美转发到 _emplace_ 中，以去消除第二个调用和第三个调用中的低效。结果不言自明：  
+我们可以通过重写 _logAndAdd_ 来持有 _universal reference_，见 [_Item 24_](#item-24-区分-universal-reference-和右值引用)，并依据 [_Item 25_](#item-25-stdmove-用于右值引用-stdforward-用于-univeral-reference) 来将这个 _universal reference_ 完美转发到 _emplace_ 中以去消除第二个调用和第三个调用中的低效。结果不言自明：  
 ```C++
   template<typename T>
   void logAndAdd(T&& name)
@@ -598,10 +602,13 @@ return std::move(w);
     names.emplace(std::forward<T>(name));
   }
   std::string petName("Darla");                   // as before
+  
   logAndAdd(petName);                             // as before, copy
                                                   // lvalue into multiset
+  
   logAndAdd(std::string("Persephone"));           // move rvalue instead
                                                   // of copying it
+  
   logAndAdd("Patty Dog");                         // create std::string
                                                   // in multiset instead
                                                   // of copying a temporary
@@ -610,7 +617,7 @@ return std::move(w);
 
 完美的优化！
 
-如果这就是故事的结局的话，我们现在可以停下来骄傲地退休了，但是我还没有告诉过你客户并不是总能直接访问 _logAndAdd_ 所需要的 _name_。有些客户只有一个索引，_logAndAdd_ 可以使用这个索引到表中去查找相应的 _name_。为了支持这些客户，重载了 _logAndAdd_：
+如果这就是故事的结局的话，那么我们现在可以停下来骄傲地退休了，但是我还没有告诉过你客户并不是总能直接访问 _logAndAdd_ 所需要的 _name_。有些客户只有一个索引，_logAndAdd_ 可以使用这个索引到表中去查找相应的 _name_。为了支持这些客户，重载了 _logAndAdd_：
 ```C++
   std::string nameFromIdx(int idx);               // return name
                                                   // corresponding to idx
@@ -622,7 +629,7 @@ return std::move(w);
       names.emplace(nameFromIdx(idx));
   }
 ```
-对于这两个函数的重载决议像所期待地那样工作：
+对于这两个函数的重载决议可以像所期待地那样去工作：
 ```C++
   std::string petName(_Darla_);                   // as before
 
@@ -631,8 +638,9 @@ return std::move(w);
   logAndAdd("Patty Dog");                         // the T&& overload
 
   logAndAdd(22);                                  // calls int overload
+```
 
-实际上，只有当你没有太多期待的时候，重载决议才会像所期待地那样工作。假设有一个客户使用 _short_ 来持有索引，然后会传递这个 _short_ 到 _logAndAdd_ 中：  
+实际上，只有当你没有太多期待的时候，重载决议才可以像所期待地那样去工作。假设有一个客户使用 _short_ 来持有索引，然后会传递这个 _short_ 到 _logAndAdd_ 中：  
 ```C++
   short nameIdx;
   …                                               // give nameIdx a value
@@ -641,13 +649,13 @@ return std::move(w);
 ```  
 因为最后一行的注释不是很明显，所以让我来解释此处发生了什么。
 
-存在两个 _logAndAdd_ 重载函数。持有 _universal reference_ 的重载函数可以推导 _T_ 为 _short_  ，因此产生一个精确匹配。持有 _int_ 形参的重载函数只能在 _promotion_ 后才能匹配 _short_ 实参。根据一般的重载决议规则，精确匹配优于 _promotion_ 匹配，所以 _universal reference_ 的重载函数会被调用。
+存在两个 _logAndAdd_ 重载函数。持有 _universal reference_ 的重载函数可以推导 _T_ 为 _short_，因此产生一个精确匹配。持有 _int_ 形参的重载函数只能在 _promotion_ 后才能匹配 _short_ 实参。根据一般的重载决议规则，精确匹配优于 _promotion_ 匹配，所以 _universal reference_ 的重载函数会被调用。
 
 在 _universal reference_ 的重载函数中，形参 _name_ 绑定的是所传入的 _short_。_name_ 会被完美转发到 _names_ 的成员函数 _emplace_ 中，_names_ 是一个 _std::multiset&lt;std::string&gt;_，然后这个 _emplace_ 负责轮流将 _name_ 转发到 _std::string_ 的构造函数中。因为 _std::string_ 没有持有 _short_ 的构造函数，所以在 _logAndAdd_ 中的 _multiset::emplace_ 中的 _std::string_ 的构造函数会失败。这都是因为对于 _short_ 实参来说，_universal reference_ 比 _int_ 是更精确的匹配。
 
-持有 _universal reference_ 的函数是 _C++_ 中最贪婪的函数。在这个函数实例化时，可以几乎为所有类型的实参创建精确匹配，只有几种类型不可以，会在 [_Item 30_](#item-30-熟悉完美转发失败的场景) 中描述。这也是为什么将重载和 _universal reference_ 做组合几乎总是一个糟糕的想法：_universal reference_ 的重载函数可以接受很多的实参类型，远远比写重载函数的开发者期待地要多。
+持有 _universal reference_ 的函数是 _C++_ 中最贪婪的函数。在这个函数实例化时，几乎可以为所有类型的实参创建精确匹配，只有几种类型不可以，会在 [_Item 30_](#item-30-熟悉完美转发失败的场景) 中描述。这也是为什么将重载和 _universal reference_ 做组合几乎总是一个糟糕的想法：_universal reference_ 的重载函数可以接受很多的实参类型，远远比写重载函数的开发者期待地要多。
 
-填上这个坑的简单方法是去写一个完美转发构造函数。对 _logAndAdd_ 例子做个小改动来演示这个问题。先不去写一个持有 _std::string_ 的或者持有用来查找 _std::string_ 的索引的 _free_ 函数，而是去写一个类 _Person_ 它的构造函数有着相同功能：  
+填上这个坑的简单方法是去写一个完美转发构造函数。对 _logAndAdd_ 例子做个小改动来演示这个问题。先不去写一个持有 _std::string_ 的或者持有用来查找 _std::string_ 的索引的 _free_ 函数，而是去写一个类 _Person_，它的构造函数有着相同功能：  
 ```C++
   class Person {
   public:
@@ -663,6 +671,98 @@ return std::move(w);
     std::string name;
   };
 ```
+就像 _logAndAdd_ 的场景，传递 _int_ 之外的 _integral_ 类型，比如：_std::size_t_、_short_ 和 _long_ 等，将会调用的是 _universal reference_ 的重载函数而不是 _int_ 的重载函数，这会导致编译失败。然而，这里的问题更糟糕，因为在 _Person_ 中存在着的重载函数比我们看到的要多。[_Item 17_](Chapter%203.md#item-17-理解特殊成员函数的生成) 解释了：在合适的条件下， _C++_ 将会生成 _copy constructor_ 和 _move constructor_，即使当类中包含了一个泛化构造函数且这个泛化构造函数可以被实例化成 _copy constructor_ 和 _move constructor_ 的 _signature_ 时，也是这样。因此，如果 _Person_ 的 _copy constructor_ 和 _move constructor_ 是被生成的话，那么 _Person_ 实际上看起来像是这样：  
+```C++
+  class Person {
+  public:
+    template<typename T>                // perfect forwarding ctor
+    explicit Person(T&& n)
+    : name(std::forward<T>(n)) {}
+    
+    explicit Person(int idx);           // int ctor
+    
+    Person(const Person& rhs);          // copy ctor
+                                        // (compiler-generated)
+    
+    Person(Person&& rhs);               // move ctor
+    …                                   // (compiler-generated)
+  };
+```  
+只有当你花费大量的时间在编译器和编译器开发者上时，才能产生这种直觉，这时你已经忘记了什么是人类的思维：
+```C++
+  Person p("Nancy");
+  
+  auto cloneOfP(p);                     // create new Person from p;
+                                        // this won't compile!
+```  
+此处，我们尝试根据另一个 _Person_ 来创建一个 _Person_，这似乎是可以得到的最明显的拷贝构造的场景，_p_ 是左值，所以我们可以排除所有拷贝是通过移动而完成的想法。但是这个代码没有调用 _copy constructor_。这个代码调用的是完美转发构造函数。这个完美转发构造函数会使用 _Person_ 对象 _p_ 来初始化 _Person_ 的 _std::string_ 数据成员。_std::string_ 没有持有 _Person_ 的构造函数，你的编译器会愤怒地举手投降，大概率你的编译器会使用冗长和难以理解的错误信息来惩罚你，以表达它们的愤怒。
+
+你可能会好奇：为什么完美转发构造函数会被调用而不是 _copy constructor_ 呢？ 我们是使用另一个 _Person_ 来初始化一个 _person_ 的。的确应该这样，但是编译器发誓要遵守 _C++_ 的规则，而这个规则是用来管理重载函数的重载决议的。
+
+编译器如下推理。_cloneOfP_ 被 _non-const_ 左值类型的 _p_ 所初始化，这意味着泛化构造函数可以被实例化成持有 _Person&_ 的构造函数。在这样的实例化后， _Person_ 看起来像是这样：  
+```C++
+  class Person {
+  public:
+    explicit Person(Person& n)          // instantiated from
+    : name(std::forward<Person&>(n)) {} // perfect-forwarding
+                                        // template
+
+    explicit Person(int idx);           // as before
+
+    Person(const Person& rhs);          // copy ctor
+    …                                   // (compiler-generated)
+};
+```  
+在这个语句中：
+```C++
+auto cloneOfP(p);
+```  
+_p_ 可以被传递给 _copy constructor_ 或者所实例化出的构造函数。调用 _copy constructor_ 是需要增加 _const_ 到 _p_ 上的，以去匹配 _copy constructor_ 的形参的类型，但是调用所实例化出的构造函数是不需要这些额外操作的。因此所实例化出的构造函数是更好的匹配，所以编译器这样做是符合设计的：调用更匹配的函数。所以此时调用的是完美转发构造函数，而不是 _copy constructor_。
+
+如果我们稍微改动下例子，将被拷贝的对象的类型修改为 _const_ 的话，那么我们会听到完全不同的音调：
+```C++
+const Person cp("Nancy");               // object is now const
+
+auto cloneOfP(cp);                      // calls copy constructor!
+```
+因为现在被拷贝的对象的类型是 _const_ 了，所以 _copy constructor_ 现在是更精确的匹配了。所实例化出的构造函数有着相同的签名，  
+```C++
+  class Person {
+  public:
+  explicit Person(const Person& n);     // instantiated from
+                                        // template
+
+  Person(const Person& rhs);            // copy ctor
+        // (compiler-generated)
+  …
+};   
+```
+但是没有用，因为 _C++_ 的重载决议规则的其中一个是：当模板所实例化出的函数和非模板所实例化出的函数，即为：**_普通_** 函数，对于函数调用来说都是同样好的匹配时，首选普通函数。因为 _copy constructor_ 是普通函数，所以它胜过和它有着相同的 _signature_ 的所实例化出的函数。
+
+如果你好奇为什么编译器可以实例化出一个和 _copy constructor_ 有着相同的 _signature_ 的构造函数却仍然要生成 _copy constructor_ 的话，那么请复习 [_Item 17_](Chapter%203.md#item-17-理解特殊成员函数的生成)。
+
+当继承介入时，完美转发构造函数和编译器所生成的 _copy constructor_ 和 _move constructor_ 之间的交互会变得更复杂。特别是 _derived class_ 的 _copy constructor_ 和 _move constructor_ 的常规的实现会表现得非常令人惊讶。看下面：  
+```C++
+  class SpecialPerson: public Person {
+  public:
+    SpecialPerson(const SpecialPerson& rhs)       // copy ctor; calls
+    : Person(rhs)                                 // base class
+    { … }                                         // forwarding ctor!
+
+    SpecialPerson(SpecialPerson&& rhs)            // move ctor; calls
+    : Person(std::move(rhs))                      // base class
+    { … }                                         // forwarding ctor!
+  };
+```  
+就像注释说明的，_derived class_ 的 _copy constructor_ 和 _move constructor_ 调用的不是 _base class_ 的 _copy constructor_ 和 _move constructor_，调用的是 _base class_ 的完美转发构造函数。为了弄清楚为什么会这样，请注意：_derived class_ 的函数正在使用 _SpecialPerson_ 类型的实参来传递给它们的 _base class_，然后在类 _Person_ 的构造函数中完成模板实例化和重载决议。最终，这个代码不可以通过编译，因为 _std::string_ 没有持有 _SpecialPerson_ 的构造函数。
+
+我希望我现在已经说服你了，你应该尽量避免重载 _universal reference_ 形参。但是如果重载 _universal reference_ 是一个糟糕的想法的话，那么当大部分类型的实参需要转发，而小部分类型的实参需要按照特殊方式去处理时，应该怎么做呢？这个鸡蛋可以使用很多方法来剥开。事实上，方法非常多，我会使用一整个 _Item_ 来做介绍。那就是 [_Item 27_](#item-27-熟悉重载-univeral-reference-的替代方法)，继续阅读就会遇到答案。
+
+### 需要记住的规则
+
+* 重载 _universal reference_ 几乎总是会导致 _universal reference_ 的重载函数的在不期望被调用的情况下却被调用到。
+
+* 完美转发构造函数尤其有问题，因为对于 _non-const_ 左值来说，完美转发构造函数通常比 _copy constructor_ 是更好的匹配，而且完美转发构造函数还会劫持 _derived class_ 对 _base class_ 的 _copy constructor_ 和 _move constructor_ 的调用。
 
 ## _Item 27_ 熟悉重载 _univeral reference_ 的替代方法
 
