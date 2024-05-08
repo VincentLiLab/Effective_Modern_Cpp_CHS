@@ -358,7 +358,7 @@ _shared_from_this_ 会在内部找出当前对象的 _control block_，然后会
 
 一个 _control block_ 一般只有几个字节大小，虽然 _custom deleter_ 和 _allocator_ 可能会使它变大点。_control block_ 的实现一般会比你所想的要更复杂。它利用了继承和 _virtual function_，它们被用来确保所指向的对象能被正确销毁。这意味着：使用 _std::shared_ptr_ 是有成本的，而这些成本是 _control block_ 所使用的 _virtual function_ 带来的。 
 
-动态分配的 _control block_、任意大小的 _deleter_ 和 _allocator_、_virtual function_ 的机制和原子引用计数操作，在你了解了这些概念之后，你对于 _std::shared_ptr_ 的热情可能已经有点消退了。其实还好。对于所有的资源管理问题它们不一定都是最好的解决方案。但是对于 _std::shared_ptr_ 所提供的功能来说，这些成本还算合理。在使用 _default deleter_ 和 _default allocator_ 的一般的条件下且 _std::shared_ptr_ 是由 _std::make_shared_ 所生成的时，_control block_ 就只有 3 个字那么大，并且它的分配几乎是无成本的。因为这些成本被并入到了它所指向的对象所对应的内存分配操作中了。见 [_Item 21_](#item-21-首选-stdmake_unique-和-stdmake_shared-而不是直接使用-new)。解引用 _std::shared_ptr_ 的成本并不会比解引用原始指针的成本高太多。执行那些需要引用计数的操作时，比如：_copy constructor_、_copy assignment operator_ 和析构函数，是需要一个或两个原子操作的，但是这些操作一般都会映射到独立的机器指令上，所以虽然相对于非原子指令来说是有成本的，但是仍然是单一指令的。_control block_ 中的虚函数机制通常只会在每个由 _std::shared_ptr_ 管理的对象上使用一次：就是当对象被销毁时。
+动态分配的 _control block_、任意大小的 _deleter_ 和 _allocator_、_virtual function_ 的机制和原子引用计数操作，在你了解了这些概念之后，你对于 _std::shared_ptr_ 的热情可能已经有点消退了。其实还好。对于所有的资源管理问题它们不一定都是最好的解决方案。但是对于 _std::shared_ptr_ 所提供的功能来说，这些成本还算合理。在使用 _default deleter_ 和 _default allocator_ 的一般的条件下且 _std::shared_ptr_ 是由 _std::make_shared_ 所生成的时，_control block_ 就只有 3 个字那么大，并且它的分配几乎是无成本的。因为这些成本被并入到了它所指向的对象所对应的内存分配操作中了。见 [_Item 21_](#item-21-首选-stdmake_unique-和-stdmake_shared-而不是直接使用-new)。解引用 _std::shared_ptr_ 的成本并不会比解引用原始指针的成本大太多。执行那些需要引用计数的操作时，比如：_copy constructor_、_copy assignment operator_ 和析构函数，是需要一个或两个原子操作的，但是这些操作一般都会映射到独立的机器指令上，所以虽然相对于非原子指令来说是有成本的，但是仍然是单一指令的。_control block_ 中的虚函数机制通常只会在每个由 _std::shared_ptr_ 管理的对象上使用一次：就是当对象被销毁时。
 
 这些相当小的成本换取了动态分配的资源的自动生命周期管理。大部分情况，使用 _std::shared_ptr_ 要远比尝试手动管理 _shared ownership_ 的对象的生命周期要好的多。如果你发现你在怀疑是否可以负担得起使用 _std::shared_ptr_ 的话，那么你应该重新考虑是否 _shared ownership_。如果 _exclusive ownership_ 可以完成或可能完成的话，那么 _std::unique_ptr_ 是一个更好的选择。它的性能接近于原始指针。从 _std::unique_ptr_ 到 _std::shared_ptr_ 的升级也是简单的，因为可以根据 _std::unique_ptr_ 来创建 _std::shared_ptr_。
 
@@ -421,7 +421,7 @@ _shared_from_this_ 会在内部找出当前对象的 _control block_，然后会
 ```C++
   std::unique_ptr<const Widget> loadWidget(WidgetID id);
 ```  
-如果 _loadWidget_ 是成本高的调用，比如：执行了文件操作或者 _database IO_，并且经常会重复使用 _ID_ 话，那么一个合理优化是：写一个函数去做 _loadWidget_ 所做的事情，但是会缓存下它的结果。然而，那些曾经已经请求过的 _Widget_ 都会堆积在缓存中，这会导致性能问题，所以另一个合理的优化是：当缓存中的那些 _Widget_ 时不再被使用时，就去销毁它们。
+如果 _loadWidget_ 是成本大的调用，比如：执行了文件操作或者 _database IO_，并且经常会重复使用 _ID_ 话，那么一个合理优化是：写一个函数去做 _loadWidget_ 所做的事情，但是会缓存下它的结果。然而，那些曾经已经请求过的 _Widget_ 都会堆积在缓存中，这会导致性能问题，所以另一个合理的优化是：当缓存中的那些 _Widget_ 时不再被使用时，就去销毁它们。
 
 对于这个缓存类型的工厂函数来说，返回类型为 _std::unique_ptr_ 就不合适了。调用方应该肯定会接收这些指向缓存对象的智能指针，这样的话，调用方就控制了这些缓存对象的生命周期了，但是缓存也需要那些指向这些缓存对象的指针。缓存中的指针需要能够探测它们何时才是悬空的，因为，工厂函数的客户在使用完了工厂函数所返回的对象之后，这些对象就会被销毁了，相应的缓存中的指针也将会悬空了。因此缓存中的指针应该是 _std::weak_ptr_，因为 _std::weak_ptr_ 才可以探测它们何时是悬空的。这意味着工厂函数的返回类型应该是 _std::shared_ptr_ 的，因为只有当一个对象的生命周期是由 _std::shared_ptr_ 管理时，_std::weak_ptr_ 才可以探测它们何时是悬空的。 
 
@@ -500,7 +500,7 @@ _std::make_unique_ 和 _std::make_shared_ 是三个 _make function_ 中的两个
 ```C++
   void processWidget(std::shared_ptr<Widget> spw, int priority);
 ```  
-按 _by-value_ 的形式来传递 _std::shared_ptr_ 可能会有点可疑，但是  [_Item 41_](Chapter%208.md#item-41-对于移动成本低且总是会被复制的可拷贝形参考虑-pass-by-value) 解释了：如果 _processWidget_ 总是会构造 _std::shared_ptr_ 的副本的话，比如，将已经处理过的 _std::shared_ptr_ 存储到一个数据结构中，那么这就是一个合理的设计选择了。
+按 _by-value_ 的形式来传递 _std::shared_ptr_ 可能会有点可疑，但是  [_Item 41_](Chapter%208.md#item-41-对于移动成本小且总是会被复制的可拷贝形参考虑-pass-by-value) 解释了：如果 _processWidget_ 总是会构造 _std::shared_ptr_ 的副本的话，比如，将已经处理过的 _std::shared_ptr_ 存储到一个数据结构中，那么这就是一个合理的设计选择了。
 
 现在，假设我们有一个函数用于计算相关的优先级，
 ```C++

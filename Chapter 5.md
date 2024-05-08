@@ -17,7 +17,8 @@
     - [需要记住的规则](#需要记住的规则-4)
   - [_Item 28_ 理解引用折叠](#item-28-理解引用折叠)
     - [需要记住的规则](#需要记住的规则-5)
-  - [_Item 29_ 假设 _move operation_ 是不存在的、成本大的和未使用的](#item-29-假设-move-operation-是不存在的成本大的和未使用的)
+  - [_Item 29_ 假设 _move operation_ 是不存在的、成本大的和不可使用的](#item-29-假设-move-operation-是不存在的成本大的和不可使用的)
+    - [需要记住的规则](#需要记住的规则-6)
   - [_Item 30_ 熟悉完美转发失败的场景](#item-30-熟悉完美转发失败的场景)
 
 
@@ -30,7 +31,7 @@
 
 右值引用将移动语义和完美转发这两个完全不同的特性联系在了一起。它是实现移动语义和完美转发的底层语言机制。
 
-你使用这些特性的经验越丰富，你越能意识到你最初的印象仅仅是冰山一角。移动语义、完美转发和右值引用的世界要比它所展现的更加微妙。例如：_std::move_ 不移动任何东西，而完美转发是不完美的。_move operation_ 并不是一定总是比 _copy operation_ 成本低。就算是，也没有你期待的那么低。在移动是有效的上下文中，_move operation_ 也不总是会被调用到。
+你使用这些特性的经验越丰富，你越能意识到你最初的印象仅仅是冰山一角。移动语义、完美转发和右值引用的世界比它所展现的要更加微妙。例如：_std::move_ 不移动任何东西，而完美转发是不完美的。_move operation_ 并不是一定总是比 _copy operation_ 成本小。就算是，也没有你期待的那么低。在移动是有效的上下文中，_move operation_ 也不总是会被调用到。
 
 不管你对这些特性研究的有多深，但是似乎总是不够深。幸运地是，深度是有限的。本章将会带你去了解根本。一旦你了解了根本，_C++11_ 的这部分内容就容易理解了。例如：你将会了解到 _std::move_ 和 _std::forward_ 的使用惯例。你将会对 _type&&_ 的模糊天性感到舒适。你将会理解为什么 _move operation_ 的行为特点的变化会如此丰富。所有的这些都会被理解。在那时，你将会回到起点，因为移动语义、完美转发和右值引用会再一次显得非常简单。但是这次，你不会再模糊了。
 
@@ -78,7 +79,7 @@ _std::move_ 和 _std::forward_ 只是执行转换的函数，它们实际上是�
 
 当然，右值适合移动，所以，应用 _std::move_ 到一个对象上是在告诉编译器这个对象是可以被移动的。这也是取名为 _std::move_ 的原因：为了方便指定可以被移动的对象。
 
-事实上，右值只在通常情况下适合移动。假定有一个表示注解的类。这个类所对应的构造函数持有包含有注解的 _std::string_ 类型的形参，这个类的构造函数会将这个形参拷贝到数据成员中。 根据 [_Item 41_](Chapter%208.md#item-41-对于移动成本低且总是会被复制的可拷贝形参考虑-pass-by-value) 的解释，你按 _by-value_ 的形式来声明形参：
+事实上，右值只在通常情况下适合移动。假定有一个表示注解的类。这个类所对应的构造函数持有包含有注解的 _std::string_ 类型的形参，这个类的构造函数会将这个形参拷贝到数据成员中。 根据 [_Item 41_](Chapter%208.md#item-41-对于移动成本小且总是会被复制的可拷贝形参考虑-pass-by-value) 的解释，你按 _by-value_ 的形式来声明形参：
 ```C++
   class Annotation {
   public:
@@ -94,7 +95,7 @@ _std::move_ 和 _std::forward_ 只是执行转换的函数，它们实际上是�
     …
   };
 ```  
-将 _text_ 拷贝至数据成员是有成本的，为了避免这种拷贝的成本，你遵循 [_Item 41_](Chapter%208.md#item-41-对于移动成本低且总是会被复制的可拷贝形参考虑-pass-by-value)
+将 _text_ 拷贝至数据成员是有成本的，为了避免这种拷贝的成本，你遵循 [_Item 41_](Chapter%208.md#item-41-对于移动成本小且总是会被复制的可拷贝形参考虑-pass-by-value)
 的建议，将 _std::move_ 应用到了 _text_ 上，从而产生了一个右值：  
 ```C++
   class Annotation {
@@ -411,7 +412,7 @@ _emplace_back_ 的类型形参被命名为了 _Args_，但它却仍然是 _unive
 ```C++
   w.setName("Adela Novak");
 ```
-在 _setName_ 的 _universal reference_ 版本中，_string literal_ _Adela Novak_ 会被传递给 _setName_，然后在 _setName_ 中，_string literal_ _Adela Novak_ 会被传递给 _w_ 中的 _std::string_ 的 _move assignment operator_。因此，_w_ 的 _name_ 数据成员将直接根据这个 _string literal_ 来赋值；此期间没有 _std::string_ 类型的临时对象产生。然而在 _setName_ 的重载版本中，_std::string_ 类型的临时对象则会被创建出，用于绑定 _setName_ 的形参，然后这个临时对象会被移动到 _w_ 的数据成员中。调用 _setName_ 一次将会需要：执行一次 _std::string_ 的构造函数，它用于创建临时对象；执行一次 _std::string_ 的 _move assignment operator_，它用于将 _newName_ 移动到 _w.name_ 中；执行一次 _std::string_ 的析构函数，它用于销毁这个临时变量。相对于只会执行持有 _const char*_ 指针的 _std::string_ 的 _move assignment operator_ 的前者，后者几乎肯定是代价更大的执行序列。额外的成本因实现的不同而不同 ，这个额外的成本是否值得担忧因应用和库的不同而不同，但是事实就是：使用一对重载了左值引用和右值引用的函数来代替 _universal reference_ 可能会在一些场景下带来运行成本。如果我们泛化这个例子，使 _Widget_ 的数据成员的类型为任意类型，而不是已知的 _std::string_ 类型，那么性能差距可能会非常地大，因为不是所有的类型在移动时都像 _std::string_ 一样成本小，见 [_Item 29_](#item-29-假设-move-operation-是不存在的成本大的和未使用的)。
+在 _setName_ 的 _universal reference_ 版本中，_string literal_ _Adela Novak_ 会被传递给 _setName_，然后在 _setName_ 中，_string literal_ _Adela Novak_ 会被传递给 _w_ 中的 _std::string_ 的 _move assignment operator_。因此，_w_ 的 _name_ 数据成员将直接根据这个 _string literal_ 来赋值；此期间没有 _std::string_ 类型的临时对象产生。然而在 _setName_ 的重载版本中，_std::string_ 类型的临时对象则会被创建出，用于绑定 _setName_ 的形参，然后这个临时对象会被移动到 _w_ 的数据成员中。调用 _setName_ 一次将会需要：执行一次 _std::string_ 的构造函数，它用于创建临时对象；执行一次 _std::string_ 的 _move assignment operator_，它用于将 _newName_ 移动到 _w.name_ 中；执行一次 _std::string_ 的析构函数，它用于销毁这个临时变量。相对于只会执行持有 _const char*_ 指针的 _std::string_ 的 _move assignment operator_ 的前者，后者几乎肯定是成本更大的执行序列。额外的成本因实现的不同而不同 ，这个额外的成本是否值得担忧因应用和库的不同而不同，但是事实就是：使用一对重载了左值引用和右值引用的函数来代替 _universal reference_ 可能会在一些场景下带来运行成本。如果我们泛化这个例子，使 _Widget_ 的数据成员的类型为任意类型，而不是已知的 _std::string_ 类型，那么性能差距可能会非常地大，因为不是所有的类型在移动时都像 _std::string_ 一样成本小，见 [_Item 29_](#item-29-假设-move-operation-是不存在的成本大的和不可使用的)。
 
 然而，关于左值和右值重载，最严重的问题不在于代码的体积和语言习惯，也不是代码的运行性能。最严重的问题是这种设计的可扩展性很差。_Widget::setName_ 只持有一个形参，所以只要两个重载函数就可以，但是对于持有多个形参的函数来说，每一个形参都要有其所对应的左值和右值，重载函数的数量将会几何级数式地增长：_n_ 个形参需要 2<sup>n</sup> 个重载函数。这也不是最糟糕的，一些函数，实际是函数模板，可以持有无限个形参，每一个形参都要有其所对应的左值和右值。这样的函数的典型例子是 _std::make_shared_ 和 _C++14_ 的 _std::make_unique_，见 [_Item 21_](Chapter%204.md#item-21-首选-stdmake_unique-和-stdmake_shared-而不是直接使用-new)。看看它们最常用的重载的声明：  
 ```C++
@@ -787,7 +788,7 @@ auto cloneOfP(cp);                      // calls copy constructor!
 
 ### _pass by value_
 
-这种方法允许你在没有增加复杂度的情况下提升性能，这种方法反常地使用 _pass-by-value_ 来代替 _pass-by-reference_。这种设计遵循 [_Item 41_](Chapter%208.md#item-41-对于移动成本低且总是会被复制的可拷贝形参考虑-pass-by-value) 的建议，当你知道你要拷贝对象时，考虑去按 _by-value_ 形式去传递它们，我将这样做的原理和如何提升的效率的相关细节推迟到 [_Item 41_](Chapter%208.md#item-41-对于移动成本低且总是会被复制的可拷贝形参考虑-pass-by-value) 中讨论。我在此处只展示下如何在 _Person_ 例子中使用这种技术：  
+这种方法允许你在没有增加复杂度的情况下提升性能，这种方法反常地使用 _pass-by-value_ 来代替 _pass-by-reference_。这种设计遵循 [_Item 41_](Chapter%208.md#item-41-对于移动成本小且总是会被复制的可拷贝形参考虑-pass-by-value) 的建议，当你知道你要拷贝对象时，考虑去按 _by-value_ 形式去传递它们，我将这样做的原理和如何提升的效率的相关细节推迟到 [_Item 41_](Chapter%208.md#item-41-对于移动成本小且总是会被复制的可拷贝形参考虑-pass-by-value) 中讨论。我在此处只展示下如何在 _Person_ 例子中使用这种技术：  
 ```C++
   class Person {
   public:
@@ -1248,9 +1249,7 @@ _type trait_ _std::remove_reference&lt;Widget&&gt;::type_ 产生了 _Widget_，�
 这里没有引用的引用，所以我们做完了，_w2_ 是一个右值引用。
 
 我们现在真正地理解了 [_Item 24_](#item-24-区分-universal-reference-和右值引用) 所介绍的 _univeral reference_。_univeral reference_ 不是一种新的引用，实际上它是在满足两个条件的上下文中的右值引用：
-
 * 类型推导区分左值和右值。类型 _T_ 的左值被推导为类型 _T&_，同时类型 _T_ 的右值被推导为类型 _T_ 。
-
 * 引用折叠发生。
 
  _univeral reference_ 的概念是有用的，因为 _univeral reference_ 可以让你无需识别引用折叠上下文的存在，也无需在脑中推导左值和右值的不同类型，更无需在将脑中所推导出的类型进行替换后再去应用引用折叠规则。
@@ -1283,10 +1282,51 @@ _type trait_ _std::remove_reference&lt;Widget&&gt;::type_ 产生了 _Widget_，�
 
 ### 需要记住的规则
 
- * 折叠引用发生了四种上下文种，分别是：模板实例化、 _auto_ 类型生成、_typedef_ 和 _alias declaration_ 的生成和使用以及 _decltype_。
+* 折叠引用发生了四种上下文种，分别是：模板实例化、 _auto_ 类型生成、_typedef_ 和 _alias declaration_ 的生成和使用以及 _decltype_。
 * 当编译器在引用折叠的上下文中生成引用的引用时，结果会变为单引用。如果任意一个原始引用是左值引用的话，那么结果就是左值引用。否则，结果就是右值引用。
 *  _univeral reference_ 是在类型推导区分左值还是右值和发生引用折叠的上下文中的右值引用。     
 
-## _Item 29_ 假设 _move operation_ 是不存在的、成本大的和未使用的
+## _Item 29_ 假设 _move operation_ 是不存在的、成本大的和不可使用的
+
+移动语义可以说是 _C++11_ 的首要特性。你可能听过：“移动 _container_ 和拷贝指针现在是一样成本小的了”，“拷贝临时对象现在是非常高效的了，避免拷贝临时对象等同于就是在过早优化！” 这些观点非常容易理解。移动语义确实是一个重要的特性。移动语义不仅允许编译器去使用相对成本小的 _move operation_ 来替换相对成本大的 _copy operation_，实际上还要求编译器这样做，当然是在满足合适条件时。获取你的 _C++98_ 代码，然后使用 _C++11_ 编译器和标准库来重新编译，那么你的软件运行的更快了。
+
+移动语义确实可以做到这些，而这些也赋予给了移动语义一个传奇般的光环。然而，传奇通常来说都是夸张的结果。本 _Item_ 的目的就是让你的期望现实点。
+
+很多的类型是不支持移动语义的，就让我们从这个观察开始。整个 _C++98_ 的标准库在 _C++11_ 中进行了彻底的重写，为那些移动比拷贝要更快的类型增加了 _move operation_，库组件的实现也进行了修改，以去利用那些 _move operation_，但也有可能的是：你正在使用的代码还没有被完全修改以去使用 _C++11_ 的优势。对于应用中或使用的库中的那些并没有为 _C++11_ 做过更改的类型，你的编译器中的移动支持可能对你就没好处了。是的，_C++11_ 会为那些没有 _move operation_ 的类来生成 _move operation_，但那也只是为那些没有声明 _copy operation_、_move operation_ 和析构函数的类来生成 _move operation_，见 [_Item 17_](Chapter%203.md#item-17-理解特殊成员函数的生成)。删除了移动，比如：删除 _move operation_，见 [_Item 11_](Chapter%203.md#item-11-首选-deleted-function-而不是-private-undefined-function)，的类型的数据成员和 _base class_ 也会阻止编译器生成 _move operation_。对于那些没有显式支持 _move operation_ 和没有编译器所生成的 _move operation_ 的类型，就别期待 _C++11_ 会比 _C++98_ 有任何性能改进了。
+
+即使那些显式支持了 _move operation_ 的类型也可能不会有你所期望的那么大的益处。例如：标准 _C++11_ 库中的所有的 _container_ 都是支持移动的，但是，如果去假设移动所有的 _container_ 都是成本小的话，那就错了。因为对于一些 _container_ 来说，没有真正成本小的方法去移动它们的元素。对于另外一些 _container_ 来说，_container_ 所提供的真正成本小的 _move operation_ 又有 _container_ 元素无法满足的限制条件。
+
+考虑 _std::array_，它是一个 _C++11_ 的新 _container_。_std::array_ 本质上是一个有 _STL_ 接口的内建数组。_std::array_ 和其他的标准 _container_ 在本质上是不相同的，其他的标准 _container_ 都是将它们的内容存储在堆上的。在概念上，这些 _container_ 类型的对象持有的只是一个指针，是将这个指针做为的数据成员的，这个指针指向是存储着所对应的 _container_ 的内容的堆内存。这个实现是非常复杂的，但是对于现在的分析来说并不重要。这个指针的存在使得可以在恒定的时间内来移动整个 _container_ 的内容：将指向 _container_ 的内容的指针从源 _container_ 拷贝到目标 _container_ 中，并将源 _container_ 的指针设置为空。
+ 
+![image6](image/image6.jpg)
+
+_std::array_ 没有这样的一个指针，因为 _std::array_ 的内容是被直接存储在 _std::array_ 对象中的：
+
+![image7](image/image7.jpg)
+
+注意 _aw1_ 中的所有元素是被移动到 _aw2_ 中的。假设 _Widget_ 是一个移动比拷贝要快的类型的话，那么移动一个 _Widget_ 类型的 _std::array_ 是比拷贝一个 _Widget_ 类型的 _std::array_ 要快的。_std::array_ 肯定是提供移动支持的。然而，移动和拷贝 _std::array_ 都是有线性时间计算复杂度的，因为 _container_ 中的每个元素都必须被拷贝或移动。这和我们有时会听到的“移动 _container_ 现在和分配一组指针是一样成本小的了”的说法相去甚远。
+
+另一方面，_std::string_ 提供了恒定时间的移动和线性时间的拷贝。这听起来像是移动快于拷贝的，但其实并不是。很多的 _string_ 的实现都利用了 _small string optimization_ _SSO_。当使用了 _SSO_ 时，**_小_** _string_，比如：不超过 _15_ 个字符容量的 _string_，是被存储在 _std::string_ 对象中的，不会使用堆分配的内存空间。对于使用了基于 _SSO_ 的实现的小 _string_ 来说，移动并不会比拷贝还快，因为 _copy-only-a-pointer_ 技巧通常是移动快于拷贝的性能优势的基础，但是此时并不能应用这个技巧。 
+
+发明 _SSO_ 的动机就充分说明了短 _string_ 才是许多程序的标准。使用内置的空间去存储这些 _string_ 的内容避免了动态内存分配，这通常是一种效率上的胜利。但是，这种胜利所带来的的后果就是移动没有拷贝快，当然也可以采取半杯满的态度来这样说：拷贝不比移动慢。
+
+甚至对于那些支持了快速 _move operation_ 的类型来说，一些似乎肯定是移动的情况也最终可能成为拷贝。[_Item 14_](Chapter%203.md#item-14-当函数不会抛出异常时声明函数为-noexcept) 解释了：标准库中的一些 _container_ 操作提供的是强异常安全保证，为了确保依赖于这个保证的 _legacy_ _C++98_ 代码在升级到 _C++11_ 时不会被破坏，所以只有当所对应的 _move operation_ 被认为是不会抛出异常时，才会使用 _underlying_ _move operation_ 来代替 _underlying_ _copy operation_。后果是：即使当一个类型提供了 _move operation_ 且这个 _move operation_ 的效率又是高于 _copy operation_ 时，甚至在代码中的某个特定点上 _move operation_ 又是非常合适时，比如：源对象是个右值，编译器仍然会被迫使去执行 _copy operation_，因为所对应的 _move operation_ 没有声明为 _noexcept_。
+
+因此，在下面的这几种场景中，_C++11_ 的移动语义不会给你带来什么好处：  
+* 没有 _move operation_：被移动的对象没有提供 _move operation_。因此，移动需求变为了拷贝需求。
+* 移动并不快：被移动的对象有 _move operation_，但是这个 _move operation_ 并没有 _copy operation_ 快。
+* 移动并不可用：移动会发生的上下文需要不会抛出异常的 _move operation_，但是这个 _move operation_ 没有被声明为 _noexcept_。
+
+值得一提的是：还有另外一种 _move operation_ 没有提供效率增益的场景：  
+* 源对象是左值：很少有例外，见 [_Item 25_](#item-25-stdmove-用于右值引用-stdforward-用于-univeral-reference)，只有右值才可以被用来做为 _move operation_ 源。
+
+但是本 _Item_ 的标题是：去假设 _move operation_ 是不存在的、成本大的和不可使用的。这是泛型代码中的常见场景，比如：当写模板时，因为你不能知道你所处理的所有类型。在这样的状况下，对于 _copy operation_ 必须得是保守的，就像是在 _C++98_ 中没有移动语义一样。这也是 _unstable_ 代码的场景，即为：代码中的所使用的类型的 _characteristic_ 是经常被修改的。
+
+然而，通常你是了解你的代码所使用的类型的，也是可以信任所使用的类型的 _characteristic_ 是不会改变的，比如：这些类型是否支持成本小的 _move operation_。当是这种场景时，你不需要再做本 _Item_ 标题的假设了。你可以简单地查看你正在使用的类型的关于 _move operation_ 支持的细节。如果这些类型提供了成本小的 _move operation_，并且你是在这些 _move operation_ 会被执行的场景下使用的这些 _move operation_ 所对应的对象的话，那么你可以安全地信任移动语义，去使用相对成本小的 _move operation_ 来代替 _copy operation_。
+
+### 需要记住的规则
+
+* 假设 _move operation_ 是不存在的、成本大的和不可使用的。
+* 在已知类型或已知支持移动语义的代码中，不需要做上述假设。
 
 ## _Item 30_ 熟悉完美转发失败的场景
