@@ -895,7 +895,7 @@ _double_ 重载函数的注释说 _double_ 和 _float_ 都是会被拒绝的，�
   if (isLucky(3.5f)) …        // error!
 ```
 
-另一个 _deleted function_ 可以执行而 _private member function_ 不可以执行的技巧是阻止使用那些应该被 _disabled_ 的模板实例。例如：假如你需要一个使用了内建指针的模板。尽管 [_Chapter 4_](Chapter%204.md#chapter-4-智能指针) 建议你首选智能指针而不是原始指针：
+另一个 _deleted function_ 可以执行而 _private member function_ 不可以执行的技巧是阻止使用那些应该被删除的模板实例。例如：假如你需要一个使用了内建指针的模板。尽管 [_Chapter 4_](Chapter%204.md#chapter-4-智能指针) 建议你首选智能指针而不是原始指针：
 ```C++
   template<typename T>
   void processPointer(T* ptr);

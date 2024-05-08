@@ -8,6 +8,13 @@
   - [_Item 26_ 避免重载 _univeral reference_](#item-26-避免重载-univeral-reference)
     - [需要记住的规则](#需要记住的规则-3)
   - [_Item 27_ 熟悉重载 _univeral reference_ 的替代方法](#item-27-熟悉重载-univeral-reference-的替代方法)
+    - [放弃重载](#放弃重载)
+    - [_pass by const T\&_](#pass-by-const-t)
+    - [_pass by value_](#pass-by-value)
+    - [使用 _tag dispatch_](#使用-tag-dispatch)
+    - [限制持有 _univeral reference_ 的模板](#限制持有-univeral-reference-的模板)
+    - [权衡](#权衡)
+    - [需要记住的规则](#需要记住的规则-4)
   - [_Item 28_ 理解引用折叠](#item-28-理解引用折叠)
   - [_Item 29_ 假设 _move operation_ 是不存在的、成本大的和未使用的](#item-29-假设-move-operation-是不存在的成本大的和未使用的)
   - [_Item 30_ 熟悉完美转发失败的场景](#item-30-熟悉完美转发失败的场景)
@@ -175,7 +182,7 @@ _std::move_ 的吸引力在于使用方便、可以减少错误发生的可能�
     };
 ```
 
-注意，首先，_std::move_ 只需要函数实参 _rhs.s_，而 _std::forward_ 需要函数实参 _rhs.s_ 和模板类型实参 _std::string_ 。其次，所传递给 _std::forward_ 的类型应该是 _non-reference_，因为这是用来表明所传递的实参是一个右值的编码惯例，见 [_Item 28_](#item-28-理解引用折叠)。这两者结合起来就意味着： _std::move_ 会比 _std::forward_ 要少输入一些代码，并且 _std::move_ 省去了传递那个编码了所传递的实参是一个右值的类型实参的麻烦。 _std::move_ 消除了可能会传递一个错误类型的可能性，比如：_std::string&_ 会导致数据成员 _s_ 是拷贝构造所得，而不是移动构造所得。
+注意，首先，_std::move_ 只需要函数实参 _rhs.s_，而 _std::forward_ 需要函数实参 _rhs.s_ 和模板类型实参 _std::string_ 。其次，所传递给 _std::forward_ 的类型应该是 _non-reference_，因为这是用来表明所传递的实参是一个右值的编码惯例，见 [_Item 28_](#item-28-理解引用折叠)。这两者结合起来就意味着： _std::move_ 会比 _std::forward_ 要少输入一些代码，并且 _std::move_ 省去了传递那个编码了所传递的实参是一个右值的类型实参的麻烦。_std::move_ 消除了可能会传递一个错误类型的可能性，比如：_std::string&_ 会导致数据成员 _s_ 是拷贝构造所得，而不是移动构造所得。
 
 更重要的是，使用 _std::move_ 所要表达的是会无条件地转换为右值，而使用 _std::forward_ 所要表达的则是只会将那些绑定了右值的引用转换为右值。这是两个完全不同的动作。_std::move_ 通常只是设置了移动，而 _std::forward_ 则是以保留某个对象的原来的 _lvalueness_ 或者 _rvalueness_ 的方式来将这个对象转发到其他函数。因为这两个动作是不同的，所以使用两个不同的函数来进行区分是很好的。
 
@@ -761,10 +768,327 @@ auto cloneOfP(cp);                      // calls copy constructor!
 ### 需要记住的规则
 
 * 重载 _universal reference_ 几乎总是会导致 _universal reference_ 的重载函数的在不期望被调用的情况下却被调用到。
-
 * 完美转发构造函数尤其有问题，因为对于 _non-const_ 左值来说，完美转发构造函数通常比 _copy constructor_ 是更好的匹配，而且完美转发构造函数还会劫持 _derived class_ 对 _base class_ 的 _copy constructor_ 和 _move constructor_ 的调用。
 
 ## _Item 27_ 熟悉重载 _univeral reference_ 的替代方法
+
+[_Item 26_](#item-26-避免重载-univeral-reference) 解释了：重载 _univeral reference_ 可能会导致各种各样的问题，独立函数和成员函数都是这样的，尤其是构造函数。然而它也给出了一些重载 _univeral reference_ 可能是有用的例子。如果重载 _univeral reference_ 的行为能像我们所期望的那样就好了！本 _Item_ 就来探讨可以实现我们所期望的行为的方法，通过设计来避免重载 _univeral reference_ 或者通过限制 _univeral reference_ 可以匹配的类型来完成。
+
+接下来的讨论都是基于 [_Item 26_](#item-26-避免重载-univeral-reference) 所引入的例子的。如果你最近还没有读 [_Item 26_](#item-26-避免重载-univeral-reference) 的话，在继续之前先去复习下。
+
+### 放弃重载
+
+[_Item 26_](#item-26-避免重载-univeral-reference) 中的第一个例子 _logAndAdd_ 代表了很多这样的函数：可以通过将那些重载函数分别命名为不同的名字来避免重载 _univeral reference_ 的缺点。例如，两个 _logAndAdd_ 重载函数就可以分别重命名为 _logAndAddName_ 和 _logAndAddNameIdx_。但是，这种方法不适用于我们考虑的第二个例子：_Person_ 的构造函数，这是因为构造函数的名字是被语言所固定的。此外，谁想要放弃重载呢？
+
+### _pass by const T&_
+
+这个替代方法是回到 _C++98_ 中，然后使用 _pass by const T&_ 来代替 _pass by univeral reference_。实际上，这是 [_Item 26_](#item-26-避免重载-univeral-reference) 考虑的第一种方法。这种设计的缺点是没有像我们所希望的那样高效。在了解了 _univeral reference_ 和重载之间的交互后，放弃一些效率而让事情变得简单可能是一个比最初看起来要有吸引力的权衡。
+
+### _pass by value_
+
+这种方法允许你在没有增加复杂度的情况下提升性能，这种方法反常地使用 _pass-by-value_ 来代替 _pass-by-reference_。这种设计遵循 [_Item 41_](Chapter%208.md#item-41-对于移动成本低且总是会被复制的可拷贝形参考虑-pass-by-value) 的建议，当你知道你要拷贝对象时，考虑去按 _by-value_ 形式去传递它们，我将这样做的原理和如何提升的效率的相关细节推迟到 [_Item 41_](Chapter%208.md#item-41-对于移动成本低且总是会被复制的可拷贝形参考虑-pass-by-value) 中讨论。我在此处只展示下如何在 _Person_ 例子中使用这种技术：  
+```C++
+  class Person {
+  public:
+    explicit Person(std::string n)      // replaces T&& ctor; see
+    : name(std::move(n)) {}             // Item 41 for use of std::move
+
+    explicit Person(int idx)            // as before
+    : name(nameFromIdx(idx)) {}
+    …
+
+  private:
+    std::string name;
+};
+```
+
+因为 _std::string_ 没有只持有一个 _integer_ 的构造函数，所以对于 _person_ 的构造函数来说，所有 _int_ 和 _int-like_ 类型，比如：_std::size_t_、_short_ 和 _long_，都会被引导至 _int_ 重载函数中。类似地，那些可以被用来创建 _std::string_ 的对象，比如：像 _"Ruth"_ 这样的 _literal_，都会被引导至持有 _std::string_ 的构造函数中。这对于调用者来说没有什么惊讶之处。我想你可能会争辩说：当使用 _0_ 和 _NULL_ 去表示空指针时，这会调用到 _int_ 构造函数，这会让一些人感到惊讶，这些人应该去学习 [_Item 8_](Chapter%203.md#item-8-首选-nullptr-而不是-0-和-null)，并且让他们重复多读几遍，直到使用 _0_ 或者 _NULL_ 做为空指针的想法让他们退缩。
+
+### 使用 _tag dispatch_
+
+_pass by const T&_ 和 _pass by value_ 都没有提供对完美转发的支持。如果使用 _univeral reference_ 的动机是完美转发的话，那么我们必须要使用 _univeral reference_，没有其他选择。同时我们还不想放弃重载。所以如果我们既不想放弃重载，也不想放弃 _univeral reference_ 的话，那么我们如何可以避免重载 _univeral reference_ 呢？
+
+实际上并不难。通过观察所有重载函数的所有形参和所有调用处的所有实参，然后选择一个整体上最匹配的函数，也就是考虑所有形参实参的组合，来完成重载函数的调用。无论什么类型的实参被传入，_univeral reference_ 形参通常都是最精确的匹配，但是如果 _univeral reference_ 只是形参列表的一部分，并且这个形参列表包含有不是 _univeral reference_ 的形参的话，那么在 _non-univeral reference_ 形参上产生足够差的匹配就可以使 _univeral reference_ 重载函数失去竞争的机会。这是 _tag dispatch_ 方法的基础，下面这个例子会让前面的描述更容易理解。
+
+我们应用 _tag dispatch_ 到 _logAndAdd_ 例子上。下面是例子的代码，免得你查询的时候走神。  
+```C++
+  std::multiset<std::string> names;     // global data structure
+
+  template<typename T>                  // make log entry and add
+
+  void logAndAdd(T&& name)              // name to data structure
+  {
+    auto now = std::chrono::system_clock::now();
+    log(now, "logAndAdd");
+    names.emplace(std::forward<T>(name));
+  }
+```  
+这个函数本身没有问题，但是当我们引入持有一个 _int_ 的重载函数时，这个重载函数会通过索引来查询一些对象，我们就回到了 [_Item 26_](#item-26-避免重载-univeral-reference) 的麻烦之地。本 _Item_ 的目标就是来解决这个问题的。不会增加重载函数，而是会重新实现 _logAndAdd_，将其委托给其他两个函数，一个用于 _integral_ 值，另一个用于其他的所有。_logAndAdd_ 它自己将接收所有类型的实参，包括 _integral_ 和 _non-integral_。
+
+完成真正工作的这两个函数被命名为 _logAndAddImpl_，即为：我们将会使用重载。其中的一个函数会持有 _univeral reference_。我们会同时有重载和 _univeral reference_。但是每个重载函数都将会持有第二个形参，它被用来表明所传入的实参是否是 _integral_ 的。这个第二个形参可以避免我们陷入 [_Item 26_](#item-26-避免重载-univeral-reference) 所描述的泥沼，因为我们会使用这个第二个形参来确定哪个重载函数会被选择。
+
+是的，我知道，“烦死了，别说了，给我展示代码吧。”没问题。下面是几乎正确的更新后的 _logAndAdd_ 版本。  
+```C++
+template<typename T>
+void logAndAdd(T&& name)
+{
+    logAndAddImpl(std::forward<T>(name),
+                    std::is_integral<T>());       // not quite correct
+} 
+```  
+这个函数转发它的形参到 _logAndAddImpl_ 中，而且还传递一个实参来表明形参的类型 _T_ 是否是 _integral_。至少，这是应该做的。对于是右值的 _integral_ 实参来说，这个函数做到了它该做的。但是正如 [_Item 28_](#item-28-理解引用折叠) 所解释的：如果一个左值实参被传递给了 _univeral reference_ 的 _name_ 的话，那么 _T_ 将会被类型推导为左值引用。这不是一个 _integral_ 类型，因为引用不是 _integral_ 类型。这意味着 _std::is_integral&lt;T&gt;_ 对于左值实参都将会失败，即使这个实参真的代表了一个 _integral_ 值。
+
+意识有这个问题等同于解决了这个问题，因为 _C++_ 标准库有 _type trait_，见 [_Item 9_](Chapter%203.md#item-9-首选-alias-declaration-而不是-typedef)， _std::remove_reference_，它做了它名字所表明的和我们所需要的事情：移除类型中的 _reference qualifier_。因此实现 _logAndAdd_ 的合适方法是：  
+```C++
+  template<typename T>
+  void logAndAdd(T&& name)
+  {
+      logAndAddImpl(
+      std::forward<T>(name),
+      std::is_integral<typename std::remove_reference<T>::type>()
+      );
+  }
+```  
+这很管用。在 _C++14_ 中，可以通过使用 _std::remove_reference_t&lt;T&gt;_ 代替 _typename std::remove_reference&lt;T&gt;::type_ 来让你少敲几下键盘。细节见 [_Item 9_](Chapter%203.md#item-9-首选-alias-declaration-而不是-typedef)。
+
+这个问题解决了，我们现在可以关注所调用的函数 _logAndAddImpl_ 了。共有两个重载，第一个只对 _non-integral_ 类型适用，即为：_std::is_integral&lt;typename std::remove_reference&lt;T&gt;::type&gt;_ 是错误的类型。  
+```C++
+  template<typename T>                                      // non-integral
+  void logAndAddImpl(T&& name, std::false_type)             // argument:
+  {                                                         // add it to
+    auto now = std::chrono::system_clock::now();            // global data
+    log(now, "logAndAdd");                                  // structure
+    names.emplace(std::forward<T>(name));
+  } 
+```  
+一旦你明白了上面的形参背后的机制，这就是简单直观的代码了。概念上，_logAndAdd_ 传递了一个 _boolean_ 到了 _logAndAddImpl_ 中用来指明所传递给 _logAndAdd_ 的实参的类型是否是 _integral_ 类型，但是 _true_ 和 _false_ 是运行期间的值，而我们需要的是使用重载决议，一种编译期间的现象，去选择正确的 _logAndAddImpl_ 重载函数。这就意味着我们需要一个对应于 _true_ 的类型和一个对应于 _false_ 的类型。这个需求非常合理，所以标准库提供了 _std::true_type_ 和 _std::false_type_ 来满足需求。如果 _T_ 是 _integral_ 的话，那么 _logAndAdd_ 所传递给 _logAndAddImpl_ 的实参就是一个继承自 _std::true_type_ 类型的对象；如果 _T_ 不是 _integral_ 的话，那么 _logAndAdd_ 传递给 _logAndAddImpl_ 的实参就是一个继承自 _std::false_type_ 类型的对象了。所以只有当 _T_ 不是 _integral_ 类型时，_logAndAddImpl_ 重载函数才是可以在 _logAndAdd_ 中被调用的。
+
+第二种重载函数覆盖了相反的场景：当 _T_ 是一个 _integral_ 类型时。在这种场景下，_logAndAddImpl_ 只需要找到传入的索引所对应的 _name_，并且回传这个 _name_ 到 _logAndAdd_ 中：  
+```C++
+  std::string nameFromIdx(int idx);                         // as in Item 26
+
+  void logAndAddImpl(int idx, std::true_type)               // integral
+  {                                                         // argument: look
+      logAndAdd(nameFromIdx(idx));                          // up name and
+  }                                                         // call logAndAdd
+                                                            // with it
+```  
+这个 _logAndAddImpl_ 使用索引来查询所对应的 _name_ 并把这个 _name_ 传给 _logAndAdd_，这个 _name_ 会被完美转发给另一个 _logAndAddImpl_ 重载函数。通过这样的方法，我们避免了在两个 _logAndAddImpl_ 中都去添加日志相关的代码。
+
+在这个设计中，类型 _std::true_type_ 和 _std::false_ 是 _tag_，它的唯一目的是迫使重载决议去走向我们想要的方向。注意我们甚至都没有命名它们的形参。这些形参在运行时毫无作用，事实上，我们希望编译器能够知道 _tag_ 的形参是被没有被使用的，并将这些形参优化在程序的执行镜像之外，一些编译器是可以的，至少在某些时候是可以的。在 _logAndAdd_ 中的重载实现函数是通过创建合适的 _tag_ 对象来将工作 **_dispatch_** 给正确的重载函数的。因此这种设计的名字是 _tag dispatch_。这是模板元编程的标准构建块，你看的现代 _C++_ 库的代码越多，你越是能经常遇到它。
+
+对于我们的目的而言，关于 _tag dispatch_ 的重点并不在于它是如何工作的，而是在于它允许我们可以在没有 [_Item 26_](#item-26-避免重载-univeral-reference) 所描述的问题的情况下将 _univeral reference_ 和重载组合在一起。_dispatch function_ _logAndAdd_ 持有没被限制的 _univeral reference_ 形参，这个 _logAndAdd_ 不是重载的。_implementation function_ _logAndAddImpl_ 是重载的，这个两个重载函数都持有 _univeral reference_ 形参，但是重载函数的重载决议不只依赖于 _univeral reference_ 形参，还依赖于 _tag_ 形参，设计出 _tag_ 为的就是只有一个重载函数可以被匹配到。因此，_tag_ 是用来确定哪个重载函数会被调用到。_univeral reference_ 形参总是会为它的实参生成精确匹配的事实也就不重要了。
+
+### 限制持有 _univeral reference_ 的模板
+
+ _tag dispatch_ 的关键是存在一个单一的非重载的函数来做为客户的 _API_，这个单一的函数会将被完成的工作分发给 _implementation function_。创建一个非重载的 _dispatch function_ 一般都是容易的，但是 [_Item 26_](#item-26-避免重载-univeral-reference) 中考虑到的第二个问题 _Person_ 类的完美转发构造函数则是个例外。编译器可能会生成 _copy constructor_ 和 _move constructor_，所以即使你只写了一个构造函数，并且在这个构造函数中使用了 _tag dispatch_，但一些构造函数的调用仍然可能会被编译器所生成的函数所处理掉，从而会绕过 _tag dispatch_ 系统。
+
+事实上，真正的问题并不在于编译器所生成的函数会绕过 _tag dispatch_ 设计，而在于编译器所生成的函数并不是一定会绕过 _tag dispatch_ 设计。你几乎总是想要类的 _copy constructor_ 去处理拷贝左值的请求，但是正如 [_Item 26_](#item-26-避免重载-univeral-reference) 所描述的，提供一个持有 _univeral reference_ 的构造函数会导致：当拷贝 _non-const_ 左值时，调用的是 _univeral reference_ 构造函数，而不是 _copy constructor_。 [_Item 26_](#item-26-避免重载-univeral-reference) 也解释了：当 _base class_ 声明有一个完美转发构造函数，当 _derived class_ 按照传统方式实现了它们的 _copy constructor_ 和 _move constructor_ 时，_base class_ 的完美构造函数通常会被调用到，尽管正确的行为应该是 _base class_ 的 _copy constructor_ 和 _move constructor_ 应该被调用。
+
+对于像这样的情况：持有 _univeral reference_ 的重载函数比你想到的要更贪婪，但却又未贪婪到成为单个的 _dispatch function_，_tag dispatch_ 不是你正在寻找的技术。你需要不同的技术，这个技术可以让你逐步降低 _univeral reference_ 所在的函数模板被使用的条件。我的朋友，你需要的是 _std::enable_if_。
+
+_std::enable_if_ 给了你一种方法可以迫使编译器表现地就好像某个特定的模板不存在一样。这些模板被认为是无效的。默认情况下，全部的模板都是有效的。但是只有当满足了 _std::enable_if_ 所指定的条件时，使用了 _std::enable_if_ 的模板才是有效的。在我们的场景中，当所传递的类型不是 _Person_ 时，_person_ 的完美转发构造函数是有效的。当所传递的类型是 _Person_ 时，_person_ 的完美转发构造函数是无效的，即为：让编译器忽略这个完美转发构造函数，因为这将会导致类的 _copy constructor_ 和 _move constructor_ 去处理调用，这正是当使用另一个 _Person_ 初始化 _Person_ 时，我们想要的结果。
+
+表达这个想法不是特别困难，但是语法是令人厌恶的。特别是如果你之前没有看过它的话，我会让你慢慢让你上手。_std::enable_if_ 的条件部分存在一些可以套用的模板，所以我们就从这些模板开始。下面是 _Perosn_ 中的完美转发构造函数的声明，它只显示了 _std::enable_if_ 所需要的那部分。我只展示了这个完美构造函数的声明，因为使用 _std::enable_if_ 不会影响函数的实现。相关函数的实现和 [_Item 26_](#item-26-避免重载-univeral-reference) 中是一样的。  
+```C++
+class Person {
+public:
+  template<typename T,
+            typename = typename std::enable_if<condition>::type>
+  explicit Person(T&& n); 
+
+  ...
+
+};
+```  
+如果想要理解上面的代码到底发生了什么的话，我必须遗憾地建议你去查询其他的资料，因为细节需要花费时间去解释，而在本书中并没有足够的空间去解释这些细节。你研究时，请看 _SFINAE_ 和 _std::enable_if_ ，因为前者是使后者可以工作的技术。在这里，我想要关注的是可以控制所对应的构造函数是否是有效的条件表达式。
+
+我们想要指定的条件是 _T_ 不是 _Person_，即为：只有当 _T_ 不是 _Person_ 时，所实例化出的构造函数才应该是有效的。由于可以确定两个类型是否是相同的 _type trait_ _std::is_same_ 的存在，我们想要的条件是 _!std::is_same&lt;Person, T&gt;::value_。注意表达式前面的是 _!_。我们希望 _Person_ 和 _T_ 是不同的。这已经接近我们所需要的了，但这还不是完全正确的，因为，正如 [_Item 28_](#item-28-理解引用折叠) 所解释的，使用左值所初始化的 _univeral reference_ 总是被类型推导为左值引用。这意味着像下面这样的代码，  
+```C++
+  Person p("Nancy");
+
+  auto cloneOfP(p);           // initialize from lvalue
+```  
+_univeral reference_ 构造函数中的类型 _T_ 将会被推导为 _Person&_。而 _Person_ 和 _Person&_ 是不同的类型，那么 _std::is_same_ 的结果将会反映出：_std::is_same&lt;Person, Person&&gt;::value_ 是 _false_。
+
+只有当 _T_ 不是 _Person_ 时，_Person_ 中的所实例化出的构造函数才应该是有效的，如果我们仔细思考这句话的含义的话，我们就会意识到：当我们看到 _T_ 时，我们希望去忽略：  
+* _T_ 是否是引用。为了确定 _univeral reference_ 构造函数是否是有效的，_Person_、_Person&_ 和 _Person&&_ 都和 _Person_ 是相同的。
+* _T_ 是否是 _const_ 或 _volatile_。对于我们来说，_const Person_、_volatile Person_ 和 _const volatile Person_ 都和 _Person_ 是相同的。
+
+这意味着我们需要这样的一个方法：在检查 _T_ 和 _Person_ 是否是相同的前，先去剥离了 _T_ 中的 _reference_、_const_ 和 _volatile_。标准库再一次以 _type trait_ 的形式给了我们所需要的工具，那就是 _std::decay_。_std::decay&lt;T&gt;::type_ 除了 _reference_ 和 _cv-qualifier_，即为：_const_ 和 _volatile_，会被移除外，剩下的就和 _T_ 是相同的了。我正在胡说，因为 _std::decay_ 就像它的名字一样，它还会将数组类型和函数类型转换为指针类型，见 [_Item 1_](Chapter%201.md#item-1-理解模板的类型推导)，但是为了当前的讨论，它变现地就像我所描述的那样就行了。那么我们想要控制我们的构造函数是否是有效的条件是：  
+```C++
+  !std::is_same<Person, typename std::decay<T>::type>::value
+```  
+即为：在忽略了 _T_ 的 _reference_ 或 _cv-qualifier_ 后，_Person_ 和 _T_ 是不同的。正如 [_Item 9_](Chapter%203.md#item-9-首选-alias-declaration-而不是-typedef) 解释的： _std::decay_ 前面的 _typename_ 是必须的，因为 _std::decay&lt;T&gt;::type_ 是依赖于模板形参 _T_ 的。
+
+将这个条件插入到前面的 _std::enable_if_ 模板中，为了是容易看到各部分是如何连接的，对插入后的结果做一些格式处理，经过上面的操作，产生了这个 Person_ 的完美构造函数的声明：  
+```C++
+class Person {
+public:
+  template<
+    typename T,
+    typename = typename std::enable_if<
+                !std::is_same<Person,
+                              typename std::decay<T>::type
+                              >::value
+              >::type
+    >
+  explicit Person(T&& n);
+    
+    …
+
+};
+```  
+如果你还没有看过这样的东西的话，那么感恩吧。我把这个设计放在最后是有理由的。当你可以选择其他的机制来避免 _univeral reference_ 和重载的组合时，你应该去使用那些机制，你几乎总是可以这样的。不过一旦你熟悉这种函数语法和大量 _&lt;&gt;_ 后，这也就没那么糟了。此外，它实现了你一直努力实现的行为。有了上面的声明后，在使用另一个 _Person_ 来构建 _Person_ 时，永远不会再去执行持有 _univeral reference_ 的构造函数了，这个 _Person_ 可以是左值或右值、可以是 _const_ 或 _non-const_ 和 _volatile_ 或 _non-volatile_。
+
+成功了，对吗？我们完成了！
+
+没结束呢，先停止庆祝吧。在 [_Item 26_](#item-26-避免重载-univeral-reference) 中还有一个问题没有解决。我们需要解决它。
+
+假设 _Person_ 的 _derived class_ 按照传统的方式实现了 _copy constructor_ 和 _move constructor_：   
+```C++
+  class SpecialPerson: public Person {
+  public:
+    SpecialPerson(const SpecialPerson& rhs)       // copy ctor; calls
+    : Person(rhs)                                 // base class
+    { … }                                         // forwarding ctor!
+
+    SpecialPerson(SpecialPerson&& rhs)            // move ctor; calls
+    : Person(std::move(rhs))                      // base class
+    { … }                                         // forwarding ctor!
+    
+    …
+  };
+```    
+这和我在 [_Item 26_](#item-26-避免重载-univeral-reference) 中所展示的代码是相同的，包括注释也是相同的，注释仍然是准确的。当我们拷贝或者移动 _SpecialPerson_ 对象时，我们希望使用 _SpecialPerson_ 的 _base class_ 的 _copy constructor_ 和 _move constructor_ 去拷贝和移动 _SpecialPerson_ 的 _base class_ 部分，但是在这些函数中，我们是将 _SpecialPerson_ 对象传递给它的 _base class_ 的构造函数的，因为 _SpecialPerson_ 和 _Person_ 是不同的，甚至在应用 _std::devcay_ 之后仍然是不同的，所以它的 _base class_ 中的 _univeral reference_ 构造函数是有效的，会欢快地进行实例化以去执行 _SpecialPerson_ 实参的精确匹配。在  _Person_ 的 _copy constructor_ 和 _move constructor_ 中，将 _SpecialPerson_ 对象绑定到 _Person_ 形参一定是会产生 _derived-to-base_ 转换的，而精确匹配比 _derived-to-base_ 转换要更好，所以我们现在的代码拷贝和移动 _SpecialPerson_ 对象将会使用 _Person_ 的完美转发构造函数去拷贝和移动 _SpecialPerson_ 对象的 _base class_ 部分！又重现了一次 [_Item 26_](#item-26-避免重载-univeral-reference) 中的问题。
+
+_derived class_ 只是遵循一般的规则来实现 _derived class_ 的 _copy constructor_ 和 _move constructor_，所以要解决这个问题还得是要在 _base class_ 中，特别是那个控制 _Person_ 的 _univeral reference_ 构造函数是否是有效的条件。现在我们已经意识到了：想要的并不是只有当 _T_ 不是 _Person_ 时，_Person_ 中的所实例化出的构造函数才应该是有效的，想要的是只有当 _T_ 不是 _Person_ 和派生自 _Person_ 的类型时，_Person_ 中的所实例化出的构造函数才应该是有效的。讨厌的继承。
+
+当你听到标准 _type trait_ 可以被用来确定一个类型是否是派生自另一个类型时，你不应该再感到惊讶了。它就是 _std::is_base_of_。如果 _T2_ 是派生自 _T1_ 的话，那么 _std::is_base_of&lt;T1, T2&gt;::value_ 就是 _true_。因为类也被认为是从它自己派生出的，所以 _std::is_base_of&lt;T, T&gt;::value_ 也是 _true_。这很方便，我们要去修改控制着 _Person_ 的完美转发构造函数的条件，为的是：在剥离了 _T_ 的 _reference_ 和 _cv-qualifier_ 后，只有当 _T_ 既不是 _Person_ 也不是派生自 _Person_ 的类型时，_Person_ 的完美转发构造函数才是有效的。使用 _std::is_base_of_ 来代替 _std::is_same_ 会带给我们所需要的：  
+```C++
+  class Person {
+  public:
+    template<
+      typename T,
+      typename = typename std::enable_if<
+                  !std::is_base_of<Person,
+                                  typename std::decay<T>::type
+                                >::value
+                >::type
+    >
+    explicit Person(T&& n);
+      
+    …
+
+  };
+```  
+现在，我们终于结束了。前提是，我们是在 _C++11_ 下写代码的。如果我们使用的是 _C++14_ 的话，这个代码仍然可以工作，但是对于其中的 _std::enable_if_ 和 _std::decay_ 来说，我们可以利用 _alias template_ 来摆脱其中令人讨厌的 _typename_ 和 _::type_ ，因此产生了下面这个更精致的代码：  
+```C++
+  class Person { // C++14
+  public:
+    template<
+    typename T,
+      typename = std::enable_if_t< // less code here
+                  !std::is_base_of<Person,
+                                    std::decay_t<T> // and here
+                                  >::value
+                > // and here
+    >
+    explicit Person(T&& n);
+    
+    …
+  
+  };
+```  
+
+好吧，我承认我撒谎了。我们仍然没有结束。但是非常接近了。真的非常非常接近了。相信我。
+
+我们已经看到了：对于一些实参类型来说，我们可以使用 _std::enable_if_ 有选择地来让 _Person_ 的 _univeral reference_ 构造函数变成是无效的，而让 _Person_ 的 _copy constructor_ 和 _move constructor_ 去进行处理这些实参类型，但是我们还没有看到如何以去区分 _integral_ 和 _non-integral_ 实参。毕竟这才是我们最初的目标；构造函数的多义性问题只是我们在讨论的过程中被卷入的一个问题而已。
+
+我们需要做的全部，这次真的是全部了，是去增加一个 _Person_ 构造函数去处理 _integral_ 实参，然后再进一步地去限制所实例化出的构造函数，为的是让这些 _integral_ 实参变成是无效的。把这些佐料和之前已经讨论过的所有东西一起倒进锅里，然后慢慢炖，最后来品尝成功的滋味：  
+```C++
+class Person {
+  public:
+    template<
+      typename T,
+      typename = std::enable_if_t<
+        !std::is_base_of<Person, std::decay_t<T>>::value
+        &&
+        !std::is_integral<std::remove_reference_t<T>>::value
+      >
+    > 
+    explicit Person(T&& n)              // ctor for std::strings and
+    : name(std::forward<T>(n))          // args convertible to
+    { … }                               // std::strings
+
+    explicit Person(int idx)            // ctor for integral args
+    : name(nameFromIdx(idx))
+    { … }
+
+    
+    …  
+                                        // copy and move ctors, etc.
+  private:
+    std::string name;
+};
+```
+完美，多么美妙的事情。嗯，好吧，对于那些对模板元编程有一定偏爱的人来说，这可能会更加美妙，但是事实上，这种方法不仅完成了工作，还是以独特优雅方式完成的。因为这个使用了完美转发，所以是最高效的，然后又因为这个是控制而不是禁止 _univeral reference_ 和重载的组合，所以这种技术可以应用到必须使用重载的场景中。
+
+### 权衡
+
+本 _Item_ 中所提到的前三种技术：放弃重载、_pass by const T&_ 和 _pass by value_ 都是指明了所调用的函数的每一个形参的类型的。后两种技术：_tag dispatch_ 和限制持有 _univeral reference_ 的模板，都是使用了完美转发的，因此是没有指明所调用的函数的形参的类型的。这个基础决定：指明还是不指明，是有后果的。
+
+通常，完美转发是更高效的，因为完美转发避免了为符合形参声明的类型而去创建临时对象的情况。在 _Person_ 的构造函数的场景中，完美转发允许将像 _"Nancy"_ 这样的 _string literal_ 转发到 _std::string_ 的构造函数中，但是，那些没有使用完美转发的技术则必须要根据 _string literal_ 来创建 _std::string_ 临时对象，以去满足 _Person_ 的构造函数的形参 _specification_。
+
+但是完美转发也是有缺点的。第一个缺点是：有些实参不可以被完美转发，即使它们可以被传递给那些持有特定类型的函数。[_Item 30_](#item-30-熟悉完美转发失败的场景) 解释了这些完美转发失败的场景。
+
+第二个缺点是：当客户传递无效实参时，错误信息难以理解。例如：假定有一个要创建 _Person_ 对象的客户传递了一个由 _char16_t_ 而不是 _char_ 所组成的 _string literal_，_char16_t_ 是一种 _C++11_ 引入的类型，代表了 _16-bit_ 的字符，而 _std::string_ 由 _char_ 所组成：
+```C++
+Person p(u"Konrad Zuse");               // "Konrad Zuse" consists of
+                                        // characters of type const char16_t
+```  
+在本 _Item_ 所介绍的前三种方法中，编译器将会看到可用的构造函数持有的是 _int_ 或 _std::string_，这会引入或多或少算是直观的错误信息来表示没有从 _const char16_t[12]_ 到 _int_或 _std::string_ 的转换。
+
+然而，在基于完美转发的方法中，_const char16_t_ 的数组在没有抱怨的情况下就可以绑定构造函数的形参。紧接着这个 _const char16_t_ 的数组会被转发给 _Person_ 的 _std::string_ 数据成员的构造函数中，直到此时，调用者所传递的 _const char16_t_ 的数组和 _std::string_ 数据成员的构造函数所需要的类型的之间的不匹配才会被发现。所导致的错误信息可能是令人印象深刻的。我使用的其中一个编译器所报的错误超过了 _160_ 行。
+
+在这个例子中，_univeral reference_ 只被转发了一次，从 _Person_ 的构造函数到了 _std::string_ 的构造函数，但是越复杂的系统，越有可能需要经过多层函数调用，这个 _univeral reference_ 最终才能到达那个可以确定实参的类型是否是可被接受的调用之处。_univeral reference_ 被转发的次数越多，出错时的错误信息可能就越令人困惑。很多的开发者认为应该把 _univeral reference_ 形参留给性能至上的接口。
+
+在 _Person_ 的场景中，我们知道转发函数的 _univeral reference_ 形参应该被用来做为 _std::string_ 的 _initializer_，所以可以使用 _static_assert_ 来验证这个 _univeral reference_ 可以扮演这个角色。 _std::is_constructible_ _type trait_ 会执行一个编译期间的测试去确定某个类型的对象是否可以被特定类型的对象而构建，所以这个 _assertion_ 很容易写：  
+```C++
+  class Person {
+  public:
+    template<                                               // as before
+      typename T,
+      typename = std::enable_if_t<
+        !std::is_base_of<Person, std::decay_t<T>>::value
+        &&
+        !std::is_integral<std::remove_reference_t<T>>::value
+      >
+    >
+    explicit Person(T&& n)
+    : name(std::forward<T>(n))
+    {
+      // assert that a std::string can be created from a T object
+      static_assert(
+        std::is_constructible<std::string, T>::value,
+        "Parameter n can't be used to construct a std::string"
+      );
+      
+      …                                                     // the usual ctor work goes here
+    
+    }
+
+    …                                                       // remainder of Person class (as before)
+
+  };
+```  
+如果客户代码尝试使用那些不能用于构建 _std::string_ 的类型来创建 _person_ 的话，那么就会产生这个特定的错误信息。不幸运地是，在这个例子中，_static_assert_ 是在构造函数实现中的，但是转发代码是成员初始值列表的一部分，是在 _static_assert_ 调用之前的。在我使用的其中一个编译器中，结果是 _static_assert_ 所产生的易读的友好的信息只能在普通的错误信息也就是那 _160_ 多行错误信息之后才可以出现。
+
+### 需要记住的规则
+
+* _univeral reference_ 和重载的组合的替代方法包括：使用不同的函数名、_pass by const T&_ 和 _pass by value_ 和使用 _tag dispatch_。
+* 通过 _std::enable_if_ 来限制模板可以允许同时使用 _univeral reference_ 和重载，它控制了编译器可以使用 _univeral reference_ 重载函数的条件。
+* _univeral reference_ 形参通常有效率性优势，但是通常也有易用性劣势。
 
 ## _Item 28_ 理解引用折叠
 
