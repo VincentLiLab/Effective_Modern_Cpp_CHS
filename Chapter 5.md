@@ -16,6 +16,7 @@
     - [权衡](#权衡)
     - [需要记住的规则](#需要记住的规则-4)
   - [_Item 28_ 理解引用折叠](#item-28-理解引用折叠)
+    - [需要记住的规则](#需要记住的规则-5)
   - [_Item 29_ 假设 _move operation_ 是不存在的、成本大的和未使用的](#item-29-假设-move-operation-是不存在的成本大的和未使用的)
   - [_Item 30_ 熟悉完美转发失败的场景](#item-30-熟悉完美转发失败的场景)
 
@@ -1091,6 +1092,200 @@ Person p(u"Konrad Zuse");               // "Konrad Zuse" consists of
 * _univeral reference_ 形参通常有效率性优势，但是通常也有易用性劣势。
 
 ## _Item 28_ 理解引用折叠
+
+[_Item 23_](#item-23-理解-stdmove-和-stdforward) 说过：当一个实参被传递给模板函数时，所推导出的模板形参的类型编码了这个实参是左值还是右值。但是 [_Item 23_](#item-23-理解-stdmove-和-stdforward) 并没有提及的是：只有当实参是被用来初始化 _univeral reference_ 形参时，上述情况才会发生，因为直到 [_Item 24_](#item-24-区分-universal-reference-和右值引用) 才介绍 _univeral reference_，所以这样做是有原因的，总之，这些关于 _univeral reference_ 和左值右值的编码的论述都意味着：对于这样的模板，  
+```C++
+  template<typename T>
+  void func(T&& param);
+```
+所推导出的模板形参 _T_ 会编码所传递给 _param_ 的实参是左值还是右值。
+
+这种编码机制是简单的。当实参是左值时，_T_ 会被推导为左值引用。当实参是右值时，_T_ 会被推导为 _non-reference_。注意是不对称的：左值被推导为左值引用，而右值被推导为 _non-reference_。因此：  
+```C++  
+  Widget widgetFactory();               // function returning rvalue
+  
+  Widget w;                             // a variable (an lvalue)
+
+  func(w);                              // call func with lvalue; T deduced
+                                        // to be Widget&
+
+  func(widgetFactory());                // call func with rvalue; T deduced
+                                        // to be Widget
+```  
+在 _func_ 的两个调用中，所传入的都是 _Widget_，但是因为一个是左值另一个是右值，所以模板形参 _T_ 被推导为了不同的类型。正如我们很快就会看到的，这决定了 _univeral reference_ 会成为左值引用还是右值引用，这也是 _std::forward_ 可以工作的底层机制。
+
+在我们更进一步看 _std::forward_ 和 _univeral reference_ 之前，我们必须注意：在 _C++_ 中，引用的引用是不合法的。如果你试着声明一个引用的引用的话，那么你的编译器将会训斥你：  
+```C++
+  int x;
+  …
+  auto& & rx = x;                       // error! can't declare reference to reference
+```  
+但是，考虑当左值被传递给持有 _univeral reference_ 的函数模板时：  
+```C++
+  template<typename T>
+  void func(T&& param);                 // as before
+  
+  func(w);                              // invoke func with lvalue;
+                                        // T deduced as Widget&
+```  
+如果我们获取到了所推导出的 _T_ 的类型，即为：_Widget&_，并且用 _Widget&_ 来实例化模板的话，那么我们会得到：  
+```C++
+  void func(Widget& && param);
+```  
+一个引用的引用！但是编译器却没有报错。从 [_Item 24_](#item-24-区分-universal-reference-和右值引用) 中我们知道了：因为 _univeral reference_ 是被左值所初始化的，所以 _Param_ 的类型应该是左值引用，但是编译器是如何根据所推导出的 _T_ 的类型并将其替换到模板中而得到下面的函数签名的呢？哪个是最终的函数签名呢？  
+```C++
+  void func(Widget& param);
+```  
+答案是引用折叠。是的，禁止你声明引用的引用，但是编译器却可能会在特定的上下文中产生引用的引用，模板实例化就是其中之一。当编译器生成引用的引用时，引用折叠规定了接下来该怎么做。
+
+因为共有两种引用：左值引用和右值引用，所以有四种可能的 _reference-reference_ 组合：_lalue to lvalue_、_lvalue to rvalue_、_rvalue to lvalue_ 和 _rvalue to rvalue_。如果引用的引用是在所允许的环境下所产生的话，比如：在模板实例化过程中，那么按照下面的规则来将引用的引用折叠为一个单引用：如果任意一个引用是左值引用的话，那么组合的结果就是左值引用。否则，也就是如果全部都是右值引用的话，那么组合的结果是右值引用。
+
+在上面的例子中，将所推导出的类型 _Widget&_ 替换到模板 _func_ 中生成右值引用的左值引用，引用折叠规则告诉我们这个结果为左值引用。
+
+引用折叠是使 _std::forward_ 可以工作的关键部分。正如 [_Item 25_](#item-25-stdmove-用于右值引用-stdforward-用于-univeral-reference) 所解释的，_std::forward_ 被应用到 _univeral reference_ 形参上，所以常见的用法看起来像下面这样：  
+```C++
+  template<typename T>
+  void f(T&& fParam)
+  {
+      …                                           // do some work
+
+      someFunc(std::forward<T>(fParam));          // forward fParam to
+  }                                               // someFunc
+```  
+因为 _fParam_ 是 _univeral reference_，所以我们知道类型形参 _T_ 会编码所传递给 _f_ 的实参，即为：被用来初始化 _fParam_ 的表达式，是左值还是右值。只有当 _T_ 编码了所传递给 _f_ 的实参是右值时，即为：当 _T_ 是 _non-reference_ 类型时，_std::forward_ 的工作才是将左值 _fParam_ 转换为右值。 
+
+这里显示 _std::forward_ 是如何来做到这些的：   
+```C++
+  template<typename T>                                      // in
+  T&& forward(typename                                      // namespace
+                remove_reference<T>::type& param)           // std
+  {
+    return static_cast<T&&>(param);
+  }
+```  
+这并不完全符合标准，我已经省略了少量接口细节，但是这些省略对于理解 _std::forward_ 是如何工作来说是不相关的。
+
+假设所传递给 _f_ 的实参是一个 _Widget_ 类型的左值。_T_ 会被推导为 _Widget&_，_std::forward_ 的调用会被实例化为 _std::forward &lt;Widget&&gt;_。将 _Widget&_ 加到 _std::forward_ 实现中会产生下面这样的代码：  
+```C++
+  Widget& && forward(typename
+                      remove_reference<Widget&>::type& param)
+  { return static_cast<Widget& &&>(param); } 
+```
+
+_type trait_ _std::remove_reference&lt;Widget&&gt;::type_ 产生了 _Widget_，见 [_Item 9_](Chapter%203.md#item-9-首选-alias-declaration-而不是-typedef)，所以变为了下面这样：  
+```C++
+  Widget& && forward(Widget& param)
+  { return static_cast<Widget& &&>(param); }
+```
+
+引用折叠也被应用到了返回类型和转换上，_std::forward_ 的最终版本的结果为：  
+```C++
+  Widget& forward(Widget& param)                                // still in
+  { return static_cast<Widget&>(param); }                             // namespace std
+```  
+正如你可以看到的，当一个左值实参被传递给函数模板 _f_ 时，_std::forward_ 被实例化为持有左值引用和返回左值引用。_std::forward_ 中的转换不做任何事情，因为 _param_ 的类型已经是 _Windet&_ 了，所以转换没有效果。因此，一个所传递给 _std::forward_ 的左值实参将会返回左值引用。根据定义左值引用是左值，所以，传递一个左值到 _std::forward_ 会导致返回的是左值，就像它应该做的那样。
+
+现在，假设所传递给 _f_ 的实参是一个 _Widget_ 类型的右值。在这种场景下，所推导出的 _f_ 的模板类型形参 _T_ 就是为 _Widget_。因此，在 _f_ 中的 _std::forward_ 的调用就是为 _std::forward&lt;Widget&gt;_。在 _std::forward_ 实现中使用 _Widget_ 替换 _T_ 后，会得到下面的代码：
+```C++  
+  Widget&& forward(typename
+                    remove_reference<Widget>::type& param)
+  { return static_cast<Widget&&>(param); }
+```  
+应用 _std::remove_reference_ 到 _non-reference_ 类型的 _Widget_ 上得到是 _Widget_，所以 _std::forward_ 变为了下面这样：
+```C++  
+  Widget&& forward(Widget& param)
+  { return static_cast<Widget&&>(param); }
+```  
+这里没有引用的引用，所以没有引用折叠，这是 _std::forward_ 的最终的实例化版本。
+
+因为函数所返回的右值引用肯定是右值，所以在这种场景下，_std::forward_ 会将 _f_ 的形参 _fParam_，一个左值，转换为一个右值。最终的结果是：所传递给 _f_ 的右值实参做为一个右值被转发给了 _someFunc_，这正是应该发生的。
+
+在 _C++14_ 中，_std::remove_reference_t_ 的存在使 _std::forward_ 的实现变得更加简洁：
+```C++
+  template<typename T>                            // C++14; still in
+  T&& forward(remove_reference_t<T>& param)       // namespace std
+  {
+      return static_cast<T&&>(param);
+  }
+```
+引用折叠发生在四个上下文中。第一个也是最常见的是模板实例化。第二个是 _auto_ 变量的类型生成。第二个的细节和第一个的细节在本质上是相同的，这是因为 _auto_ 变量的类型推导和模板的类型推导在本质上是相同的，见 [_Item 2_](Chapter%201.md#item-2-理解-auto-的类型推导)。再一次思考这个在本 _Item_ 之前就出现过的例子：  
+```C++
+  template<typename T>
+  void func(T&& param);
+
+  Widget widgetFactory();               // function returning rvalue
+
+  Widget w;                             // a variable (an lvalue)
+
+  func(w);                              // call func with lvalue; T deduced
+                                        // to be Widget&
+
+  func(widgetFactory());                // call func with rvalue; T deduced
+                                        // to be Widget
+```  
+这个可以被模仿为 _auto_ 格式。这个声明  
+```C++
+  auto&& w1 = w;
+```  
+使用左值来初始化 _w1_，所推导出的 _auto_ 为 _Widget&_。在  _w1_ 的声明中使用 _Widget&_ 替换 _auto_ 会产生下面这个 _reference-to-reference_ 的代码，  
+```C++
+  Widget& && w1 = w;
+```  
+在引用折叠后，这会变为：
+```C++
+  Widget& w1 = w;
+```   
+所以， _w1_ 是一个左值引用。
+
+另一方面，这个声明，  
+```C++
+  auto&& w2 = widgetFactory();
+```  
+使用右值来初始化 _w2_，所推导出的 _auto_ 为 _non-reference_ 类型的 _Widget_。使用 _Widget_ 替换 _auto_ 后得到了下面的代码：  
+```C++
+  Widget&& w2 = widgetFactory();
+```  
+这里没有引用的引用，所以我们做完了，_w2_ 是一个右值引用。
+
+我们现在真正地理解了 [_Item 24_](#item-24-区分-universal-reference-和右值引用) 所介绍的 _univeral reference_。_univeral reference_ 不是一种新的引用，实际上它是在满足两个条件的上下文中的右值引用：
+
+* 类型推导区分左值和右值。类型 _T_ 的左值被推导为类型 _T&_，同时类型 _T_ 的右值被推导为类型 _T_ 。
+
+* 引用折叠发生。
+
+ _univeral reference_ 的概念是有用的，因为 _univeral reference_ 可以让你无需识别引用折叠上下文的存在，也无需在脑中推导左值和右值的不同类型，更无需在将脑中所推导出的类型进行替换后再去应用引用折叠规则。
+
+我说过共有四种上下文，但是我们只讨论了其中的两个：模板实例化和 _auto_ 类型生成。第三个是 _typedefs_ 和 _alias declaration_ 的生成和使用，见 [_Item 9_](Chapter%203.md#item-9-首选-alias-declaration-而不是-typedef)。在 _typedef_ 的生成和评估期间，如果引用的引用产生了的话，引用折叠会介入去消除引用的引用。例如：假设我们有一个类模板 _Widget_，它内嵌了一个 _typedef_ 的右值引用类型，  
+```C++
+  template<typename T>
+  class Widget {
+  public:
+    typedef T&& RvalueRefToT;
+  
+    …
+  };
+```  
+然后，假设使用一个左值引用类型来实例化 _Widget_：   
+```C++
+  Widget<int&> w;
+```  
+在 _Widget_ 模板内部使用 _int&_ 替换 _T_ 会得到下面的代码：  
+```C++
+  typedef int& && RvalueRefToT;
+```  
+引用折叠进行会简化它为，  
+```C++
+  typedef int& RvalueRefToT;
+```  
+很显然，我们为 _typedef_ 所选择的名称大概率不是我们所希望的：当使用一个左值引用类型来实例化 _Widget_ 时， _RvalueRefToT_ 却是一个左值引用的 _typedef_。
+
+最后一个折叠引用发生的上下文是使用 _decltype_ 时。在执行 _decltype_ 分析类型期间，如果引用的引用的产生了的话，引用折叠会介入去消除引用的引用，对于 _decltype_ 的详细信息，请看 [_Item 3_](Chapter%201.md#item-3-理解-decltype)。
+
+### 需要记住的规则
+
+ * 折叠引用发生了四种上下文种，分别是：模板实例化、 _auto_ 类型生成、_typedef_ 和 _alias declaration_ 的生成和使用以及 _decltype_。
+* 当编译器在引用折叠的上下文中生成引用的引用时，结果会变为单引用。如果任意一个原始引用是左值引用的话，那么结果就是左值引用。否则，结果就是右值引用。
+*  _univeral reference_ 是在类型推导区分左值还是右值和发生引用折叠的上下文中的右值引用。     
 
 ## _Item 29_ 假设 _move operation_ 是不存在的、成本大的和未使用的
 
