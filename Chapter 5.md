@@ -20,6 +20,13 @@
   - [_Item 29_ 假设 _move operation_ 是不存在的、成本大的和不可使用的](#item-29-假设-move-operation-是不存在的成本大的和不可使用的)
     - [需要记住的规则](#需要记住的规则-6)
   - [_Item 30_ 熟悉完美转发失败的场景](#item-30-熟悉完美转发失败的场景)
+    - [_braced initializer_](#braced-initializer)
+    - [_0_ 或 _NULL_ 来做为空指针](#0-或-null-来做为空指针)
+    - [只有声明的 _integral static const_ 的数据成员](#只有声明的-integral-static-const-的数据成员)
+    - [重载的函数名和模板名](#重载的函数名和模板名)
+    - [_bitfield_](#bitfield)
+    - [结尾](#结尾)
+    - [需要记住的规则：](#需要记住的规则-7)
 
 
 # _Chapter 5_ 右值引用、移动语义和完美转发
@@ -788,7 +795,7 @@ auto cloneOfP(cp);                      // calls copy constructor!
 
 ### _pass by value_
 
-这种方法允许你在没有增加复杂度的情况下提升性能，这种方法反常地使用 _pass-by-value_ 来代替 _pass-by-reference_。这种设计遵循 [_Item 41_](Chapter%208.md#item-41-对于移动成本小且总是会被复制的可拷贝形参考虑-pass-by-value) 的建议，当你知道你要拷贝对象时，考虑去按 _by-value_ 形式去传递它们，我将这样做的原理和如何提升的效率的相关细节推迟到 [_Item 41_](Chapter%208.md#item-41-对于移动成本小且总是会被复制的可拷贝形参考虑-pass-by-value) 中讨论。我在此处只展示下如何在 _Person_ 例子中使用这种技术：  
+这种方法允许你在没有增加复杂度的情况下提升性能，这种方法反常地使用 _pass-by-value_ 来代替 _pass-by-reference_。这种设计遵循 [_Item 41_](Chapter%208.md#item-41-对于移动成本小且总是会被复制的可拷贝形参考虑-pass-by-value) 的建议，当你知道你要拷贝对象时，考虑去按 _by-value_ 的形式去传递它们，我将这样做的原理和如何提升的效率的相关细节推迟到 [_Item 41_](Chapter%208.md#item-41-对于移动成本小且总是会被复制的可拷贝形参考虑-pass-by-value) 中讨论。我在此处只展示下如何在 _Person_ 例子中使用这种技术：  
 ```C++
   class Person {
   public:
@@ -1330,3 +1337,210 @@ _std::array_ 没有这样的一个指针，因为 _std::array_ 的内容是被�
 * 在已知类型或已知支持移动语义的代码中，不需要做上述假设。
 
 ## _Item 30_ 熟悉完美转发失败的场景
+
+_C++11_ 的盒子上最显著的特性之一是完美转发。完美转发是完美的！哎，打开这个盒子，你会发现理想的 **_完美_** 和现实的 **_完美_**。 _C++11_ 的完美转发是非常好的，但是只有当你愿意忽略一点点小的不足时，才能实现真正的完美。本 _Item_ 致力于让你熟悉这些小的不足。
+
+在开始研究这些不足前，值得去重新看下 **_完美转发_** 的含义。**_转发_** 只是意味着：一个函数将它的形参传递也就是转发到另一个函数中。目标是让第二个函数也就是所转发到的那个函数所接收到的对象和第一个函数也就是进行转发的那个函数所接收到的对象是相同的。这就排除了 _by-value_ 的形参，因为它们是原始调用方所传入的实参的副本。我们希望被转发到那个函数能够使用那个原始传入的对象。指针形参也被排除了，因为我们不想强迫调用者去传递指针。当要达到通用意义上的转发时，我们要使用是引用形参。
+
+完美转发意味着我们不仅转发了对象，我们还转发了这些对象的显著 _characteristic_：这些对象的类型，它们是左值还是右值，它们是 _const_ 还是 _volatile_。结合我们要使用的是引用形参的观察，这意味着我们要使用的是 _univeral reference_，见 [_Item 24_](#item-24-区分-universal-reference-和右值引用)，因为只有 _univeral reference_ 形参编码了所传递给这个形参的实参的 _lvalueness_ 和 _rvalueness_。
+
+让我们假设我们有一个函数 _f_ ，我们想要写一个转发给 _f_ 的函数，实际上是函数模板。我需要做的核心看起来像下面这样：  
+```C++
+  template<typename T>
+  void fwd(T&& param)                   // accept any argument
+  {
+    f(std::forward<T>(param));          // forward it to f
+  }
+```  
+本质上说，转发函数是泛型的。例如：_fw_ 模板可以接收任意类型的实参，并转发这些实参。这种泛型的一个逻辑扩展是让转发函数不仅仅是模板，而是可以接收任意数量的实参的 _variadic_ 模板。_fwd_ 所对应的的 _variadic_ 形式看起来像下面这样：  
+```C++
+  template<typename... Ts>
+  void fwd(Ts&&... params)              // accept any arguments
+  {
+
+    f(std::forward<Ts>(params)...);     // forward them to f
+  }
+```  
+这个形式会在一些地方看到：标准 _container_ 的 _emplacement_，见 [_Item 42_](Chapter%208.md#item-42-考虑使用-emplacement-来代替-insertion)，和智能指针工厂函数：_std::make_shared_ 和 _std::make_unique_，见 [_Item 21_](Chapter%204.md#item-21-首选-stdmake_unique-和-stdmake_shared-而不是直接使用-new)。
+
+对于我们的目标函数 _f_ 和我们的转发函数 _fwd_，如果使用一个特定的实参调用 _f_ 会执行某个操作，而使用这个特定的实参调用 _fwd_ 却会执行另一个不同的操作的话，那么完美转发就是失败的：  
+```C++
+  f( expression );                      // if this does one thing,
+  fwd( expression );                    // but this does something else, fwd fails
+                                        // to perfectly forward expression to f 
+```  
+多种类别的实参都会导致这种错误，知道是哪些类别和知道如何进行解决是非常重要的，所以让我们来浏览这些不能被完美转发的实参的类别。
+
+### _braced initializer_
+
+假定 _f_ 被声明为这样：  
+```C++
+  void f(const std::vector<int>& v);
+```  
+在这种场景下，使用 _braced initializer_ 来调用 _f_ 可以编译：  
+```C++
+  f({ 1, 2, 3 });                       // fine, _{1, 2, 3}_ implicitly
+                                        // converted to std::vector<int>
+```  
+但是传递这个相同的 _braced initializer_ 给 _fwd_ 却不可以编译：  
+```C++
+  fwd({ 1, 2, 3 });                     // error! doesn't compile
+```  
+因为使用 _braced initializer_ 是完美转发的失败场景。
+
+全部这些失败场景都有相同的理由。在 _f_ 的直接调用中，比如: _f({ 1, 2, 3 })_，编译器在调用处知道了所传递的实参和 _f_ 所声明的形参的类型。编译器会将调用处的实参和形参的声明进行比较，检查它们是否是兼容的，如果是兼容的话，那么编译器会执行隐式转换，让这个调用能够成功执行。在上面的例子中，编译器会根据 _{ 1, 2, 3 }_ 来生成一个临时的 _std::vector&lt;int&gt;_ 对象，为的是 _f_ 的形参 _v_ 有 _std::vector&lt;int&gt;_ 对象可以绑定。
+
+当通过转发函数模板 _fwd_ 来间接调用 _f_ 时，编译器就不会再将 _fwd_ 的调用处所传递的实参和 _f_ 的形参的声明进行比较了。相反的是，编译器会推导所传递给 _fwd_ 的实参的类型，然后再将所推导出的类型和 _f_ 的形参的声明进行比较，当出现以下任一场景时，完全转发会失败：  
+* 编译器无法推导出 _fwd_ 的一个或多个形参的类型。在这种场景下，代码会编译失败。
+* 编译器可以推导出 _fwd_ 的一个或多个形参的类型，但却是 **_错误_** 类型。这里的 **_错误_** 的意思是：使用所推导出的类型对 _fwd_ 进行实例化会导致编译失败，或者使用 _fwd_ 所推导出的类型去调用 _f_ 所产生的行为和直接使用所传递给 _fwd_ 的实参去调用 _f_ 所产生的行为是不一样的。造成这些差异的原因是：如果 _f_ 是一个重载函数名，并且又发生了 **_错误_** 的类型推导的话，那么 _fwd_ 中所调用的重载函数 _f_ 和直接调用而被执行的重载函数 _f_ 是不一样的。
+
+在上面的 _fwd({ 1, 2, 3 })_ 调用中，它的问题是在于：它是将 _braced initializer_ 传递给了一个没有被声明为 _std::initializer_list_ 的函数模板形参，按照标准所说，这是一个 **_non-deduced context_**。再直白点说，编译器禁止为 _fwd_ 中的表达式 _{1, 2, 3}_ 进行类型推导，因为 _fdw_ 的形参不是没有被声明为 _std::initializer_list_。因为禁止为 _fwd_ 的形参来进行类型推导，所以编译器必须拒绝这个调用，这也是可以理解的。
+
+有趣地是，[_Item 2_](#item-23-理解-stdmove-和-stdforward) 解释了：使用 _braced initializer_ 来初始化 _auto_ 变量是可以类型推导成功的。这些 _auto_ 变量会被认为是 _std::initializer_list_ 对象。这就为转发函数的形参的类型应该被推导为 _std::initializer_list_ 的场景提供了一种解决方法：先使用 _auto_ 来声明一个局部变量，再将这个局部变量转递给转发函数。
+```C++
+  auto il = { 1, 2, 3 };                // il's type deduced to be
+                                        // std::initializer_list<int>
+  
+  fwd(il);                              // fine, perfect-forwards il to f
+```
+### _0_ 或 _NULL_ 来做为空指针
+
+[_Item 8_](Chapter%203.md#item-8-首选-nullptr-而不是-0-和-null) 解释了：当你尝试将 _0_ 或 _NULL_ 做为空指针来传递给模板时，类型推导将会出错。对于你所传递的实参，所推导出的是 _integral_ 类型，通常是 _int_，而不是指针类型。结果是 _0_ 和 _NULL_ 都不可以做为空指针来被完美转发。但是，解决方法是很简单的：传递 _nullptr_ 而不是 _0_ 或 _NULL_。对于相关细节，见 [_Item 8_](Chapter%203.md#item-8-首选-nullptr-而不是-0-和-null)。
+
+### 只有声明的 _integral static const_ 的数据成员
+
+通常情况下，不需要在类中定义 _integral static const_ 的数据成员，声明就足够了。因为编译器会对这些成员的值执行 _const propagation_，因此不再需要为这些成员分配内存空间了。例如：考虑这样的代码：  
+```C++
+  class Widget {
+  public:
+      static const std::size_t MinVals = 28;      // MinVals' declaration
+      …
+  };
+  …                                               // no defn. for MinVals
+  
+  std::vector<int> widgetData;
+  widgetData.reserve(Widget::MinVals);            // use of MinVals
+```  
+此处，我们使用 _Widget::MinVals_，此后简称为 _MinVals_，去指明 _widgetData_ 的初始容量，即使 _MinVals_ 还没有定义。通过将值 _28_ 放到所有提及到 _MinVals_ 的地方，来让编译器绕过缺失的定义，因为是要求这样做的。没有为 _MinVals_ 分配内存空间也就没问题了。如果 _MinVals_ 的地址被获取了的话，比如：如果有人创建了一个指向 _MinVals_ 的指针的话，那么 _MinVals_ 将会需要所对应的内存空间，为的是指针有内存空间可以指，这样的代码是可以编译的，但是会在链接的时候失败，直到提供了 _MinVals_ 的定义。 
+
+考虑到这一点，想象 _f_ 被声明为下面这样，而 _fwd_ 会转发它的实参给到 _f_：  
+```C++
+  void f(std::size_t val);
+```  
+使用 _MinVals_ 调用 _f_ 是可以的，因为编译器可以使用 _MinVals_ 的值来代替 _MinVals_：  
+```C++
+  f(Widget::MinVals);             // fine, treated as _f(28)_
+```  
+如果我们尝试通过 _fwd_ 来调用 _f_ 的话，那么事情可能就不会那么顺利了：  
+```C++
+  fwd(Widget::MinVals);           // error! shouldn't link
+```  
+这个代码可以编译，但应该不能链接。如果这让你想起了当我们编写获取 _MinVals_ 地址的代码时所发生的情况的话，那就很好，因为底层的问题是相同的。
+
+虽然此时没有去获取 _MinVals_ 的地址，但是 _fwd_ 的形参是一个 _univeral reference_，而在编译器所生成的代码中，引用通常是被视为指针的。在程序的底层二进制代码中和在硬件中，指针和引用本质上是相同的。引用只是会自动被解引用的指针，在这个层次上，这说的也就是正确的了。既然如此，按 _by-reference_ 的形式传递 _MinVals_ 就和按 _by-value_ 的形式传递的 _MinVals_ 是一样高效的了，因此，必须存在指针所指向的内存空间。当需要按 _by-reference_ 的形式来传递 _integral static const_ 的数据成员时，通常需要它们是被定义过的，这会导致使用完美转发的代码失败，而没有使用完美转发的相同代码则会成功。
+
+但是，通过前面的讨论，你大概也注意到了我的模糊的措辞。代码 **_应该不能_** 链接。引用 **_通常_** 是被视为指针。按 _by-reference_ 的形式传递 _integral static const_ 数据成员 **_通常_** 需要这些数据成员是被定义过的。这几乎就像是我知道一些我不能告诉你的事情。
+
+是有的。根据标准，按 _by-reference_ 的形式传递 _MinVals_ 需要它是被定义过的。但不是所有的实现都强迫这样做。所以，依赖于所使用的编译器和链接器，你可能会发现你可以完美转发那些没有被定义过的 _integral static const_ 的数据成员。如果可以的话，那么恭喜你，但也没有理由期待这样的代码可以进行移植。为了可以移植，只需要为正在讨论的 _integral static const_ 的数据成员来提供定义。对于 _MinVals_ 来说，就像是下面这样：  
+```C++
+  const std::size_t Widget::MinVals;    // in Widget's .cpp file
+```  
+注意定义不可以被重复初始化，在 _MinVals_ 的场景中是 _28_。然而，不要担心这个细节。如果你忘记了并在定义的时候也提供了 _initializer_ 的话，那么你的编译器将会抱怨，提醒你只可以初始化一次。
+
+### 重载的函数名和模板名
+
+假定我们的函数 _f_ 可以通过传递一个会完成一部分它的工作的函数来定制它的行为，我们仍然希望通过 _fwd_ 来将实参转发 _f_。假设所传递的这个函数是持有和返回都是 _int_，那么 _f_ 可以被声明为下面这样：  
+```C++
+  void f(int (*pf)(int));               // pf = _processing function_
+```  
+值得注意的是也可以使用简单的非指针语法来声明 _f_。这样的声明看起来像是下面这样，它和上面的声明有着相同的含义：  
+```C++
+  void f(int pf(int));                  // declares same f as above
+```
+不管怎样，现在假设我们有一组重载函数 _processVal_：  
+```C++
+  int processVal(int value);
+  int processVal(int value, int priority);
+```  
+我们可以传递 _processVal_ 给 _f_，   
+```C++
+  f(processVal);              // fine
+```
+居然可以这样做。_f_ 要求的是一个指向函数的指针来做为它的实参，但是 _processVal_ 不是一个函数指针，甚至都不是一个函数，而是两个不同函数的名字。然而，编译器是知道需要哪个 _processVal_ 的：可以和 _f_ 的形参类型所匹配的那个。因此，编译器会选择那个持有一个 _int_ 的 _processVal_，并将这个 _processVal_ 的地址转递给 _f_。
+
+之所以这样可以工作，都是因为 _f_ 的声明让编译器知道了那个 _processVal_ 的版本是它所需要的。然而，_fwd_ 做为一个函数模板，是没有任何关于它所需要的类型的信息的，那么编译器也就不可能知道哪个重载函数应该被传递了：  
+```C++
+  fwd(processVal);                      // error! which processVal?
+```  
+单独的 _processVal_ 没有类型。没有类型，就没有类型推导，而没有类型推导，我们留下的也就是另一个完美转发失败的场景了。
+
+如果我们尝试使用函数模板来代替重载函数名，或者是尝试将函数模板添加到重载函数中的话，也会产生相同的问题。一个函数模板代表的不是一个函数，而是很多个函数：  
+```C++
+  template<typename T>
+  T workOnVal(T param)                  // template for processing values
+  { … }
+  
+  fwd(workOnVal);                       // error! which workOnVal
+                                        // instantiation?
+```  
+为了让像 _fwd_ 这样的完美转发函数可以接受重载函数名或模板名，需要做是手动指明你想要去转发的重载函数或实例化。例如：你首先可以创建一个和 _f_ 的形参有着相同类型的函数指针，且利用 _processVal_ 或 _workOnVal_ 来初始化这个指针，这样就有合适的 _processVal_ 版本可以被选择了，或者就有合适的 _workOnVal_ 实例化可以被生成了，然后将这个指针再传递给 _fwd_：
+```C++
+  using ProcessFuncType =                         // make typedef;
+  int (*)(int);                                   // see Item 9
+
+  ProcessFuncType processValPtr = processVal;     // specify needed
+                                                  // signature for
+                                                  // processVal
+  fwd(processValPtr);                             // fine
+  
+  fwd(static_cast<ProcessFuncType>(workOnVal));   // also fine
+```
+当然，这需要你知道 _fwd_ 正在转发的函数指针的类型。去假设完美转发函数会写出这个函数指针的类型是不合理的。毕竟。完美转发函数是被设计用来接受一切的，所以，如果没有文档告诉你该传递什么的话，你如何知道呢？
+
+### _bitfield_
+
+最后一个完美转发失败的场景是当 _bitfield_ 被用来做为函数实参时。为了了解这在实际中的意义，观察 _IPV4_ 头，它可以被表示为：  
+```C++
+  struct IPv4Header {
+    std::uint32_t version:4,
+                  IHL:4,
+                  DSCP:6,
+                  ECN:2,
+                  totalLength:16;
+    …
+  };
+```  
+
+如果我们的 _long-suffering_ 的函数 _f_ 被声明为持有一个 _std::size_t_ 形参，这个函数 _f_ 是我们的转发函数_fwd_ 的长期目标，当使用 _IPv4Header_ 对象的 _totalLength_ 域来调用 _f_ 时，可以成功编译：  
+```C++
+  void f(std::size_t sz);               // function to call
+
+  IPv4Header h;
+  …
+  f(h.totalLength);                     // fine
+```
+然而，当试着通过 _fwd_ 来将 _h.totalLength_ 转发给 _f_ 时，这就是一个不同的故事了：  
+```C++
+  fwd(h.totalLength);                   // error!
+```  
+
+问题在于 _fwd_ 的形参是引用，而 _h.totalLength_ 是一个 _non-const_ _bitfield_。这听起来可能没那么糟糕，但是 _C++_ 的标准用异常清晰的文字谴责了这种组合：“一个 _non-const_ 引用不应该去绑定一个 _bitfield_”。对于这个禁止有一个极好的理由。_bitfield_ 可能是由机器字的任意部分所组成的，比如：_32-bit_ _int_ 的 _bits 3-5_，但是没有方法直接对这些部分进行取地址。我之前就提到过：引用和指针在硬件层面上是相同的，既然没有方法去创建指向任意位的指针，也就没有方法去创建绑定任意位的引用，另外 _C++_ 规定了你所可以指向的最小单位是 _char_。
+
+解决不能完美转发 _bitfield_ 的方法是简单的。只要你知道了任意接受 _bitfield_ 做为实参的函数最终接收到是 _bitfield_ 的值的副本就可以了。毕竟，没有函数可以将引用绑定到 _bitfield_ 上，也没有函数可以接受指向 _bitfield_ 的指针，因为就不存在指向 _bitfield_ 的指针。可以传递 _bitfield_ 的形参只有按 _by-value_ 的形式传递的形参和 _reference-to-const_。在按 _by-value_ 的形式传递的形参的场景中，所调用的函数明显接收的是一个 _bitfield_ 的值的副本，而在 _reference-to-const_ 的场景中，标准要求引用实际上绑定的必须得是 _bitfield_ 的值的副本，而这个副本是存储在一些标准 _integral_ 类型的对象中的，比如 _int_。_reference-to-const_ 绑定的不是 _bitfield_，而是 **_普通_** 对象，并且 _bitfield_ 的值是已经被拷贝到这个对象中了。
+
+那么，可以将 _bitfield_ 传递给完美转发函数的关键就是去利用所转发到函数所接收到的将是 _bitfield_ 的值的副本的事实。因此，你可以自己去创建一个副本，然后再使用这个副本去调用转发函数。在 _IPv4Header_ 的场景中，代码会使用这种技巧：  
+```C++
+  // copy bitfield value; see Item 6 for info on init. form
+  auto length = static_cast<std::uint16_t>(h.totalLength);
+  
+  fwd(length);                          // forward the copy
+```
+
+### 结尾
+
+在大多数场景中，完美转发可以像所宣传的那样工作。你几乎不需要去特别注意什么。但是当完美转发不能工作时，当那些看起来是合理的代码却不能通过编译时，或者更糟糕地，当这些代码可以通过编译，但是这些代码的行为却不是如你所愿时，了解完美转发的不完美就非常重要了。同样重要的是知道如何解决这些不完美。在大多数场景下，都是简单的。
+
+### 需要记住的规则：
+
+* 当模板类型推导失败或者推导出错误的类型时，完美转发会失败。
+* _braced initializer_ 、_0_ 或 _NULL_ 来表示空指针、只有声明的 _integral static const_ 的数据成员、重载的函数名和模板名以及 _bitfield_，这些是导致完美转发失败的实参的类别。

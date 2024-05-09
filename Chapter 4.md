@@ -674,7 +674,7 @@ _make_ 函数的第二个限制来自于它们的实现的语法细节。[_Item 
 ```C++
   processWidget(spw, computePriority());          // arg is lvalue
 ```  
-因为 _processWidget_ 的 _std::shared_ptr_ 形参是按 _by-value_ 形式传递的，根据右值进行构造只需要一次移动，而根据左值进行的构造则需要一次拷贝。对于 _std::shared_ptr_ 来说，这有非常大的不同，因为拷贝一个 _std::shared_ptr_ 需要引用计数的原子增加。而移动一个 _std::shared_ptr_ 则完全不需要引用计数的操作。为了可以让异常安全代码达到非异常安全代码的性能水平，我们需要应用 _std::move_ 到 _spw_ 上，以将 _spw_ 转换为右值，见 [_Item 23_](Chapter%205.md#item-23-理解-stdmove-和-stdforward)：  
+因为 _processWidget_ 的 _std::shared_ptr_ 形参是按 _by-value_ 的形式传递的，根据右值进行构造只需要一次移动，而根据左值进行的构造则需要一次拷贝。对于 _std::shared_ptr_ 来说，这有很大的不同，因为拷贝一个 _std::shared_ptr_ 需要引用计数的原子增加。而移动一个 _std::shared_ptr_ 则完全不需要引用计数的操作。为了可以让异常安全代码达到非异常安全代码的性能水平，我们需要应用 _std::move_ 到 _spw_ 上，以将 _spw_ 转换为右值，见 [_Item 23_](Chapter%205.md#item-23-理解-stdmove-和-stdforward)：  
 ```C++
   processWidget(std::move(spw),         // both efficient and
                   computePriority());   // exception safe
