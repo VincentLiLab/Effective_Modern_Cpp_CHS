@@ -1,4 +1,13 @@
-# _chapter 6_ _lambda expression_
+- [_Chapter 6_ _lambda expression_](#chapter-6-lambda-expression)
+  - [_Item 31_ 避免默认捕获模式](#item-31-避免默认捕获模式)
+    - [需要记住的规则：](#需要记住的规则)
+  - [_Item 32_ 使用初始化捕获来将对象移动到 _closure_ 中](#item-32-使用初始化捕获来将对象移动到-closure-中)
+    - [需要记住的规则：](#需要记住的规则-1)
+  - [_Item 33_ 在 _auto\&\&_ 形参上使用 _decltype_ 来进行完美转发](#item-33-在-auto-形参上使用-decltype-来进行完美转发)
+  - [_Item 34_ 首选 _lambda_ 而不是 _std::bind_](#item-34-首选-lambda-而不是-stdbind)
+
+
+# _Chapter 6_ _lambda expression_
 
  _lambda expression_ _lambda_ 是 _C++_ 编程中的游戏变革者。这有点让人惊讶，因为 _lambda_ 并没有给语言带来新的表达能力。所有 _lambda_ 可以完成的事情你都可以手动来完成，只不过是要多些敲代码而已。但是 _lambda_ 可以非常方便的创建函数对象，这对于日常 _C++_ 软件开发的影响是巨大的。当没有 _lambda_ 时，_STL_ 的 _if_ 算法，比如：_std::find_if_、_std::remove_if_、_std::count_if_ 等，通常只能使用最简单的 _predicate_ 来进行调用，但是当有了 _lambda_ 时，就能使用复杂的 _predicate_ 来进行调用了。这种情况也发生在可以自定义 _comparison function_ 的算法中，比如 _std::sort_、_std::nth_element_、_std::lower_bound_ 等。在 _STL_ 之外，_lambda_ 可以快速地来为 _std::unique_ptr_ 和 _std::shared_ptr_ 来创建 _custom deleter_，见 [_Item 18_](Chapter%204.md#item-18-对于-exclusive-ownership-的资源管理使用-stdunique_ptr) 和 [_Item 19_](Chapter%204.md#item-19-对于-shared-ownership-的资源管理使用-stdshared_ptr)，也让线程 _API_ 中的条件变量的 _predicate_ 的 _specification_ 变得简单了，见 [_Item 39_](Chapter%207.md#item-39-对于-one-shot-event-通信考虑-void-future)。在标准库之外，_lambda expression_ 方便了回调函数、接口适配函数和单次调用的特定上下文函数的  _on-the-fly_ _specification_。_lambda_ 确实让 _C++_ 成为了更友好的编程语言。
 
@@ -285,6 +294,153 @@ _Widget::addFilter_ 可以被声明为下面这样：
 * 默认 _by-value_ 捕获容易受到悬空指针的影响，特别是 _this_，还会误导性地暗示所对应的 _lambda_ 是 _self-contained_ 的。
 
 ## _Item 32_ 使用初始化捕获来将对象移动到 _closure_ 中
+
+有时候，_by-value_ 和 _by-reference_ 捕获都不是你想要的。如果你想要把一个 _move-only_ 对象，比如：_std::unique_ptr_ 或 _std::future_，放入到一个 _closure_ 中的话，那么 _C++11_ 没有提供可以完成的方法。如果你想要把一个拷贝是代价大的而移动是代价小的对象，比如：标准库中的大部分容器，放入到一个 _closure_ 中的话，那么你想要的是移动而不是拷贝。再一次，_C++11_ 没有提供可以完成的方法。
+
+但只是 _C++11_ 没有提供可以完成的方法。在 _C++14_ 中就是不同的故事了。_C++14_ 提供了直接的方法来将对象移动到 _closure_ 中。如果你的编译器是 _C++14-compliant_ 的话，那么高兴地继续往下读吧。如果你仍然使用是 _C++11_ 的编译器的话，那么你也应该高兴地继续读下去，因为在 _C++11_ 中也有可以模拟移动捕获的方法。
+
+甚至在 _C++11_ 刚被接受时，缺少移动捕获也被认为是一个缺点。直观的解决方法是在 _C++14_ 中添加移动捕获，但是标准委员会却选择了一条不同的路。标准委员会引入了一个新的非常灵活的捕获机制，_capture-by-move_ 只是它可以执行的技术之一。这个新能力被称为初始化捕获。初始化捕获几乎可以做 _C++11_ 的捕获可以做的所有事情，甚至更多。你不可以使用初始化捕获完成的一件事是默认捕获模式，但是 [_Item 31_](#item-31-避免默认捕获模式) 解释了无论如何你都应该远离默认捕获模式。对于 _C++11_ 的捕获所覆盖的情况，初始化捕获的语法是有点冗长的，所以在 _C++11_ 的捕获就可以完成工作的场景下，选择使用 _C++11_ 的捕获而不是初始化捕获也是非常合理的。
+
+使用初始化捕获能够让你去指定：  
+* _lambda_ 所生成的 _closure class_ 中的数据成员的名字
+* 初始化数据成员的表达式。
+
+下面展示了如何可以使用初始化捕获来将 _std::unique_ptr_ 移动到 _closure_ 中：  
+```C++
+  class Widget {                                  // some useful type
+  public:
+    …
+
+    bool isValidated() const;
+    bool isProcessed() const;
+    bool isArchived() const;
+
+  private:
+    …
+  };
+
+  auto pw = std::make_unique<Widget>();           // create Widget; see
+                                                  // Item 21 for info on
+                                                  // std::make_unique
+
+  …                                               // configure *pw
+
+  auto func = [pw = std::move(pw)]                // init data mbr
+              { return pw->isValidated()          // in closure w/
+                      && pw->isArchived(); };     // std::move(pw)
+```
+
+上面的代码包含了初始化捕获。_=_ 的左侧是你所指定的 _closure class_ 中的数据成员的名字，而 _=_ 的右侧则是初始化表达式。有趣地是，_=_ 的左侧的作用域和右侧的作用域是不相同的。左侧的作用域是 _closure class_。右侧的作用域和定义出 _lambda_ 的作用域是相同的。在上面的例子中，_=_ 的左侧的名字 _pw_ 指的是 _closure class_ 中的一个数据成员，而 _=_ 的右侧的名字 _pw_ 则指的是在那个 _lambda_ 的上面所声明的那个对象，即为：通过调用 _std::make_unique_ 所初始化的那个变量。所以 _pw = std::move(pw)_ 意味着：在 _closure_ 中创建了一个数据成员 _pw_，并使用将 _std::move_ 应用到局部变量 _pw_ 上所产生的结果来初始化这个所创建的数据成员 _pw_。
+
+像往常一样，_lambda_ 中的代码是在 _closure class_ 的作用域中的，所以这里所使用的 _pw_ 指的是 _closure class_ 的数据成员。 
+
+这个例子中的注释 _configure *pw_ 表明了：在 _Widget_ 被 _std::make_unique_ 创建之后，在 _Widget_ 所对应的 _std::unique_ptr_ 被 _lambda_ 捕获之前，这个 _Widget_ 会以某些方式被更改。如果这些配置不是必要的话，即为：如果 _std::make_unique_ 所创建的 _Widget_ 是处在一个适合直接被 _lambda_ 进行捕获的状态下的话，那么局部变量 _pw_ 不是必须要存在的，因为 _closure class_ 的数据成员可以直接被 _std::make_unique_ 来进行初始化：  
+```C++
+  auto func = [pw = std::make_unique<Widget>()]             // init data mbr
+              { return pw->isValidated()                    // in closure w/
+                        && pw->isArchived(); };             // result of call
+                                                            // to make_unique
+```  
+应该清楚的是：_C++14_ 的 **_捕获_** 概念相比于 _C++11_ 有了非常大的泛化，因为在 _C++11_ 中，不能够捕获表达式的结果。因此，初始化捕获的另一个名字为 _generalized lambda_ 捕获。
+
+但是，如果你使用的编译器没有支持 _C++14_ 的初始化捕获的话，那么如何可以在没有支持移动捕获的语言下完成移动捕获呢？
+
+记住：_lambda expression_ 只是生成了一个类，并且创建了这个类的一个对象。不存在你可以使用 _lambda_ 做而不可以手动做的事情。例如：我们刚才看到的 _C++14_ 的代码的例子可以在 _C++11_ 下这样写：  
+```C++
+  class IsValAndArch {                                      // "is validated
+  public:                                                   // and archived"
+    using DataType = std::unique_ptr<Widget>;
+
+    explicit IsValAndArch(DataType&& ptr)                   // Item 25 explains
+    : pw(std::move(ptr)) {}                                 // use of std::move
+    
+    bool operator()() const
+    { return pw->isValidated() && pw->isArchived(); }
+
+  private:
+    DataType pw;
+  };
+
+  auto func = IsValAndArch(std::make_unique<Widget>());
+```   
+比起写 _lambda_，这里做了更多的工作，但是并不会改变这样的事实：如果你在 _C++11_ 中想要一个支持对数据成员实施移动初始化的类的话，那么你去花点时间敲代码就完全可以完成的你的期望。
+
+如果你想要坚持使用 _lambdas_ 的话，鉴于 _lambdas_ 的方便，你大概是会坚持的，那么在 _C++11_ 可以通过下面的方法来模拟移动捕获：  
+* 将需要捕获的对象移动到 _std::bind_ 所产生的函数对象中 
+* 给 _lambda_ 一个指向所 **_捕获_** 的对象的引用
+
+如果你熟悉 _std::bind_ 的话，那么代码是非常简单的。如果你不熟悉 _std::bind_ 的话，那么代码就需要花点时间去习惯，但是是值得的。
+
+假设你想要的是：创建一个局部 _std::vector_，然后将一组合适的值放到这个 _std::vector_ 中，最后将这个 _std::vector_ 移动到一个 _closure_ 中。在 _C++14_ 中，这是很容易的：  
+```C++
+  std::vector<double> data;                       // object to be moved
+                                                  // into closure
+
+  …                                               // populate data
+
+  auto func = [data = std::move(data)]            // C++14 init capture
+    { /* uses of data */ };
+```
+
+这个代码的关键部分是：想要移动的对象的类型 _std::vector&lt;double&gt;_、对象的名字 _data_ 和用于初始化捕获的初始化表达式  _std::move(data)_。_C++11_ 所对应的代码是像下面这样，其中有关键的部分：  
+```C++
+  std::vector<double> data;                       // as above
+
+  …                                               // as above
+
+  auto func =
+    std::bind(                                    // C++11 emulation
+      [](const std::vector<double>& data)         // of init capture
+      { /* uses of data */ },
+      std::move(data)
+  );
+```  
+像 _lambda expression_ 一样，_std::bind_ 也会生成函数对象，我将 _std::bind_ 所返回的是函数对象称为 _bind_ 对象。_std::bind_ 的第一个实参是可调用对象。后续的实参表示的是所要传递给这个可调用对象的值。
+
+_bind_ 对象包含了所有传递给 _std::bind_ 的实参的副本。对于每个左值实参，在 _bind_ 对象中的所对应的对象都是被拷贝构造的。对于每个右值实参，在 _bind_ 对象中的所对应的对象都是被移动构造的。在这个例子中，第二个实参是一个右值，是 _std::move_ 的结果，见 [_Item 23_](Chapter%205.md#item-23-理解-stdmove-和-stdforward)，所以 _data_ 是被移动构造至 _bind_ 对象中的，这个移动构造是模拟移动捕获的关键，因为将右值移动至一个 _bind_ 对象中是我们解决无法将右值移动至 _C++11_ 的 _closure_ 中的方法。 
+
+当 _bind_ 对象被 **_调用_** 时，即为：_bind_ 对象的 _call operator_ 被执行时，_bind_ 对象所存储的实参会被传递给最初所传递给 _std::bind_ 的那个可调用对象了。在这个例子中，这也意味着：当 _bind_ 对象 _func_ 被调用时，在 _func_ 中所移动构造出的 _data_ 的副本会被传递给所传递给 _std::bind_ 的那个 _lambda_。
+
+除了形参 _data_ 被添加到了所对应的 _pseudo-move-captured_ 对象以外，这个 _lambda_ 和我们在 _C++14_ 中所使用的 _lambda_ 是相同的。这个形参是指向 _bind_ 对象中的 _data_ 的副本的左值引用。这个形参不是右值引用，因为尽管被用来初始化 _data_ 的副本的表达式 _std::move(data)_ 是右值，但是这个 _data_ 的副本却是个左值。因此在 _lambda_ 中所使用的 _data_ 就是 _bind_ 对象中的所移动构造出的 _data_ 的副本了。
+
+默认情况下，由 _lambda_ 所创建的 _closure class_ 中的 _operator()_ 成员函数是 _const_ 的。这将会导致 _closure_ 中的所有数据成员在 _lambda_ 中都是 _const_ 的。然而在 _bind_ 对象中的所移动构造出的 _data_ 的副本却不是 _const_ 的，因此，为了避免 _data_ 的副本在 _lambda_ 中被更改，_lambda_ 的形参应该被声明为 _const &_。如果 _lambda_ 被声明为了 _mutable_ 的话，那么由 _lambda_ 所创建的 _closure class_ 中的 _operator()_ 成员函数将不会再是 _const_ 的了 ，所以将 _lambda_ 的形参声明中的 _const_ 省略了也就是很合适的了：  
+```C++
+  auto func =
+    std::bind(                                    // C++11 emulation
+      [](std::vector<double>& data) mutable       // of init capture
+      { /* uses of data */ },                     // for mutable lambda
+      std::move(data)
+  );
+```
+因为 _bind_ 对象存储了所传递给 _std::bind_ 的所有实参的拷贝，所以在我们的例子中的那个 _bind_ 对象也就包含了由 _lambda_ 所生成的 _closure_ 的副本，而这个 _lambda_ 是 _bind_ 对象的第一个实参。因此这个 _closure_ 的生命周期和这个 _bind_ 对象的生命周期是相同的。这是重要的，因为这意味着：只要这个 _closure_ 存在，包含着 _pseudo-move-captured_ 对象的 _bind_ 对象也会存在。
+
+如果这是你第一次接触 _std::bind_ 的话，那么你需要在全面理解前面论述的细节前先去咨询你最爱的 _C++11_ 资料。即使如此，也应该清楚这些基础知识点：  
+* 不能够将对象移动构造至 _C++11_ 的 _closure_ 中，但是能够将对象移动构造至 _C++11_ 的 _bind_ 对象中。
+* 将对象移动构造至 _bind_ 对象中，然后再将所移动构造出的对象按 _by-reference_ 的形式传递给 _lambda_，这模拟了 _C++11_ 中的移动捕获。
+* 因为 _bind_ 对象的生命周期和 _closure_ 的生命周期是一样的，所以可以认为 _bind_ 对象中的对象是在 _closure_ 中的。  
+
+像第二个使用 _std::bind_ 来模拟移动捕获的例子一样，下面就是我们之前看到过的在  _closure_ 中创建 _std::unique_ptr_ 的代码：  
+```C++
+  auto func = [pw = std::make_unique<Widget>()]             // as before,
+              { return pw->isValidated()                    // create pw
+                        && pw->isArchived(); };             // in closure 
+```  
+下面是 _C++11_ 的模拟版本：
+```C++
+  auto func = std::bind(
+              [](const std::unique_ptr<Widget>& pw)
+              { return pw->isValidated()
+                    && pw->isArchived(); },
+                    std::make_unique<Widget>()
+              );
+```
+
+我正在展示如何使用 _std::bind_ 来解决 _C++11_ 的 _lambda_ 的限制，这是讽刺的，因为在 [_Item 34_](#item-34-首选-lambda-而不是-stdbind) 中，我建议使用 _lambda_ 而不是 _std::bind_。然而，[_Item 34_](#item-34-首选-lambda-而不是-stdbind) 也解释了在 _C++11_ 中存在一些 _std::bind_ 可以被使用的场景，这个就是其中之一。在 _C++14_ 中，像初始化捕获和 _auto_ 形参这样的特性就消除这些场景。
+
+### 需要记住的规则：
+
+* 使用 _C++14_ 的初始化捕获可以将对象移动至 _closure_ 中。
+* 在 _C++11_ 中，可以通过手写类或者 _std::bind_ 来模拟初始化捕获。 
 
 ## _Item 33_ 在 _auto&&_ 形参上使用 _decltype_ 来进行完美转发
 
