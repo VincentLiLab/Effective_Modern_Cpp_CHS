@@ -1,15 +1,16 @@
 - [_Chapter 6_ _lambda expression_](#chapter-6-lambda-expression)
   - [_Item 31_ 避免默认捕获模式](#item-31-避免默认捕获模式)
-    - [需要记住的规则：](#需要记住的规则)
+    - [需要记住的规则](#需要记住的规则)
   - [_Item 32_ 使用初始化捕获来将对象移动到 _closure_ 中](#item-32-使用初始化捕获来将对象移动到-closure-中)
-    - [需要记住的规则：](#需要记住的规则-1)
+    - [需要记住的规则](#需要记住的规则-1)
   - [_Item 33_ 在 _auto\&\&_ 形参上使用 _decltype_ 来进行完美转发](#item-33-在-auto-形参上使用-decltype-来进行完美转发)
+    - [需要记住的规则](#需要记住的规则-2)
   - [_Item 34_ 首选 _lambda_ 而不是 _std::bind_](#item-34-首选-lambda-而不是-stdbind)
 
 
 # _Chapter 6_ _lambda expression_
 
- _lambda expression_ _lambda_ 是 _C++_ 编程中的游戏变革者。这有点让人惊讶，因为 _lambda_ 并没有给语言带来新的表达能力。所有 _lambda_ 可以完成的事情你都可以手动来完成，只不过是要多些敲代码而已。但是 _lambda_ 可以非常方便的创建函数对象，这对于日常 _C++_ 软件开发的影响是巨大的。当没有 _lambda_ 时，_STL_ 的 _if_ 算法，比如：_std::find_if_、_std::remove_if_、_std::count_if_ 等，通常只能使用最简单的 _predicate_ 来进行调用，但是当有了 _lambda_ 时，就能使用复杂的 _predicate_ 来进行调用了。这种情况也发生在可以自定义 _comparison function_ 的算法中，比如 _std::sort_、_std::nth_element_、_std::lower_bound_ 等。在 _STL_ 之外，_lambda_ 可以快速地来为 _std::unique_ptr_ 和 _std::shared_ptr_ 来创建 _custom deleter_，见 [_Item 18_](Chapter%204.md#item-18-对于-exclusive-ownership-的资源管理使用-stdunique_ptr) 和 [_Item 19_](Chapter%204.md#item-19-对于-shared-ownership-的资源管理使用-stdshared_ptr)，也让线程 _API_ 中的条件变量的 _predicate_ 的 _specification_ 变得简单了，见 [_Item 39_](Chapter%207.md#item-39-对于-one-shot-event-通信考虑-void-future)。在标准库之外，_lambda expression_ 方便了回调函数、接口适配函数和单次调用的特定上下文函数的  _on-the-fly_ _specification_。_lambda_ 确实让 _C++_ 成为了更友好的编程语言。
+ _lambda expression_ _lambda_ 是 _C++_ 编程中的游戏变革者。这有点让人惊讶，因为 _lambda_ 并没有给语言带来新的表达能力。所有 _lambda_ 可以完成的事情你都可以手动来完成，只不过是要多些敲代码而已。但是 _lambda_ 可以非常方便的创建函数对象，这对于日常 _C++_ 软件开发的影响是巨大的。当没有 _lambda_ 时，_STL_ 的 _if_ 算法，比如：_std::find_if_、_std::remove_if_、_std::count_if_ 等，通常只能使用最简单的 _predicate_ 来进行调用，但是当有了 _lambda_ 时，就能使用复杂的 _predicate_ 来进行调用了。这种情况也发生在可以自定义 _comparison function_ 的算法中，比如 _std::sort_、_std::nth_element_、_std::lower_bound_ 等。在 _STL_ 之外，_lambda_ 可以快速地来为 _std::unique_ptr_ 和 _std::shared_ptr_ 来创建 _custom deleter_，见 [_Item 18_](Chapter%204.md#item-18-对于-exclusive-ownership-的资源管理使用-stdunique_ptr) 和 [_Item 19_](Chapter%204.md#item-19-对于-shared-ownership-的资源管理使用-stdshared_ptr)，也让线程 _API_ 中的条件变量的 _predicate_ 的规范变得简单了，见 [_Item 39_](Chapter%207.md#item-39-对于-one-shot-event-通信考虑-void-future)。在标准库之外，_lambda expression_ 方便了回调函数、接口适配函数和单次调用的特定上下文函数的  _on-the-fly_ 规范。_lambda_ 确实让 _C++_ 成为了更友好的编程语言。
 
 _lambda_ 的相关术语可以令人很困惑。这是一个简短的提醒：
 
@@ -123,7 +124,7 @@ _C++11_ 中有两个默认捕获模式：_by-reference_ 和 _by-value_。默认 
 
 从长远来看，将 _lambda_ 所依赖的局部变量和形参显式列出来是更好的软件工程。
 
-顺便一说，_C++14_ 可以在 _lambda_ 的形参 _specification_ 中使用 _auto_ 了，这意味着上面的代码可以在 _C++14_ 中变得更加简洁了。可以淘汰掉 _ContElemT typedef_，然后 _if_ 条件语句可以被修改为下面这样：  
+对了，_C++14_ 可以在 _lambda_ 的形参规范中使用 _auto_ 了，这意味着上面的代码可以在 _C++14_ 中变得更加简洁了。_ContElemT typedef_ 可以被淘汰掉了，然后 _if_ 条件语句可以被修改为下面这样：  
 ```C++
   if (std::all_of(begin(container), end(container),
                   [&](const auto& value)                    // C++14
@@ -268,7 +269,7 @@ _Widget::addFilter_ 可以被声明为下面这样：
 
 对于 _generalized lambda_ 捕获来说，没有默认捕获模式，所以即使在 _C++14_ 中，本 _Item_ 的建议：避免默认捕获模式，仍然成立。
 
-默认 _by-value_ 捕获的另外一个缺点是会让人误认为所对应的 _closure_ 是 _self-contained_ 的，这个 _closure_ 之外的数据的改动是不会影响到这个 _closure_ 本身的。通常来说并不是的，因为 _lambda_ 不仅依赖于可以被捕获的局部变量和形参，还依赖于静态存储期对象。这些对象可以是全局作用域中或 _namespace_ 作用域中所定义的对象，也可以是类中、函数中或者文件中所声明的 _static_ 对象。这些对象都可以在 _lambda_ 中被使用，但不可以被捕捉。然而，默认 _by-value_ 捕获的 _specification_ 可能会给人一种这些对象也是可以被捕捉的印象。考虑对我们之前看到的 _addDivisorFilter_ 函数做个修改：  
+默认 _by-value_ 捕获的另外一个缺点是会让人误认为 _closure_ 是 _self-contained_ 的，这个 _closure_ 之外的数据的改动是不会影响到这个 _closure_ 本身的。并不是的，因为 _lambda_ 不仅依赖于可以被捕获的局部变量和形参，还依赖于静态存储期对象。这些对象可以是全局作用域中或 _namespace_ 作用域中所定义的对象，也可以是类中、函数中或者文件中所声明的 _static_ 对象。这些对象都可以在 _lambda_ 中被使用，但不可以被捕捉。然而，默认 _by-value_ 捕获的规范可能会给人一种这些对象也是可以被捕捉的印象。考虑对我们之前看到的 _addDivisorFilter_ 函数做个修改：  
 ```C++
   void addDivisorFilter()
   {
@@ -288,7 +289,7 @@ _Widget::addFilter_ 可以被声明为下面这样：
 
 这个代码的马虎读者看到 _[]_ 会认为“是的，这个 _lambda_ 拷贝了它所使用的全部对象，因此是 _self-contained_ 的”，这是可以被原谅的。但其实并不是 _self-contained_ 的。这个 _lambda_ 没有使用任何 _non-static_ 局部对象，所以没有捕获任何东西。这个 _lambda_ 代码使用的是静态变量 _divisor_。在每个 _addDivisorFilter_ 执行结束后，当 _divisor_ 被增加时，任何通过这个函数被添加到 _filters_ 中的 _lambda_ 都会表现出新的行为，而这个新的行为和新的 _divisor_ 值是所相关的。实际来说，这个 _lambda_ 是按 _by-reference_ 的形式捕获的 _divisor_，这与默认 _by-value_ 捕获语句所暗示的含义是矛盾的。如果你一开始远离了默认 _by-value_ 捕获语句的话，那么也就消除了代码会被如此误导的风险了。
 
-### 需要记住的规则：
+### 需要记住的规则
 
 * 默认 _by-reference_ 捕获可能会导致悬空引用。
 * 默认 _by-value_ 捕获容易受到悬空指针的影响，特别是 _this_，还会误导性地暗示所对应的 _lambda_ 是 _self-contained_ 的。
@@ -437,11 +438,99 @@ _bind_ 对象包含了所有传递给 _std::bind_ 的实参的副本。对于每
 
 我正在展示如何使用 _std::bind_ 来解决 _C++11_ 的 _lambda_ 的限制，这是讽刺的，因为在 [_Item 34_](#item-34-首选-lambda-而不是-stdbind) 中，我建议使用 _lambda_ 而不是 _std::bind_。然而，[_Item 34_](#item-34-首选-lambda-而不是-stdbind) 也解释了在 _C++11_ 中存在一些 _std::bind_ 可以被使用的场景，这个就是其中之一。在 _C++14_ 中，像初始化捕获和 _auto_ 形参这样的特性就消除这些场景。
 
-### 需要记住的规则：
+### 需要记住的规则
 
 * 使用 _C++14_ 的初始化捕获可以将对象移动至 _closure_ 中。
 * 在 _C++11_ 中，可以通过手写类或者 _std::bind_ 来模拟初始化捕获。 
 
 ## _Item 33_ 在 _auto&&_ 形参上使用 _decltype_ 来进行完美转发
+
+_C++14_ 中最令人激动的其中一个特性是 _generic lambda_，也就是可以在 _lambdas_ 的形参规范上使用了 _auto_ 了。这个特性的实现是简单的：_lambdas_ 的 _closure class_ 中的 _operator()_ 是模板函数。例如：给定一个这样的 _lambda_，  
+```C++
+auto f = [](auto x){ return func(normalize(x)); };
+```
+这个 _closure class_ 的 _operator_ 看起来像是这样：  
+```C++
+class SomeCompilerGeneratedClassName {
+public:
+  template<typename T>                            // see Item 3 for
+  auto operator()(T x) const                      // auto return type
+  { return func(normalize(x)); }
+
+  …                                               // other closure class
+};                                                // functionality  
+```  
+在这个例子中，_lambda_ 对于它的形参所做的唯一一件事就是将它转发到 _normalize_ 中。如果 _normalize_ 对左值和右值区别对待的话，那么这个 _lambda_ 就是错误的了，因为它总是将左值转递给了 _normalize_，形参 _x_ 肯定是左值，即使所传递给 _lambda_ 的实参是一个右值。
+
+正确的方法是完美转发 _x_ 到 _normalize_ 中。完成这个需要对代码更改两个地方。首先，_x_ 必须变为 _universal reference_，见 [_Item 24_](Chapter%205.md#item-24-区分-universal-reference-和右值引用)，其次，必须通过 _std::forward_ 来将 _x_ 传递给 _normalize_，见 [_Item 25_](Chapter%205.md#item-25-stdmove-用于右值引用-stdforward-用于-univeral-reference)。概念上来说，这些都是很小的改变：  
+```C++
+  auto f = [](auto&& x)
+            { return func(normalize(std::forward<???>(x))); };
+```
+
+然而，概念和实现之间的问题是应该传递什么类型给 _std::forward_，即为：在上面写 _???_ 的地方应该写什么呢？    
+
+一般来说，当使用完美转发时，你就是在持有类型形参 _T_ 的模板函数中，所以只需要写 _std::forward&lt;T&gt;_ 就可以了。但是在 _generic lambda_ 中，是没有可用的类型形参 _T_ 给到你的。在 _lambda_ 所生成的 _closure class_ 中的模板函数 _operator()_ 中是存在有 _T_ 的，但是不可以在 _lambda_ 中引用这个 _T_，所以没什么用。 
+
+[_Item 28_](Chapter%205.md#item-28-理解引用折叠) 解释了：如果一个左值实参被传递给了一个 _universal reference_ 形参的话，那么这个形参的类型就会变为左值引用。如果一个右值实参被传递给了一个 _universal reference_ 形参的话，那么这个形参的类型就会变为右值引用。这意味着：在我们的 _lambda_ 中，我们可以通过检查形参 _x_ 的类型来确定所传递的实参是左值还是右值。_decltype_ 给了我们一个可以完成的方法。如果传入的是左值的话，那么 _decltype(x)_ 将会产生的是左值引用类型。如果传入的是右值的话，那么 _decltype(x)_ 将会产生的是右值引用类型。
+
+[_Item 28_](Chapter%205.md#item-28-理解引用折叠) 也解释了：当调用 _std::forward_ 时，惯例规定了：类型实参为左值引用以表明返回的是左值，类型实参为 _non-reference_ 以表明返回的是右值。在我们的 _lambda_ 中，如果 _x_ 绑定的是左值的话，_decltype(x)_ 将会产生的是左值引用。这是符合惯例的。然而，如果 _x_ 绑定的是右值的话，那么 _decltype(x)_ 将会产生是右值引用，而不是符合惯例的 _non-reference_。
+
+但是，看一看 [_Item 28_](Chapter%205.md#item-28-理解引用折叠) 中的 _std::forward_ 的 _C++14_ 的简单实现：  
+```C++
+  template<typename T>                            // in namespace
+  T&& forward(remove_reference_t<T>& param)       // std
+  {
+    return static_cast<T&&>(param);
+  }
+```
+
+如果客户代码想要完美转发一个 _Widget_ 类型的右值的话，那么通常使用类型 _Widget_，即为：_non-reference_，来实例化 _std::forward_，那么相应地 _std::forward_ 模板会产生下面这样的函数：  
+```C++
+Widget&& forward(Widget& param)                   // instantiation of
+{                                                 // std::forward when
+  return static_cast<Widget&&>(param);            // T is Widget
+}
+```   
+但是考虑一下：如果客户代码想要去完美转发 _Widget_ 类型的右值，但是没有遵循惯例将 _T_ 指明为 _non-reference_ 类型，而是将 _T_ 指明为了右值引用的话，会发生什么呢？也就是说考虑一下：如果 _T_ 是被指明为了 _Widget&&_ 的话，会发生什么呢？在执行 _std::forward_ 的实例化和应用了 _std::remove_reference_t_ 后，在引用折叠之前，再一次见 [_Item 28_](Chapter%205.md#item-28-理解引用折叠)，_std::forward_ 看起来就像下面这样：  
+```C++
+  Widget&& && forward(Widget& param)              // instantiation of
+  {                                               // std::forward when
+    return static_cast<Widget&& &&>(param);       // T is Widget&&
+  }                                               // (before reference-
+                                                  // collapsing)
+```  
+应用引用折叠规则，右值引用的右值引用会变为右值引用，这个实例化会变为下面这样：  
+```C++
+  Widget&& forward(Widget& param)                 // instantiation of
+  {                                               // std::forward when
+    return static_cast<Widget&&>(param);          // T is Widget&&
+  }                                               // (after reference-
+                                                  // collapsing)
+```  
+如果将这个实例化和将 _T_ 设置为 _Widget_ 来调用 _std::forward_ 时所产生的实例化进行比较的话，那么你会发现它们两个是一样的。这意味着使用右值引用类型实例化 _std::forward_ 所产生的结果和使用 _non-reference_ 类型实例化 _std::forward_ 所产生的结果是一样的。
+
+这是个非常好的消息，因为当一个右值被传递来做为我们的 _lambda_ 的形参 _x_ 的实参时，_decltype(x)_ 产生的是右值引用。我们在上面就已经知道了：当一个左值被传递给到我们的 _lambda_ 时，_decltype(x)_ 所产生的是符合惯例的可以传递给 _std::forward_ 的类型，我们现在也已经知道了：对于右值来说，_decltype(x)_ 所产生的类型是不符合惯例的可以传递给 _std::forward_ 的类型，但是却和符合惯例的类型产生了相同的结果。所以，对于左值和右值来说，传递 _decltype(x)_ 到 _std::forward_ 都给了我们想要的结果。因此，我们的完美转发 _lambda_ 可以写成下面这样：  
+```C++
+  auto f =
+    [](auto&& param)
+    {
+      return
+        func(normalize(std::forward<decltype(param)>(param)));
+    };
+```
+根据这个，稍作修改，就可以得到接收任意数量形参的 _lambda_，因为 _C++14_ 的 _lambda_ 也可以是 _variadic_：    
+```C++
+  auto f =
+    [](auto&&... params)
+    {
+      return
+      func(normalize(std::forward<decltype(params)>(params)...));
+    };
+```
+
+### 需要记住的规则
+
+* 在 _auto&&_ 形参上使用 _decltype_ 来进行完美转发。
 
 ## _Item 34_ 首选 _lambda_ 而不是 _std::bind_
