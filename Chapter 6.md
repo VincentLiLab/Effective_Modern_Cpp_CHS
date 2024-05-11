@@ -6,6 +6,7 @@
   - [_Item 33_ 在 _auto\&\&_ 形参上使用 _decltype_ 来进行完美转发](#item-33-在-auto-形参上使用-decltype-来进行完美转发)
     - [需要记住的规则](#需要记住的规则-2)
   - [_Item 34_ 首选 _lambda_ 而不是 _std::bind_](#item-34-首选-lambda-而不是-stdbind)
+    - [需要记住的规则](#需要记住的规则-3)
 
 
 # _Chapter 6_ _lambda expression_
@@ -300,7 +301,7 @@ _Widget::addFilter_ 可以被声明为下面这样：
 
 但只是 _C++11_ 没有提供可以完成的方法。在 _C++14_ 中就是不同的故事了。_C++14_ 提供了直接的方法来将对象移动到 _closure_ 中。如果你的编译器是 _C++14-compliant_ 的话，那么高兴地继续往下读吧。如果你仍然使用是 _C++11_ 的编译器的话，那么你也应该高兴地继续读下去，因为在 _C++11_ 中也有可以模拟移动捕获的方法。
 
-甚至在 _C++11_ 刚被接受时，缺少移动捕获也被认为是一个缺点。直观的解决方法是在 _C++14_ 中添加移动捕获，但是标准委员会却选择了一条不同的路。标准委员会引入了一个新的非常灵活的捕获机制，_capture-by-move_ 只是它可以执行的技术之一。这个新能力被称为初始化捕获。初始化捕获几乎可以做 _C++11_ 的捕获可以做的所有事情，甚至更多。你不可以使用初始化捕获完成的一件事是默认捕获模式，但是 [_Item 31_](#item-31-避免默认捕获模式) 解释了无论如何你都应该远离默认捕获模式。对于 _C++11_ 的捕获所覆盖的情况，初始化捕获的语法是有点冗长的，所以在 _C++11_ 的捕获就可以完成工作的场景下，选择使用 _C++11_ 的捕获而不是初始化捕获也是非常合理的。
+在 _C++11_ 刚被接受时，缺少移动捕获被认为是一个缺点。简单的解决方法是在 _C++14_ 中添加移动捕获，但是 _Standardization Committee_ 却选择了一条不同的路。_Standardization Committee_ 引入了一个新的非常灵活的捕获机制，_capture-by-move_ 只是它可以执行的技术之一。这个新能力被称为初始化捕获。初始化捕获几乎可以做 _C++11_ 的捕获可以做的所有事情，甚至更多。你不可以使用初始化捕获完成的一件事是默认捕获模式，但是 [_Item 31_](#item-31-避免默认捕获模式) 解释了无论如何你都应该远离默认捕获模式。对于 _C++11_ 的捕获所覆盖的情况，初始化捕获的语法是有点冗长的，所以在 _C++11_ 的捕获就可以完成工作的场景下，选择使用 _C++11_ 的捕获而不是初始化捕获也是非常合理的。
 
 使用初始化捕获能够让你去指定：  
 * _lambda_ 所生成的 _closure class_ 中的数据成员的名字
@@ -366,7 +367,7 @@ _Widget::addFilter_ 可以被声明为下面这样：
 ```   
 比起写 _lambda_，这里做了更多的工作，但是并不会改变这样的事实：如果你在 _C++11_ 中想要一个支持对数据成员实施移动初始化的类的话，那么你去花点时间敲代码就完全可以完成的你的期望。
 
-如果你想要坚持使用 _lambdas_ 的话，鉴于 _lambdas_ 的方便，你大概是会坚持的，那么在 _C++11_ 可以通过下面的方法来模拟移动捕获：  
+如果你想要坚持使用 _lambda_ 的话，鉴于 _lambda_ 的方便，你大概是会坚持的，那么在 _C++11_ 可以通过下面的方法来模拟移动捕获：  
 * 将需要捕获的对象移动到 _std::bind_ 所产生的函数对象中 
 * 给 _lambda_ 一个指向所 **_捕获_** 的对象的引用
 
@@ -400,7 +401,7 @@ _Widget::addFilter_ 可以被声明为下面这样：
 
 _bind_ 对象包含了所有传递给 _std::bind_ 的实参的副本。对于每个左值实参，在 _bind_ 对象中的所对应的对象都是被拷贝构造的。对于每个右值实参，在 _bind_ 对象中的所对应的对象都是被移动构造的。在这个例子中，第二个实参是一个右值，是 _std::move_ 的结果，见 [_Item 23_](Chapter%205.md#item-23-理解-stdmove-和-stdforward)，所以 _data_ 是被移动构造至 _bind_ 对象中的，这个移动构造是模拟移动捕获的关键，因为将右值移动至一个 _bind_ 对象中是我们解决无法将右值移动至 _C++11_ 的 _closure_ 中的方法。 
 
-当 _bind_ 对象被 **_调用_** 时，即为：_bind_ 对象的 _call operator_ 被执行时，_bind_ 对象所存储的实参会被传递给最初所传递给 _std::bind_ 的那个可调用对象了。在这个例子中，这也意味着：当 _bind_ 对象 _func_ 被调用时，在 _func_ 中所移动构造出的 _data_ 的副本会被传递给所传递给 _std::bind_ 的那个 _lambda_。
+当 _bind_ 对象被 **_调用_** 时，即为：_bind_ 对象的 _function call operator_ 被执行时，_bind_ 对象所存储的实参会被传递给最初所传递给 _std::bind_ 的那个可调用对象了。在这个例子中，这也意味着：当 _bind_ 对象 _func_ 被调用时，在 _func_ 中所移动构造出的 _data_ 的副本会被传递给所传递给 _std::bind_ 的那个 _lambda_。
 
 除了形参 _data_ 被添加到了所对应的 _pseudo-move-captured_ 对象以外，这个 _lambda_ 和我们在 _C++14_ 中所使用的 _lambda_ 是相同的。这个形参是指向 _bind_ 对象中的 _data_ 的副本的左值引用。这个形参不是右值引用，因为尽管被用来初始化 _data_ 的副本的表达式 _std::move(data)_ 是右值，但是这个 _data_ 的副本却是个左值。因此在 _lambda_ 中所使用的 _data_ 就是 _bind_ 对象中的所移动构造出的 _data_ 的副本了。
 
@@ -445,11 +446,11 @@ _bind_ 对象包含了所有传递给 _std::bind_ 的实参的副本。对于每
 
 ## _Item 33_ 在 _auto&&_ 形参上使用 _decltype_ 来进行完美转发
 
-_C++14_ 中最令人激动的其中一个特性是 _generic lambda_，也就是可以在 _lambdas_ 的形参规范上使用了 _auto_ 了。这个特性的实现是简单的：_lambdas_ 的 _closure class_ 中的 _operator()_ 是模板函数。例如：给定一个这样的 _lambda_，  
+_C++14_ 中最令人激动的其中一个特性是 _generic lambda_，也就是可以在 _lambda_ 的形参规范上使用了 _auto_ 了。这个特性的实现是简单的：_lambda_ 的 _closure class_ 中的 _operator()_ 是模板函数。例如：给定一个这样的 _lambda_，  
 ```C++
 auto f = [](auto x){ return func(normalize(x)); };
 ```
-这个 _closure class_ 的 _operator_ 看起来像是这样：  
+这个 _closure class_ 的 _function call operator_ 看起来像是这样：  
 ```C++
 class SomeCompilerGeneratedClassName {
 public:
@@ -534,3 +535,265 @@ Widget&& forward(Widget& param)                   // instantiation of
 * 在 _auto&&_ 形参上使用 _decltype_ 来进行完美转发。
 
 ## _Item 34_ 首选 _lambda_ 而不是 _std::bind_
+
+_std::bind_ 是 _C++11_ 对 _C++98_ 的 _std::bind1st_ 和 _std::bind2nd_ 的继承，但不正式地说，从 _2005_ 年开始 _std::bind_ 就已经是标准库的一部分了。就是说当 _Standardization Committee_ 采纳了被称为 _TR1_ 的包含了 _bind_ 的规范的文档的时候，_std::bind_ 就已经是标准库的一部分了。在 _TR1_ 中，_bind_ 是在一个不同的 _namespace_ 中的，所以应该是 _std::tr1::bind_ 而不是 _std::bind_，还有少数接口细节是不同的。这个历史意味着有一些程序员已经有十多年使用 _std::bind_ 的经验了。如果你也是其中一员的话，那么你可能要不情愿放弃这个对于你来说是非常好的工具。这是可以理解的，但是在这个场景中，改变是好的，因为，在 _C++11_ 中，相对于 _std::bind_ 来说，_lambda_ 几乎总是更好的选择。因为，从 _C++14_ 开始，_lambda_ 的场景不再仅是强壮的了，而是完全坚不可摧的了。
+
+本 _Item_ 假设你是熟悉 _std::bind_ 的。如果你是不熟悉的话，那么在开始前你需要对 _std::bind_ 有基本的了解。这个了解在任何场景下都是值得的，因为你永远不知道何时会在你必须读或者维护的代码中遇到 _std::bind_。
+
+就像在 [_Item 32_](#item-32-使用初始化捕获来将对象移动到-closure-中) 中那样，我将 _std::bind_ 返回的函数对象来称为 _bind_ 对象。
+
+首选 _lambda_ 而不是 _std::bind_ 的最重要的原因是 _lambda_ 的可读性更强。例如：假设我们有一个函数来配置声响警报：  
+```C++
+// typedef for a point in time (see Item 9 for syntax)
+using Time = std::chrono::steady_clock::time_point;
+
+// see Item 10 for "enum class"
+enum class Sound { Beep, Siren, Whistle };
+
+// typedef for a length of time
+using Duration = std::chrono::steady_clock::duration;
+
+// at time t, make sound s for duration d
+void setAlarm(Time t, Sound s, Duration d);
+```  
+进一步假设：在程序中的一些时刻，我们确定我们想要一个在警报，这个警报会在被设置一个小时后发出声响，并且持续 _30_ 秒。但是，警报声音还没有决定。我们可以写一个修改了 _setAlarm_ 的接口的 _lambda_，所以只有一个声音需要去被指定：  
+```C++
+// setSoundL ("L" for "lambda") is a function object allowing a
+// sound to be specified for a 30-sec alarm to go off an hour
+// after it's set
+auto setSoundL = 
+  [](Sound s)
+  {
+    // make std::chrono components available w/o qualification
+    using namespace std::chrono;
+    
+    setAlarm(steady_clock::now() + hours(1),      // alarm to go off
+    s,                                            // in an hour for
+    seconds(30));                                 // 30 seconds
+};
+```
+上面的代码中的 _lambda_ 中有 _setAlarm_ 调用。这只是一个普通的函数调用，甚至只有一点 _lambda_ 使用经验的读者都可以看出来，所传递给 _lambda_ 的形参 _s_ 是被传递来做为 _setAlarm_ 的实参的。
+
+我们可以在 _C++14_ 中通过利用秒 _s_、毫秒 _ms_ 和小时 _h_ 等标准后缀来精简代码，这是建立在 _C++11_ 的用户定义的 _literal_ 的支持上的。这些后缀是在 _std::literals_ 的 _namespace_ 中被实现的，所以上面的代码可以被写为下面这样：  
+```C++
+  auto setSoundL = 
+    [](Sound s)
+    {
+      using namespace std::chrono;
+      using namespace std::literals;          // for C++14 suffixes
+
+      setAlarm(steady_clock::now() + 1h,      // C++14, but
+      s,                                      // same meaning
+      30s);                                   // as above
+    };
+```  
+
+我们第一次尝试写相应的 _std::bind_ 调用是下面这样的。它有一个错误，稍后再解决，但是正确的代码是更复杂的，这个简单版本带来一些重要的议题：  
+```C++
+  using namespace std::chrono;                    // as above
+  using namespace std::literals;
+
+  using namespace std::placeholders;              // needed for use of "_1"
+
+  auto setSoundB =                                // "B" for "bind"
+    std::bind(setAlarm,
+    steady_clock::now() + 1h,                     // incorrect! see below
+    _1,
+    30s);
+
+```  
+上面的代码中的 _std::bind_ 中有 _setAlarm_ 调用，这个代码的读者只需要知道调用 _setSoundB_ 会使用在 _std::bind_ 调用中所指定的时间和持续时间来执行 _setAlarm_。对于不熟悉的人来说，占位符 __1_ 本质是一种魔法，但是，甚至是熟悉的人也必须在心中将这个占位符中的数字映射到它在 _std::bind_ 的形参列表上的位置上，这样才能理解在调用 _setSoundB_ 时所传递的第一个实参是做为 _setAlarm_ 的第二个实参的。这个实参的类型不会在调用 _std::bind_ 时被识别，所以，读者必须去查询 _setAlarm_ 的声明去确定什么类型的实参会传递给 _setSoundB_。
+
+但是正如我说的，这个代码不是完全正确的。在 _lambda_ 中，表达式 _steady_clock::now() + 1h_ 是 _setAlarm_ 的实参。当 _setAlarm_ 被调用时，这个实参会被求值。这是合理的：我们想在执行 _setAlarm_ 的一小时后警报发出声响。然而，在 _std::bind_ 调用中，_steady_clock::now() + 1h_ 是被传递来做为 _std::bind_ 的一个实参的，而不是 _setAlarm_ 的实参。这意味着：当 _std::bind_ 被调用时，这个表达式 _steady_clock::now() + 1h_ 就会被求值，这个表达式所生成的结果会被存储到所生成的 _bind_ 对象中。因此，这个警报会在执行 _std::bind_ 的一个小时后发出声响，而不是正确的在执行 _setAlarm_ 的一个小时后发出声响！
+
+修复这个问题需要告诉 _std::bind_ 直到 _setAlarm_ 被调用后再去对这个表达式求值，完成的方法是在第一个 _std::bind_ 中嵌套第二个 _std::bind_ 调用：  
+```C++
+  auto setSoundB =
+    std::bind(setAlarm,
+              std::bind(std::plus<>(), steady_clock::now(), 1h),
+              _1,
+              30s);
+```
+
+如果你熟悉 _C++98_ 中的 _std::plus_ 模板的话，那么你可能会对这个代码感到惊讶，没有在 _<>_ 中指定类型，即为：包含的是 _std::plus<>_，而不是 _std::plus&lt;type&gt;_。在 _C++14_ 中，标准操作符模板的模板类型实参通常可以被省略，所以，不需要在这里进行提供。_C++11_ 没有提供这些特性，所以 _C++11_ 中与 _lambda_ 等同的 _std::bind_ 是下面这样的：  
+```C++
+  using namespace std::chrono; // as above
+  using namespace std::placeholders;
+    auto setSoundB =
+      std::bind(setAlarm,
+                std::bind(std::plus<steady_clock::time_point>(),
+                            steady_clock::now(),
+                            hours(1)),
+                _1,
+                seconds(30));
+```  
+如果此时 _lambda_ 看起来还是没有吸引力的话，那么你应该检查你的视力了。
+
+当 _setAlarm_ 被重载时，就会产生一个新问题。假设有一个重载函数持有第四个形参，用来指明声响音量：  
+```C++
+  enum class Volume { Normal, Loud, LoudPlusPlus };
+
+  void setAlarm(Time t, Sound s, Duration d, Volume v); 
+```  
+
+_lambda_ 仍然可以像之前一样继续工作，因为重载决议会选择 _setAlarm_ 的三个实参版本：  
+```C++
+  auto setSoundL =                                // same as before                
+    [](Sound s)
+    {
+      using namespace std::chrono;
+
+      setAlarm(steady_clock::now() + 1h,          // fine, calls      
+                s,                                // 3-arg version
+                30s);                             // of setAlarm                      
+    };
+```
+另一方面，现在 _std::bind_ 调用则不可以通过编译：  
+```C++
+  auto setSoundB =                                // error! which            
+    std::bind(setAlarm,                           // setAlarm?
+                std::bind(std::plus<>(),
+                          steady_clock::now(),
+                          1h),
+                _1,
+                30s);
+```  
+
+存在的问题是编译器无法确定应该传递给 _std::bind_ 哪一个 _setAlarm_ 函数。编译器只有一个函数名，但只有函数名是有歧义的。
+
+为了让 _std::bind_ 调用可以编译，_setAlarm_ 必须被转换为合适的函数指针类型：
+```C++
+  using SetAlarm3ParamType = void(*)(Time t, Sound s, Duration d);
+
+  auto setSoundB =                                          // now
+    std::bind(static_cast<SetAlarm3ParamType>(setAlarm),    // okay
+              std::bind(std::plus<>(),
+                        steady_clock::now(),
+                        1h),
+              _1,
+              30s);
+```  
+但是这就又带来了另一个 _lambda_ 和 _std::bind_ 的不同之处。在 _setSoundL_ 的 _function call operator_ 中，即为：在 _lambda_ 的 _closure class_ 中的 _function call operator_ 中，调用 _setAlarm_ 是在调用一个普通的且被编译器按照常用方式而内联的函数：  
+```C++
+setSoundL(Sound::Siren);                // body of setAlarm may
+                                        // well be inlined here
+```
+然而，_std::bind_ 调用传递的是一个指向 _setAlarm_ 的函数指针，这意味着：在 _setSoundB_ 的 _function call operator_ 中，即为：在 _bind_ 对象的 _function call operator_ 中，调用 _setAlarm_ 是在调用一个函数指针。编译器很少可能会通过函数指针来内联函数调用，这意味着：相比于通过 _setSoundL_ 来调用 _setAlarm_ 来说，通过 _setSoundB_ 来调用 _setAlarm_ 很少有可能是完全内联的：  
+```C++
+  setSoundB(Sound::Siren);              // body of setAlarm is less
+                                        // likely to be inlined here
+```
+
+因此，使用 _lambda_ 所生成的代码可能是比使用 _std::bind_ 所生成的代码要快的。
+
+_setAlarm_ 的例子只是执行了一个简单的函数调用。如果你想要完成的是更复杂的事情的话，那么天平会更倾斜于 _lambda_。例如：考虑这样的一个 _C++14_ 的 _lambda_，这个 _lambda_ 会检查它的实参是否是在最小值 _lowVal_ 和最大值 _highVal_ 之间的，其中的 _lowVal_ 和 _highVal_ 是局部变量：  
+```C++
+  auto betweenL =
+    [lowVal, highVal]
+    (const auto& val)                             // C++14
+    { return lowVal <= val && val <= highVal; };
+```
+
+_std::bind_ 可以表示相同的事情，但是需要使用晦涩的方式来构造代码：  
+```C++
+  using namespace std::placeholders;                        // as above
+    
+  auto betweenB =
+    std::bind(std::logical_and<>(),                         // C++14
+              std::bind(std::less_equal<>(), lowVal, _1),
+              std::bind(std::less_equal<>(), _1, highVal));
+```  
+在 _C++11_ 中，我们必须要指明我们想要去比较的类型，那么 _std::bind_ 调用看起来会是下面这样：  
+```C++
+  auto betweenB =                                           // C++11 version
+    std::bind(std::logical_and<bool>(),
+              std::bind(std::less_equal<int>(), lowVal, _1),
+              std::bind(std::less_equal<int>(), _1, highVal));
+```
+当然，在 _C++11_ 中，_lambda_ 也不能持有 _auto_ 形参，所以也必须要提交一个类型：  
+```C++
+  auto betweenL =                                           // C++11 version
+    [lowVal, highVal]
+    (int val)
+    { return lowVal <= val && val <= highVal; };
+```  
+不管怎样，我希望我们可以同意：_lambda_ 版本不仅是简洁的，而且还是容易理解的和维护的。
+
+之前我就说过，对于有 _std::bind_ 使用经验的人来说，_std::bind_ 的占位符，比如：__1_，__2_ 等，本质上就是魔法。但是不只是因为占位符的行为是不透明的。假定我们有一个函数来创建 _Widget_ 的压缩副本：  
+```C++
+  enum class CompLevel { Low, Normal, High };     // compression
+                                                  // level
+
+  Widget compress(const Widget& w,                // make compressed
+                  CompLevel lev);                 // copy of w
+```                                                    
+我们想要创建一个函数对象，它允许我们指明一个指定的 _Widget w_ 的压缩等级。使用 _std::bind_ 将会创建这样的一个对象：  
+```C++
+  Widget w;
+
+  using namespace std::placeholders;
+
+  auto compressRateB = std::bind(compress, w, _1);   
+```
+
+现在，当我们传递 _w_ 到 _std::bind_ 时，_w_ 必须要被保存起来，以供后续的 _compare_ 所使用。_w_ 是被保存在对象 _compressRateB_ 中的，但是应该如何保存呢？_by-value_ 还是 _by-reference_ 呢？这是不同的，因为，如果 _w_ 会在调用 _std::bind_ 和 _compressRateB_ 之间被更改的话，那么按 _by-reference_ 的形式所保存的 _w_ 也会随之改变，而按 _by-value_ 的形式所保存的 _w_ 则不会有任何改变。  
+
+是按 _by-value_ 的形式所保存的，只有一个方法可以知道这个答案，那就是去记住 _std::bind_ 是如何工作的，在 _std::bind_ 调用中没有任何的迹象。而在 _lambda_ 中 _w_ 是 _by-value_ 捕获还是 _by-reference_ 捕获则是显式指明的：  
+```C++
+  auto compressRateL =                            // w is captured by     
+    [w](CompLevel lev)                            // value; lev is
+    { return compress(w, lev); };                 // passed by value
+```  
+同样显式指明的还有形参是如何传递给的 _lambda_ 的。此处，形参 _lev_ 是按 _by-value_ 的形式所传递的，这是非常清晰的。因此：  
+```C++
+compressRateL(CompLevel::High);                   // arg is passed
+                                                  // by value
+```   
+
+但是在 _std::bind_ 所生成的对象的调用中，实参是如何传递的呢？
+
+再一次，只有一个方法可以知道这个答案，那就是去记住 _std::bind_ 是如何工作的。答案是所有传递给 _bind_ 对象的实参都是按 _by-reference_ 的形式所传递的，因为这些对象的 _function call operator_ 使用的是完美转发。
+
+相比于 _lambda_，使用了 _std::bind_ 的代码可读性差、表达性差并且可能效率性也差。在 _C++14_ 中，没有 _std::bind_ 的合理使用场景。然而，在 _C++11_ 中，_std::bind_ 却可以在下面两个受限制的环境下使用：  
+
+* 移动捕获。_C++11_ 的 _lambda_ 不支持移动捕获，但是可以通过结合 _lambda_ 和 _std::bind_ 来模拟移动捕获。对于细节，请查阅 [_Item 32_](#item-32-使用初始化捕获来将对象移动到-closure-中)，[_Item 32_](#item-32-使用初始化捕获来将对象移动到-closure-中) 也解释了：_C++14_ 的 _lambda_ 的初始化捕获减少了这种模拟的需求。
+* _polymorphic function object_。因为 _bind_ 对象的 _function call operator_ 使用的是完美转发，所以可以接受任意类型的实参，除了 [_Item 30_](Chapter%205.md#item-30-熟悉完美转发失败的场景) 所描述的完美转发的限制。当你想要绑定一个使用了模板化的 _function call operator_ 的对象时，这是非常有用的。比如，给定这样的一个类，  
+```C++
+  class PolyWidget {
+  public:
+    template<typename T>
+    void operator()(const T& param);
+    …
+  };
+```  
+_std::bind_ 可以下面这样来绑定 _PolyWidget_：  
+```C++
+  PolyWidget pw;
+
+  auto boundPW = std::bind(pw, _1);
+```
+可以使用三种不同类型的实参来调用 _boundPW_：  
+```C++
+  boundPW(1930);                        // pass int to
+                                        // PolyWidget::operator()
+  
+  boundPW(nullptr);                     // pass nullptr to
+                                        // PolyWidget::operator()
+
+  boundPW("Rosebud");                   // pass string literal to
+                                        // PolyWidget::operator()
+```
+
+_C++11_ 的 _lambda_ 是无法完成这个的。然而，在 _C++14_ 中，可以通过使用带有 _auto_ 形参的 _lambda_ 来轻松完成：  
+```C++
+  auto boundPW = [pw](const auto& param)          // C++14   
+                  { pw(param); };
+```
+当然，这些都是边缘场景，而且是暂时的边缘情况，因为支持 _C++14_ 的 _lambda_ 的编译器在日渐普及。
+
+当 _bind_ 在 _2005_ 年被非正式地添加到 _C++_ 时，是对 _C++98_ 的一个巨大提升。然而 _C++11_ 的 _lambda_ 使得 _std::bind_ 几乎过时，而 _C++14_ 的 _lambda_ 则使得 _std::bind_ 没有任何使用场景了。
+
+### 需要记住的规则
+
+* _lambda_ 比起 _std::bind_ 是更易读的、更易表达的并且效率可能也是更高的。
+* 只有在 _C++11_ 中，_std::bind_ 对于实现移动捕获或者绑定带有模板化的 _function call operator_ 的对象来说还算是有用的。 
