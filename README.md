@@ -35,6 +35,7 @@ Of course, the translation is not perfect and not standard for some people, beca
 *  _braced initializer_ 花括号初始化表达式
 *  _cast_ 转换
 * _initializer_ 表达式
+* concurrency 并发
 * _enum_ 枚举
 * brace {}
 * parenthes ()
