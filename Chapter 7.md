@@ -10,6 +10,7 @@
   - [_Item 39_ 对于 _one-shot_ 事件通信考虑 _void future_](#item-39-对于-one-shot-事件通信考虑-void-future)
     - [需要记住的规则](#需要记住的规则-4)
   - [_Item 40_ 并发使用 _std::atomic_ 特殊内存使用 _volatile_](#item-40-并发使用-stdatomic-特殊内存使用-volatile)
+    - [需要记住的规则](#需要记住的规则-5)
 
 
 # _Chapter 7_ 并发 _API_
@@ -735,5 +736,231 @@ _one-shot_ 的约束可能并不像你想象的限制那么大。假定你想要
 * _condvar_ 和 _flag_ 可以被一起使用，但是所产生的通信机制是有点呆板的。
 * 使用 _std::promise_ 和 _future_ 避开了这些问题，但是这个方法使用了 _shared state_ 所对应的堆内存，只能用于 _one shot_ 通信。
 
-
 ## _Item 40_ 并发使用 _std::atomic_ 特殊内存使用 _volatile_
+
+可怜的 _volatile_。如此被人误解。它不应该出现在本 _chapter_，因为它和并发编程无关。但是在其他的编程语言中，比如：_Jave_ 和 _C#_，它是有用的，甚至在 _C++_ 中，一些编译器也已经添加了 _volatile_ 语义，使得 _volatile_ 可以应用于并发软件，但是这是只有当使用那些编译器编译时。就算只是为了消除围绕着 _volatile_ 的困惑，在并发 _chapter_ 中讨论 _volatile_ 也是值得的。
+
+程序员有时候会把 _volatile_ 和真正是属于本 _chapter_ 的 _C++_ 的特性 _std::atomic_ 模板搞混淆。这个模板的实例化，比如：_std::atomic&lt;int&gt;_、_std::atomic&lt;bool&gt;_ 和 _std::atomic&lt;Widget&gt;_ 等，提供了可以保证被其他线程视为原子操作的操作。一旦 _std::atomic_ 对象被构造出来，在这些对象上的操作表现地就好像它们是在 _mutex-protected_ 临界区中一样，但是这些操作通常是使用特殊机器指令实现的，比利用 _mutex_ 更加高效。
+
+考虑使用了 _std::atomic_ 的代码：  
+```C++
+  std::atomic<int> ai(0);               // initialize ai to 0
+  
+  ai = 10;                              // atomically set ai to 10
+
+  std::cout << ai;                      // atomically read ai's value
+  
+  ++ai;                                 // atomically increment ai to 11
+
+  --ai;                                 // atomically decrement ai to 10
+```  
+
+在这些语句执行期间，其他读取 _ai_ 的线程只可能看到 _0_、_10_ 或 _11_。没有其他可能的值，当然，假设只有一个线程在更改 _ai_。
+
+这个例子有两个方面值得注意。首先，在 _std::cout << ai;_ 语句中，_ai_ 是 _std::atomic_ 的事实只能保证读取 _ai_ 是原子的。不能保证整个语句是原子的。在 _ai_ 的值被读取和 _operator<<_ 被执行以去将 _ai_ 的值写入到标准输出之间，其他的线程可能已经修改了 _ai_ 的值了。这不会影响到这个语句的行为，因为 _int_ 所对应的 _operator<<_ 是使用 _by-value_ 的 _int_ 形参去输出的，因此所输出的值将会是从 _ai_ 所读出的值，重要的是理解在这个语句中的原子操作只有读取 _ai_ 的操作而已。
+
+这个例子的第二个值得注意的方面是最后两个语句的行为，_ai_ 的增加和减少。这两个语句每一个都是 _read-modify-write_ _RMW_ 操作，它们是原子执行的。这是 _std::atomic_ 类型最好的特性之一，一旦 _std::atomic_ 对象被构造出来，它们的所有成员函数，包括这些 _RMW_ 操作，都保证被其他线程视为是原子的。
+
+相反地，所对应的使用了 _volatile_ 的代码在多线程的上下文中几乎不保证任何事情：  
+```C++
+  volatile int vi(0);                   // initialize vi to 0
+  
+  vi = 10;                              // set vi to 10
+  
+  std::cout << vi;                      // read vi's value
+  
+  ++vi;                                 // increment vi to 11
+  
+  --vi;                                 // decrement vi to 10
+```  
+在这个代码执行期间，如果其他的线程正在读取 _vi_ 的值的话，那么它们可能看到任何东西，例如：_-12_、_68_、_4090727_。这样的代码将会有 _undefined behavior_，因为这些语句更改了 _vi_，所以如果其他的线程同时正在读取 _vi_ 的话，那么就是在同时读写同一块内存了，而这块内存既不是 _std::atomic_ 的，也没有 _mutex_ 所保护，这是数据竞争的定义。
+
+做为一个 _std::atomic_ 和 _volatile_ 的行为在多线程编程是如何不同的具体例子，考虑两个被多线程所增加的简单的 _counter_。我们将它们两个初始化为 _0_：  
+```C++
+  std::atomic<int> ac(0);               // "atomic counter"
+  
+  volatile int vc(0);                   // "volatile counter"
+```  
+我们将在两个同时运行的线程中增加每一个 _counter_ 一次：  
+
+![Alt text](image/image10.jpg)
+
+当两个线程完成时，_ac_ 的值，即为：_std::atomic_ 的值，一定为 _2_，因为每个增加都是不可分割的操作。另一方面，_vc_ 的值不需要为 _2_，因为它的增加不可能原子地发生。它的每个增加都由下面这些所组成：读取 _vc_ 的值、增加被读取到的值以及将增加后的结果写回到 _vc_ 中。但是对于 _volatile_ 对象来说，这些操作不保证是原子的，所以 _vc_ 的两个增加的组成部分可能是像下面这样交错的：  
+* _Thread 1_ 读取 _vc_ 的值，它是 _0_。
+* _Thread 2_ 读取 _vc_ 的值，它仍然是 _0_。
+* _Thread 1_ 增加它读到的 _0_ 为 _1_，然后将 _1_ 写到 _vc_ 中。
+* _Thread 2_ 增加它读到的 _0_ 为 _1_，然后将 _1_ 写到 _vc_ 中。
+
+因此 _vc_ 的最终值是 _1_，即使 _vc_ 是被增加了两次的。
+
+这不是唯一可能的结果。_vc_ 的最终值通常是不可预测的，因为 _vc_ 涉及到了数据竞争。标准规定数据竞争会导致 _undefined behavior_，这意味着编译器可能生成做任意事情的代码。当然编译器不会利用这个余地来进行恶意操作。编译器宁愿去执行在没有数据竞争的程序中是有效的优化，这些优化会在存在有数据竞争的程序中产生意外的和不可预测的行为。
+
+使用 _RMW_ 操作不是唯一 _std::atomic_ 是成功而 _volatile_ 是失败的情景。假定一个 _task_ 计算一个重要的且被另一个 _task_ 所需要的值。当第一个 _task_ 计算完成这个值时，必须要将这个值传递给第二个 _task_。[_Item 39_](#item-39-对于-one-shot-事件通信考虑-void-future) 解释了第一个 _task_ 将所期望的值的有效性传递给第二个 _task_ 的一个方法是使用 _std::atomic&lt;bool&gt;_。计算这个值的 _task_ 的代码看起来像下面这样：  
+```C++
+  std::atomic<bool> valAvailable(false);
+  
+  auto imptValue = computeImportantValue();       // compute value
+  
+  valAvailable = true;                            // tell other task
+                                                  // it's available
+```
+当人们看到这个代码时，我们知道，_imptValue_ 的赋值是发生在 _valAvailable_ 的赋值之前的，这是重要的，但是编译器看到的所有只是一对独立变量的赋值而已。通常情况下，编译器被允许去重新排序这些不相关的赋值。也就是说，给定下面这样的赋值序列，其中 _a_、_b_、_x_ 和 _y_ 分别对应于独立的变量，  
+```C++
+  a = b;
+  x = y;
+```  
+编译器可能会将它们乱序为下面这样：  
+```C++
+  x = y;
+  a = b;
+```  
+即使编译器不会将它们重新排序，底层硬件仍然可能将它们重新排序，或可能让其他 _CPU_ 看起来好像是重新排序过的，因为有时候这可以让代码运行更快。
+
+然而，使用 _std::atomic_ 会对代码的重新排序施加限制，这个限制是源代码中位于写 _std::atomic_ 变量之前的代码不得放在这个写 _std::atomic_ 变量之后，或可能让其他 _CPU_ 看起来好像是这样的。这意味着在我们的代码中，  
+```C++
+  auto imptValue = computeImportantValue();       // compute value
+  
+  valAvailable = true;                            // tell other task
+                                                  // it's available
+```  
+编译器不仅必须保持 _imptValue_ 和 _valAvailable_ 赋值的顺序，还必须生成可以确保底层硬件也会这样做的代码。因此，声明 _valAvailable_ 为 _std::atomic_ 可以确保我们的关键排序需求是保持不变的：_imptValue_ 必须被所有线程视为不晚于 _valAvailable_ 的更改。
+
+声明 _valAvailable_ 为 _volatile_ 不会对相同的代码的重新排序施加限制：  
+```C++
+  volatile bool valAvailable(false);
+  
+  auto imptValue = computeImportantValue();
+  
+  valAvailable = true;                            // other threads might see this assignment
+                                                  // before the one to imptValue!
+```  
+此处，编译器可能会反转 _imptValue_ 和 _valAvailable_ 的赋值的顺序，即使不会，编译器也可能不能生成可以避免底层硬件使其他 _CPU_ 上的代码视为 _imptValue_ 是在 _imptValue_ 之前更改的机器代码。
+
+这两个问题，不保证操作的原子性和没有在代码重新排序上提供限制，解释了为什么 _volatile_ 对于并发编程是无用的，但是没有解释 _volatile_ 对于什么是有用的。简单说，_volatile_ 用于告诉编译器它们正在处理不是常规表现的内存。
+
+**_常规_** 内存的特性有：如果你把一个值写入到了某个内存位置上，这个值会保持在那里，直到进行了重写。所以如果我有一个正常的 _int_，  
+```C++
+  int x;
+```  
+并且编译器看到了下面这样的操作顺序的话，  
+```C++
+  auto y = x;                           // read x
+  y = x;                                // read x again
+```    
+那么编译器可以通过消除 _y_ 的赋值来优化所生成的代码，因为 _y_ 的初始化是多余的。
+
+**_常规_** 内存的特性还有：如果你把一个值写入到了某个内存位置上，永远不会读取它，并且又再次写了这个内存位置的话，那么第一次的写可以被清除，因为第一次的写永远不会被用到。所以给定两个相邻的语句，  
+```C++
+  x = 10;                               // write x
+  x = 20;                               // write x again
+```  
+编译器可以清除第一个。这意味着：如果我们在源代码中有这样的代码的话，  
+```C++
+  auto y = x;                           // read x
+  y = x;                                // read x again
+  x = 10;                               // write x
+  x = 20;                               // write x again
+```  
+编译器可以把它做为下面这样：  
+```C++
+  auto y = x;                           // read x
+  
+  x = 20;                               // write x
+```
+
+让你好奇谁会写执行这种多余的读和多余的写的代码，技术上被称为 _redundant load_ 和 _dead store_，答案是人们不会直接这样写，至少我们希望不会。然而，在编译器获取了看起来是合理的代码，并且执行了模板实例化、内联、各种各样的常见的重新排序优化后，在所得到的结果中包含有编译器可以避免的 _redundant load_ 和 _dead store_ 就非常常见了。
+
+这样的优化只有当内存表现为 **_常规_** 时才是有效的。**_特殊_** 内存不是这样的。特殊内存最常见的类型可能是被用于 _memory-mapped I/O_ 的内存。这样内存中的位置实际上是在与外设，比如：外挂传感器或显示器、打印机以及网口等，进行通信，而不是在读或写常规内存，比如：_RAM_。在这样的上下文中，再一次考虑看起来是多余的读的代码：  
+```C++
+  auto y = x;                 // read x
+  y = x;                      // read x again
+```  
+如果 _x_ 对应的是温度传感器所报告的值的话，那么第二次读 _x_ 就不是多余的了，因为温度可能在两个读取之间已经改变了。  
+
+看起来是多余的写也是类似的情景。例如：在下面的代码中：  
+```C++
+  x = 10;                     // write x
+  x = 20;                     // write x again
+```  
+
+如果 _x_ 对应的是 _radio transmitter_ 的控制端口的话，那么这可能是代码正在像这个 _ratio_ 发送命令，值 _10_ 所对应的命令和 _20_ 所对应的命令是不同的。优化了第一个赋值语句将会改变发往这个 _ratio_ 的命令的顺序。
+
+_volatile_ 是我们告诉编译器我们正在处理的是特殊内存的方法。对于编译器来说，_volatile_ 的含义是 **_不要对这块内存上的操作执行优化_**。所以，如果 _x_ 对应的是特殊内存的话，它会被声明为 _volatile_：  
+```C++
+  volatile int x;
+```  
+考虑这对原来的代码的顺序所产生的影响：  
+```C++
+  auto y = x;                 // read x
+  y = x;                      // read x again (can't be optimized away)
+
+  x = 10;                     // write x (can't be optimized away)
+  x = 20;                     // write x again
+```
+这正是当 _x_ 是 _memory-mapped_ 时或当 _x_ 被映射到一个进程间共享的内存位置上时我们想要做的。
+ 
+突击测验！在最后的代码中，_y_ 的类型是什么：是 _int_ 还是 _volatile int_？
+
+顺便说下，当处理特殊内存时，_redundant load_ 和 _dead store_ 必须被保留，这个事实解释了为什么 _std::atomic_ 对于这种类型的工作是不合适的。编译器被允许去清除 _std::atomic_ 所对应的多余的操作。这个代码不能按照 _volatile_ 那样的方式写，但是如果我们此时忽视这个警告，去关注编译器会被允许做什么的话，那么我们可以说概念上编译器可能接受这样的代码：  
+```C++
+  std::atomic<int> x;
+  
+  auto y = x;                 // conceptually read x (see below)
+  y = x;                      // conceptually read x again (see below)
+  
+  x = 10;                     // write x
+  x = 20;                     // write x again
+```  
+并且会优化这个代码为下面这样：  
+```C++
+  auto y = x;                 // conceptually read x (see below)
+  x = 20;                     // write x
+```  
+对于特殊内存来说，这显然是不可接受的行为。  
+
+现在，就像已经发生的，当 _x_ 是 _std::atomic_ 时，下面这两个语句都不会通过编译：  
+```C++
+  auto y = x;                 // error!
+  y = x;                      // error!
+```   
+这是因为 _std::atomic_ 所对应的 _copy operation_ 被删除了，见 [_Item 11_](Chapter%203.md#item-11-首选-deleted-function-而不是-private-undefined-function)。理由很充分。如果使用 _x_ 来初始化 _y_ 是可以通过编译的话，那么考虑一下会发生什么。因为 _x_ 是 _std::atomic_，所以 _y_ 的类型也将会被推导为 _std::atomic_，见 [_Item 2_](Chapter%201.md#item-2-理解-auto-的类型推导)。我之前提到过关于 _std::atomic_ 的最好的事之一是它的所有操作都是原子的，为了让根据 _x_ 拷贝构造 _y_ 也成为原子的，编译器必须生成可以在同一个原子操作中进行读 _x_ 和写 _y_ 的代码。硬件通常不可以做这些，所以 _std::atomic_ 类型不支持拷贝构造。_copy assignment operator_ 也是被删除了的，原因相同，这也是为什么 _x = y_ 不可以通过编译。由于没有在 _std::atomic_ 中显式声明 _move operation_，每一个编译器所生成的特殊函数所对应的规则都在 [_Item 17_](Chapter%203.md#item-17-理解特殊成员函数的生成) 进行了描述，_std::atomic_ 没有提供 _move constructor_ 和 _move assignment operator_。
+
+可以读取 _x_ 的值并将值给到 _y_，但是需要使用 _std::atomic_ 的成员函数 _load_ 和 _store_ 来完成。_load_ 成员函数会原子地读取 _std::atomic_ 的值，同时 _store_ 成员函数会原子地写入 _std::atomic_ 的值。先使用 _x_ 来初始化 _y_，然后再在 _y_ 中放入 _x_ 的值，这个代码必须被写成下面这样：  
+```C++
+  std::atomic<int> y(x.load());         // read x
+  
+  y.store(x.load());                    // read x again
+```  
+这个可以通过编译，通过 _x.load()_ 读取 _x_ 和初始化 _y_ 或存储到 _y_ 的是独立的的函数调用，这个事实表明没有理由去期待这两条语句中的任意一条是像单独的原子操作那样做为整体去执行的。
+
+对于下面这样的代码，编译器可以通过在 _register_ 中存储 _x_ 的值而不是读取 _x_ 的值两次来进行 **_优化_**：  
+```C++
+  register = x.load();                  // read x into register
+  
+  std::atomic<int> y(register);         // init y with register value
+  
+  y.store(register);                    // store register value into y
+```  
+
+正如你看到的，结果只会从 _x_ 中读取一次，这种优化正是当处理特殊内存时必须被避免的。对于 _volatile_ 变量，这种优化不被允许。
+
+因此情况应该清晰了：  
+* _std::atomic_ 用于并发编程，但是不能用于访问特殊内存。
+* _volatile_ 用于访问特殊内存，但是不能用于并发编程。
+
+因为 _std::atomic_ 和 _volatile_ 满足于不同的目的，它们甚至可以被一起使用：  
+```C++
+  volatile std::atomic<int> vai;        // operations on vai are
+                                        // atomic and can't be
+                                        // optimized away
+```  
+如果 _vai_ 对应的是 _memory-mapped I/O_ 位置，并且这个位置会被多线程并发访问的话，那么这是有用的。
+
+做为最后的注意事项，即使当 _std::atomic_ 的 _load_ 和 _store_ 成员函数不被需要时，一些开发者也喜欢使用它们，因为这会在代码中明确表明所涉及到的那些变量不是 **_常规_** 的。强调这个事实是合理的。访问 _std::atomic_ 通常是远远慢于访问 _non-std::atomic_ 的，我们已经看到了使用 _std::atomic_ 可以避免编译器去执行特定类型的代码重新排序，而使用 _non-std::atomic_ 是被允许去执行特定类型的代码重新排序的。因此调用 _std::atomic_ 的 _load_ 和 _store_ 有助于识别潜在的可扩展性瓶颈。从正确性的角度看，没有看到那些被用于传递信息给到其他线程的变量，比如：一个表明数据有效性的 _flag_，去调用 _store_ 就可能意味着：这些变量应该被声明为 _std::atomic_，但却没有。
+
+然而，这在很大程度是一个风格问题，因此，这和 _std::atomic_ 和 _volatile_ 之间的选择是完全不同的。
+
+### 需要记住的规则
+
+* _std::atomic_ 用于在没有使用 _mutex_ 的情况下的多线程数据访问。它是一个开发并发软件的工具。
+* _volatile_ 用于读写不应该被优化掉的内存。它是一个用于处理特殊内存的工具。
