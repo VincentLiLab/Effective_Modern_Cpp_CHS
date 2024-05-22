@@ -86,7 +86,7 @@ _std::move_ 和 _std::forward_ 只是执行转换的函数，它们实际上是�
 
 当然，右值适合移动，所以，应用 _std::move_ 到一个对象上是在告诉编译器这个对象是可以被移动的。这也是取名为 _std::move_ 的原因：为了方便指定可以被移动的对象。
 
-事实上，右值只在通常情况下适合移动。假定有一个表示注解的类。这个类所对应的构造函数持有包含有注解的 _std::string_ 类型的形参，这个类的构造函数会将这个形参拷贝到数据成员中。 根据 [_Item 41_](Chapter%208.md#item-41-对于移动成本小且总是会被复制的可拷贝形参考虑-pass-by-value) 的解释，你按 _by-value_ 的形式来声明形参：
+事实上，右值只在通常情况下适合移动。假定有一个表示注解的类。这个类所对应的构造函数持有包含有注解的 _std::string_ 类型的形参，这个类的构造函数会将这个形参拷贝到数据成员中。 根据 [_Item 41_](Chapter%208.md#item-41-对于移动是成本小的且总是会被拷贝的可拷贝的形参考虑-pass-by-value) 的解释，你声明了 _by-value_ 形参：
 ```C++
   class Annotation {
   public:
@@ -102,7 +102,7 @@ _std::move_ 和 _std::forward_ 只是执行转换的函数，它们实际上是�
     …
   };
 ```  
-将 _text_ 拷贝至数据成员是有成本的，为了避免这种拷贝的成本，你遵循 [_Item 41_](Chapter%208.md#item-41-对于移动成本小且总是会被复制的可拷贝形参考虑-pass-by-value)
+将 _text_ 拷贝至数据成员是有成本的，为了避免这种拷贝的成本，你遵循 [_Item 41_](Chapter%208.md#item-41-对于移动是成本小的且总是会被拷贝的可拷贝的形参考虑-pass-by-value)
 的建议，将 _std::move_ 应用到了 _text_ 上，从而产生了一个右值：  
 ```C++
   class Annotation {
@@ -548,7 +548,7 @@ return std::move(w);
   }                           // no copy elision was performed
 ```
 
-函数的  _by-value_ 的形参也是这种情况。当这样的形参做为函数返回值时，是符合拷贝省略的，但是编译器必须把这样的形参做为右值处理。因此，如果你的代码看起来像是这样，  
+函数的 _by-value_ 的形参也是这种情况。当这样的形参做为函数返回值时，是符合拷贝省略的，但是编译器必须把这样的形参做为右值处理。因此，如果你的代码看起来像是这样，  
 ```C++
   Widget makeWidget(Widget w)           // by-value parameter of same
   {                                     // type as function's return
@@ -776,7 +776,7 @@ auto cloneOfP(cp);                      // calls copy constructor!
 
 ### 需要记住的规则
 
-* 重载 _universal reference_ 几乎总是会导致 _universal reference_ 的重载函数的在不期望被调用的情况下却被调用到。
+* 重载 _universal reference_ 几乎总是会导致 _universal reference_ 的重载函数在不期望被调用的情况下却被调用到。
 * 完美转发构造函数尤其有问题，因为对于 _non-const_ 左值来说，完美转发构造函数通常比 _copy constructor_ 是更好的匹配，而且完美转发构造函数还会劫持 _derived class_ 对 _base class_ 的 _copy constructor_ 和 _move constructor_ 的调用。
 
 ## _Item 27_ 熟悉重载 _univeral reference_ 的替代方法
@@ -795,7 +795,7 @@ auto cloneOfP(cp);                      // calls copy constructor!
 
 ### _pass by value_
 
-这种方法允许你在没有增加复杂度的情况下提升性能，这种方法反常地使用 _pass-by-value_ 来代替 _pass-by-reference_。这种设计遵循 [_Item 41_](Chapter%208.md#item-41-对于移动成本小且总是会被复制的可拷贝形参考虑-pass-by-value) 的建议，当你知道你要拷贝对象时，考虑去按 _by-value_ 的形式去传递它们，我将这样做的原理和如何提升的效率的相关细节推迟到 [_Item 41_](Chapter%208.md#item-41-对于移动成本小且总是会被复制的可拷贝形参考虑-pass-by-value) 中讨论。我在此处只展示下如何在 _Person_ 例子中使用这种技术：  
+这种方法允许你在没有增加复杂度的情况下提升性能，这种方法反常地使用 _pass-by-value_ 来代替 _pass-by-reference_。这种设计遵循 [_Item 41_](Chapter%208.md#item-41-对于移动是成本小的且总是会被拷贝的可拷贝的形参考虑-pass-by-value) 的建议，当你知道你要拷贝对象时，考虑去按 _by-value_ 的形式去传递它们，我将这样做的原理和如何提升的效率的相关细节推迟到 [_Item 41_](Chapter%208.md#item-41-对于移动是成本小的且总是会被拷贝的可拷贝的形参考虑-pass-by-value) 中讨论。我在此处只展示下如何在 _Person_ 例子中使用这种技术：  
 ```C++
   class Person {
   public:
@@ -1437,7 +1437,7 @@ _C++11_ 的盒子上最显著的特性之一是完美转发。完美转发是完
 ```  
 这个代码可以编译，但应该不能链接。如果这让你想起了当我们编写获取 _MinVals_ 地址的代码时所发生的情况的话，那就很好，因为底层的问题是相同的。
 
-虽然此时没有去获取 _MinVals_ 的地址，但是 _fwd_ 的形参是一个 _univeral reference_，而在编译器所生成的代码中，引用通常是被视为指针的。在程序的底层二进制代码中和在硬件中，指针和引用本质上是相同的。引用只是会自动被解引用的指针，在这个层次上，这说的也就是正确的了。既然如此，按 _by-reference_ 的形式传递 _MinVals_ 就和按 _by-value_ 的形式传递的 _MinVals_ 是一样高效的了，因此，必须存在指针所指向的内存空间。当需要按 _by-reference_ 的形式来传递 _integral static const_ 的数据成员时，通常需要它们是被定义过的，这会导致使用完美转发的代码失败，而没有使用完美转发的相同代码则会成功。
+虽然此时没有去获取 _MinVals_ 的地址，但是 _fwd_ 的形参是一个 _univeral reference_，而在编译器所生成的代码中，引用通常是被视为指针的。在程序的底层二进制代码中和在硬件中，指针和引用本质上是相同的。引用只是会自动被解引用的指针，在这个层次上，这说的也就是正确的了。既然如此，按 _by-reference_ 的形式传递 _MinVals_ 和按 _by-value_ 的形式传递的 _MinVals_ 就是一样高效的了，因此，必须存在指针所指向的内存空间。当需要按 _by-reference_ 的形式来传递 _integral static const_ 的数据成员时，通常需要它们是被定义过的，这会导致使用完美转发的代码失败，而没有使用完美转发的相同代码则会成功。
 
 但是，通过前面的讨论，你大概也注意到了我的模糊的措辞。代码 **_应该不能_** 链接。引用 **_通常_** 是被视为指针。按 _by-reference_ 的形式传递 _integral static const_ 数据成员 **_通常_** 需要这些数据成员是被定义过的。这几乎就像是我知道一些我不能告诉你的事情。
 
@@ -1526,7 +1526,7 @@ _C++11_ 的盒子上最显著的特性之一是完美转发。完美转发是完
 
 问题在于 _fwd_ 的形参是引用，而 _h.totalLength_ 是一个 _non-const_ _bitfield_。这听起来可能没那么糟糕，但是 _C++_ 的标准用异常清晰的文字谴责了这种组合：“一个 _non-const_ 引用不应该去绑定一个 _bitfield_”。对于这个禁止有一个极好的理由。_bitfield_ 可能是由机器字的任意部分所组成的，比如：_32-bit_ _int_ 的 _bits 3-5_，但是没有方法直接对这些部分进行取地址。我之前就提到过：引用和指针在硬件层面上是相同的，既然没有方法去创建指向任意位的指针，也就没有方法去创建绑定任意位的引用，另外 _C++_ 规定了你所可以指向的最小单位是 _char_。
 
-解决不能完美转发 _bitfield_ 的方法是简单的。只要你知道了任意接受 _bitfield_ 做为实参的函数最终接收到是 _bitfield_ 的值的副本就可以了。毕竟，没有函数可以将引用绑定到 _bitfield_ 上，也没有函数可以接受指向 _bitfield_ 的指针，因为就不存在指向 _bitfield_ 的指针。可以传递 _bitfield_ 的形参只有按 _by-value_ 的形式传递的形参和 _reference-to-const_。在按 _by-value_ 的形式传递的形参的场景中，所调用的函数明显接收的是一个 _bitfield_ 的值的副本，而在 _reference-to-const_ 的场景中，标准要求引用实际上绑定的必须得是 _bitfield_ 的值的副本，而这个副本是存储在一些标准 _integral_ 类型的对象中的，比如 _int_。_reference-to-const_ 绑定的不是 _bitfield_，而是 **_普通_** 对象，并且 _bitfield_ 的值是已经被拷贝到这个对象中了。
+解决不能完美转发 _bitfield_ 的方法是简单的。只要你知道了任意接受 _bitfield_ 做为实参的函数最终接收到是 _bitfield_ 的值的副本就可以了。毕竟，没有函数可以将引用绑定到 _bitfield_ 上，也没有函数可以接受指向 _bitfield_ 的指针，因为就不存在指向 _bitfield_ 的指针。可以传递 _bitfield_ 的形参是 _by-value_ 的形参和 _reference-to-const_。在 _by-value_ 的形参的场景中，所调用的函数明显地接收的是一个 _bitfield_ 的值的副本，而在 _reference-to-const_ 的场景中，标准要求引用实际上绑定的必须得是 _bitfield_ 的值的副本，而这个副本是存储在一些标准 _integral_ 类型的对象中的，比如 _int_。_reference-to-const_ 绑定的不是 _bitfield_，而是 **_普通_** 对象，并且 _bitfield_ 的值是已经被拷贝到这个对象中了。
 
 那么，可以将 _bitfield_ 传递给完美转发函数的关键就是去利用所转发到函数所接收到的将是 _bitfield_ 的值的副本的事实。因此，你可以自己去创建一个副本，然后再使用这个副本去调用转发函数。在 _IPv4Header_ 的场景中，代码会使用这种技巧：  
 ```C++

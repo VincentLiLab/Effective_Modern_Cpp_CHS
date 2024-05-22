@@ -30,7 +30,7 @@
     }
   }
 ```  
-天啊！_typename std::iterator_traits<It>::value_type_ 表示的是 _iterator_ 所指向的值的类型？真的？我真想忘记这有多有趣。天啊。等等，我说过这有趣吗？
+天啊！_typename std::iterator_traits&lt;It&gt;::value_type_ 表示的是 _iterator_ 所指向的值的类型？真的？我真想忘记这有多有趣。天啊。等等，我说过这有趣吗？
 
 好吧，再看一个简单有趣的例子，第三次了：声明一个局部变量，它的类型是 _closure_ 的类型。而 _closure_ 的类型只有编译器知道，因此不能被写出来。哎，太糟糕了。
 

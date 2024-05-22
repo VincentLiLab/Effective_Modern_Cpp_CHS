@@ -500,7 +500,7 @@ _std::make_unique_ 和 _std::make_shared_ 是三个 _make function_ 中的两个
 ```C++
   void processWidget(std::shared_ptr<Widget> spw, int priority);
 ```  
-按 _by-value_ 的形式来传递 _std::shared_ptr_ 可能会有点可疑，但是  [_Item 41_](Chapter%208.md#item-41-对于移动成本小且总是会被复制的可拷贝形参考虑-pass-by-value) 解释了：如果 _processWidget_ 总是会构造 _std::shared_ptr_ 的副本的话，比如，将已经处理过的 _std::shared_ptr_ 存储到一个数据结构中，那么这就是一个合理的设计选择了。
+按 _by-value_ 的形式来传递 _std::shared_ptr_ 可能会有点可疑，但是  [_Item 41_](Chapter%208.md#item-41-对于移动是成本小的且总是会被拷贝的可拷贝的形参考虑-pass-by-value) 解释了：如果 _processWidget_ 总是会构造 _std::shared_ptr_ 的副本的话，比如，将已经处理过的 _std::shared_ptr_ 存储到一个数据结构中，那么这就是一个合理的设计选择了。
 
 现在，假设我们有一个函数用于计算相关的优先级，
 ```C++

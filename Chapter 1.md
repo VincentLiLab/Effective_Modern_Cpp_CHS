@@ -822,7 +822,7 @@ _Microsoft_ 的编译器也这样：
 
 三个独立的编译器都产生了相同信息，应该能认为这些信息是准确的了吧。但是仔细看下。在模板 _f_ 中，_param_ 的类型是 _const T&_。如果是这样的话，_T_ 和 _param_ 有着相同的类型难道不奇怪吗？例如：如果 _T_ 是 _int_ 的话，那么 _param_ 应该是 _const int&_，不应该是相同的。
 
-不幸地是，_std::type_info::name_ 的结果是不可靠的。例如：在这个场景中，三个编译器所报告的 _param_ 的类型都是不正确的。此外，它们是被要求出错的，因为 _std::type_info::name_ 的规范要求这些类型是按照 _by-value_ 的形式传递给模板函数的。参考 [_Item 1_](#item-1-理解模板的类型推导)，如果这些类型是引用的话，那么它们的 _reference-ness_ 是会被忽略的，如果忽略后还有 _const_ 或 _volatile_ 的话，那么它们的 _constness_ 或 _volatileness_ 也是会被忽略的。这也是为什么 _param_ 的类型实际上是 _const Widget * const &_ 但却会被报告为 _const Widget *_ 的原因。它们的 _reference-ness_ 首先会被忽略，然后所生成的指针的 _constness_ 也会被忽略。
+不幸地是，_std::type_info::name_ 的结果是不可靠的。例如：在这个场景中，三个编译器所报告的 _param_ 的类型都是不正确的。此外，它们是被要求出错的，因为 _std::type_info::name_ 的规范要求这些类型是按 _by-value_ 的形式传递给模板函数的。参考 [_Item 1_](#item-1-理解模板的类型推导)，如果这些类型是引用的话，那么它们的 _reference-ness_ 是会被忽略的，如果忽略后还有 _const_ 或 _volatile_ 的话，那么它们的 _constness_ 或 _volatileness_ 也是会被忽略的。这也是为什么 _param_ 的类型实际上是 _const Widget * const &_ 但却会被报告为 _const Widget *_ 的原因。它们的 _reference-ness_ 首先会被忽略，然后所生成的指针的 _constness_ 也会被忽略。
 
 同样不幸地是，_IDE_ 所显示的类型信息也是不可靠的，或者至少是不能可靠地被使用的。对于相同的实例，一个我知道的 _IDE_ 编辑器报告的类型是下面这样的，这不是我乱写的：  
 ```C++
