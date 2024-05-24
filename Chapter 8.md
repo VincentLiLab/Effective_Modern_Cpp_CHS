@@ -2,6 +2,7 @@
   - [_Item 41_ 对于移动是成本小的且总是会被拷贝的可拷贝的形参考虑 _pass-by-value_](#item-41-对于移动是成本小的且总是会被拷贝的可拷贝的形参考虑-pass-by-value)
     - [需要记住的规则](#需要记住的规则)
   - [_Item 42_ 考虑使用 _emplacement_ 来代替 _insertion_](#item-42-考虑使用-emplacement-来代替-insertion)
+    - [需要记住的规则](#需要记住的规则-1)
 
 # _Chapter 8_ _tweak_
 
@@ -58,7 +59,7 @@
   };
 ```
 
-这个代码的唯一不明显的地方是应用 _std::move_ 到形参 _newName_ 上。通常来说，_std::move_ 被用于右值引用，但是这个场景中，我们知道：（1）_newName_ 是一个完全和用户传入的实参无关的对象，所以改变 _newName_ 不会影响到调用方。（2）这是最后一次使用 _newName_，所以移动 _newName_ 不会对剩下的函数有任何影响。
+这个代码的唯一不明显的地方是应用 _std::move_ 到形参 _newName_ 上。通常来说，_std::move_ 被用于右值引用，但是这个场景中，我们知道：（1） _newName_ 是一个完全和用户传入的实参无关的对象，所以改变 _newName_ 不会影响到调用方。（2）这是最后一次使用 _newName_，所以移动 _newName_ 不会对剩下的函数有任何影响。
 
 只存在有一个 _addName_ 的事实解释了我们如何避免了在源代码和目标代码中的代码重复。我们没有使用 _universal reference_，所以这个方法不会导致头文件膨胀、奇怪的失败场景或令人困惑的错误信息。但是这个设计的效率怎么样呢？我们正在使用 _pass-by-value_。这不是成本大的吗？
 
@@ -138,7 +139,7 @@
 
 这么写是有原因的。实际上，有 _4_ 个原因：  
 * 你应该只考虑使用 _pass-by-value_。是的，它只需要写一个函数。是的，它只会在目标代码中生成一个函数。是的，它避免了 _universal reference_ 所相关的问题。但是它的成本比替代方法的成本要大，正如我们在下面看到的，在一些场景中，存在一些我们还没有讨论过的成本。
-* 只对于可拷贝的形参，考虑 _pass-by-value_。不符合这个条件的形参必定包含有 _move-only_ 类型，因为如果这些形参是不可拷贝的，但是函数总是会创建副本的话， 那么必须要通过 _move constructor_ 来创建副本。回忆一下 _pass-by-value_ 相比于重载的优势是：当使用 _pass-by-value_ 时，只有一个函数必须被写出来。但是对于 _move-only_ 类型来说，不需要为左值实参来提供重载函数了，因为拷贝左值必须要调用所对应的 _copy constructor_，_move-only_ 类型所对应的 _copy constructor_ 是被删除的。这意味着只有右值实参需要被支持，在这种场景下，**_重载_** 方案只需要一个函数：持有右值引用的函数。  
+* 只对于可拷贝的形参，考虑 _pass-by-value_。不符合这个条件的形参必定包含有 _move-only_ 类型，因为如果这些形参是不可拷贝的，但是函数总是会创建副本的话， 那么必须要通过 _move constructor_ 来创建副本。回忆一下 _pass-by-value_ 相比于重载的优势是：当使用 _pass-by-value_ 时，只有一个函数必须被写出来。但是对于 _move-only_ 类型来说，不需要为左值实参来提供重载函数了，因为拷贝左值必须要调用所对应的 _copy constructor_，_move-only_ 类型所对应的 _copy constructor_ 是被删除的。这意味着只有右值实参需要被支持，在这种场景中，**_重载_** 方案只需要一个函数：持有右值引用的函数。  
 考虑一个类包含有 _std::unique_ptr&lt;std::string&gt;_ 类型的数据成员和这个数据成员所对应的 _setter_。因为 _std::unique_ptr_ 是 _move-only_ 类型，所以这个类的 _setter_ 的 **_重载_** 方法是由单一的函数组成的。调用方可以像下面这样使用这个类的 _setter_。此处的 _std::make_unique_ 所返回的右值 _std::unique_ptr&lt;std::string&gt;_，见 [_Item 21_](Chapter%204.md#item-21-首选-stdmake_unique-和-stdmake_shared-而不是直接使用-new)，是按 _by-rvalue-reference_ 的方式传递给 _setPtr_ 的，在 _setPtr_ 中这个右值会被移动到数据成员 _p_ 中。整体成本是一次移动。如果 _setPtr_ 是按 _by-value_ 的形式持有它的形参的话，那么相同的调用将会移动构造形参 _ptr_，_ptr_ 也将会被移动到数据成员 _p_ 中。因此整体成本是两次移动，是 **_重载_** 方法的两倍。  
 ```C++
   class Widget {
@@ -292,3 +293,213 @@ _C++11_ 不会从根本上改变关于 _pass-by-value_ 的智慧。通常来说�
 * _pass-by-value_ 会遭遇切割问题，所以它对于 _base class_ 类型的形参是不合适的。
 
 ## _Item 42_ 考虑使用 _emplacement_ 来代替 _insertion_
+
+如果你有一个持有 _std::string_ 的容器，当你通过 _insertion_ 函数，比如：_insert_、_push_front_、_push_back_ 和 _std::forward_list_ 的 _insert_after_ 等，来增加一个新的元素时，你将要传递给函数的元素的类型是 _std::string_，这似乎是符合逻辑的。毕竟，那是 _container_ 中的元素的类型。
+
+尽管逻辑可能是这样，但也不总是这样。考虑下面这样的代码：
+```C++
+  std::vector<std::string> vs;          // container of std::string
+  vs.push_back("xyzzy");                // add string literal
+```  
+此处，这个 _container_ 持有 _std::string_，但是你手上有的，你实际正在尝试给到 _push_back_ 的是 _string literal_，即为：_""_ 中的一个字符序列。_string literal_ 不是 _std::string_，这意味着你正在传递给 _push_back_ 的实参不是这个 _container_ 所持有的类型。
+
+_std::vector_ 所对应的 _push_back_ 重载了左值和右值，像下面这样：  
+```C++
+  template <class T,                              // from the C++11
+            class Allocator = allocator<T>>       // Standard
+  class vector {
+  public:
+    …
+    void push_back(const T& x);                   // insert lvalue
+    void push_back(T&& x);                        // insert rvalue
+    …
+  };
+```  
+在这个调用中  
+```C++
+  vs.push_back("xyzzy");
+```  
+编译器看到实参的类型 _const char[6]_ 和 _push_back_ 所持有的形参的类型 _std::string_ 引用是不匹配的。编译器可以通过根据 _string literal_ 来创建临时 _std::string_ 并将这个临时 _std::string_ 传递给 _push_back_ 来解决这个不匹配。换句话说，编译器对待这个调用就像下面这样：  
+```C++
+  vs.push_back(std::string("xyzzy"));   // create temp. std::string
+                                        // and pass it to push_back
+```   
+这个代码可以通过编译和运行，所有人都可以高兴地回家了。是除了性能怪以外的所有人，因为性能怪意识到了这个代码没有它应该有的高效。  
+
+为了创建 _std::string_ 的 _container_ 中的新元素，性能怪知道，一个 _std::string_ 的构造函数必须被调用，但是上面的代码不是只调用了一次构造函数。是两次。还调用了一次 _std::string_ 的析构函数。下面是在运行时调用 _push_back_ 会发生的事情：  
+*  临时 _std::string_ 对象是根据 _string literal_ 所创建的。这个对象没有名字，我们称它为 _temp_。_temp_ 的构造是第一次 _std::string_ 的构造。因为 _temp_ 是个临时对象，所以它是个右值。
+*  _temp_ 是被传递给 _push_back_ 所对应的右值重载函数的，_temp_ 绑定了右值引用形参 _x_。_x_ 的副本是在 _std::vector_ 的内存中被构造的。这个构造是第二次构造，这个构造在 _std::vector_ 中创建了一个新的对象。被用于将 _x_ 拷贝到 _std::vector_ 中的构造函数是移动构造函数，因为做为右值引用的 _x_ 在它被拷贝前被转换为了右值。对于转换右值引用形参为右值的信息，见 [_Item 25_](Chapter%205.md#item-25-stdmove-用于右值引用-stdforward-用于-univeral-reference)。
+*  在 _push_back_ 返回后，_temp_ 立即被销毁，因此会调用 _std::string_ 的析构函数。
+  
+性能怪不能提供帮助，但是提醒说：如果存在一个方法可以获取 _string literal_ 并可以将这个 _string literal_ 直接传递给在 _std::vector_ 中所构造出的 _std::string_ 对象的话，那么我们可以避免构造和析构 _temp_。这将是极大高效的，甚至性能怪也可以满意。因为你是 _C++_ 程序员，大概率你也是性能怪。如果你不是的话，那么你仍然可能会认可性能怪的观点。如果你完全对性能不感兴趣的话，那么你不应该出门去 _python_ 的房间吗？我非常高兴告诉你存在一个方法可以在调用 _push_back_ 时实现效率最大化。不是去调用 _push_back_。_push_back_ 是错误的函数。你想要的函数是 _emplace_back_。
+
+_emplace_back_ 做的完全如你所愿：_emplace_back_ 使用所传递给它的形参去直接在 _std::vector_ 中构造 _std::string_。没有涉及到临时变量：  
+```C++
+  vs.emplace_back("xyzzy");             // construct std::string inside
+                                        // vs directly from "xyzzy"
+```   
+因为 _emplace_back_ 使用了完美转发，所以只要你没有撞上完美转发的限制的话，见 [_Item 30_](Chapter%205.md#item-30-熟悉完美转发失败的场景)，那么你可以传递任意数量任意类型组合的形参给 _emplace_back_，例如：如果你想要通过持有字符和重复数量的 _std::string_ 的构造函数来在 _vs_ 中去创建 _std::string_ 的话，那么你可以这样做：  
+```C++
+  vs.emplace_back(50, 'x');             // insert std::string consisting
+                                        // of 50 'x' characters
+```  
+_emplace_back_ 对于所有支持 _push_back_ 的标准 _container_ 都是有效的。类似，所有支持 _push_front_ 的标准 _container_ 都支持 _emplace_front_。除了 _std::forward_list_ 和 _std::array_ 以外的所有支持 _insert_ 的标准 _container_ 都支持 _emplace_。_associative containers_ 提供了 _emplace_hint_ 去补充它们的持有着 **_hint_** _iterator_ 的 _insert_ 函数，_std::forward_list_ 拥有 _emplace_after_ 去匹配它们的 _insert_after_。
+
+使得 _emplacement_ 函数可以胜过 _insertion_ 函数的是前者的更加灵活的接口。_insertion_ 函数接受的是将要被插入的对象，而 _emplacement_ 函数接受的是将要被插入的对象所对应的构造函数的实参。这个区别允许 _emplacement_ 函数去避免 _insertion_ 函数必须要的临时对象的创建和销毁。
+
+因为 _container_ 所持有的类型的实参可以被传递给 _emplacement_ 函数，这些实参会导致所对应的函数去执行拷贝构造或者移动构造，甚至当 _insertion_ 函数不需要临时变量时，_emplacement_ 也可以被使用。在那种情况下，_insertion_ 和 _emplacement_ 本质上做的是相同的事情。例如：给定：
+```C++
+  std::string queenOfDisco("Donna Summer");
+```  
+下面这两个调用都是有效的，它们两个对 _container_ 有着相同的净效果：  
+```C++
+  vs.push_back(queenOfDisco);           // copy-construct queenOfDisco
+                                        // at end of vs
+  
+  vs.emplace_back(queenOfDisco);        // ditto
+```  
+
+因此 _emplacement_ 函数可以完成 _insertion_ 函数可以完成的所有事。有时候 _emplacement_ 函数完成的更高效，至少理论上，它们应该永远不会低效地完成。所以，为什么不一直使用 _emplacement_ 函数呢？
+
+因为正如俗话所说，在理论上，理论和现实之间没有区别，但是在现实中，理论和现实之间有区别。在当前的标准库实现中，正如所期待的，存在 _emplacement_ 胜过 _insertion_ 的情景。但是糟糕地是，也存在 _insertion_ 运行更快的情景。这样的情景不太容易去描述，因为这依赖于所传递的实参的类型、所使用的 _container_、需要 _insertion_ 和 _emplacement_ 的 _container_ 中的位置、所包含的类型的构造函数的异常安全性以及对于重复值是被禁止的 _container_，即为：_std::set_、_std::map_、_std::unordered_set_ 和 _std::unordered_map_，将要被记录的值是否已经在 _container_ 中了。因此通常的性能调优建议适用于：想要确定 _emplacement_ 或 _insertion_ 哪个运行更快，可以对它们进行测试。
+
+当然，这不是非常令人满意的，所以你会非常高兴学习启发思维，这个启发思维可以帮助你识别 _emplacement_ 函数是最有可能值得的情景的方法。如果下面的这些全部都是满足的话，那么 _emplacement_ 几乎肯定是胜过 _insertion_ 的：
+* 所增加的值是被构造而不是赋值到 _container_ 中的。本 _Item_ 开头的例子：增加具有 _xyzzy_ 的 _std::string_ 到 _std::vector_ vs 中，展示了被增加到 _vs_ 的尾部的值，这个尾部是一个还没有数据存在的位置。因此，新值必须被构造到 _std::vector_ 中。如果我们修改这个例子，以让新的 _std::string_ 去到一个已经被某个对象所占用了的位置的话，那么就是不同的故事了。考虑下面的代码。对于这个代码，很少会有实现将所增加的 _std::string_ 构造到 _vs[0]_ 所占用的内存中。相反，都是将所增加的 _std::string_ _move-assign_ 到 _vs[0]_ 所占用的内存中。但是这需要可以移动的对象，这意味着一个临时对象需要被创建来做为移动的源。因为 _emplacement_ 胜过 _insertion_ 的主要优势是临时对象既不会被创建，也不会被销毁，所以当被增加的值是通过赋值被放到 _container_ 时，_emplacement_ 的优势就消失了。  
+增加一个值到 _container_ 中是通过构造还是赋值来完成通常是取决于实现者的。但是再一次，启发思维可以帮助。_node-based_ _container_ 几乎总是使用构造去增加新值的，大多数标准 _container_ 是 _node-based_。唯一不是的是 _std::vector_、_std::deque_ 和 _std::string_，_std::array_ 不是，但是它不支持 _insertion_ 和 _emplacement_，所以它和这里不相关。在 _non-node-based_ _container_ 中，你可以依赖 _emplace_back_ 以去使用构造而不是赋值来将新值放到所对应的位置，对于 _std::deque_ 的 _emplace_front_ 也是这样的。
+```C++
+  std::vector<std::string> vs;          // as before
+  
+  …                                     // add elements to vs
+  
+  vs.emplace(vs.begin(), "xyzzy");      // add "xyzzy" to
+                                        // beginning of vs
+```
+* 所传递的实参的类型和所对应的 _container_ 所持有的类型是不相同的。再次，_emplacement_ 胜过 _destruction_ 是因为当所传递的实参的类型不是所对应的 _container_ 所持有的类型时，_emplacement_ 的接口不需要创建和销毁临时对象。当类型 _T_ 的对象被增加到 _container&lt;T&gt;_ 时，没有理由期待 _emplacement_ 是快于 _insertion_ 的，因为没有临时对象需要被创建去满足 _insertion_ 接口。
+* _container_ 不太可能因为重复去拒绝新值。这意味着 _container_ 要么允许重复，要么你增加的大部分的值是唯一的。这个很重要，因为为了探测某个值是否已经存在于所对应的 _container_ 中了，_emplacement_ 的实现通常会创建一个具有新值的 _node_，为的是可以将这个值和 _container_ 中已经存在的值做比较。如果被增加的值是不在所对应的 _container_ 中的话，那么这个被增加的值的 _node_ 是会被链入的。然而，如果被增加的值是已经在所对应的 _container_ 中的话，那么这个 _emplacement_ 是会被拒绝的，这个被增加的值的 _node_ 是会被销毁的，这意味着构造和析构的成本是被浪费的。这样的 _node_ 经常为 _emplacement_ 函数而非 _insertion_ 函数创建。
+
+之前在本 _Item_ 就提到过的调用满足上面的所有条件。_emplace_back_ 也是快于相应的 _push_back_ 调用的：
+```C++
+  vs.emplace_back("xyzzy");             // construct new value at end of
+                                        // container; don't pass the type in
+                                        // container; don't use container
+                                        // rejecting duplicates
+  
+  vs.emplace_back(50, 'x');             // ditto
+```
+
+当决定是否使用 _emplacement_ 函数时，其他的两个问题值得牢记。第一个是关于资源分配的。假定你有一个 _std::shared_ptr&lt;Widget&gt;_ 的容器，  
+```C++
+  std::list<std::shared_ptr<Widget>> ptrs;
+```  
+并且你想要增加一个应该通过 _custom deleter_ 进行释放的 _std::shared_ptr_ 的话，见 [_Item 19_](Chapter%204.md#item-19-对于-shared-ownership-的资源管理使用-stdshared_ptr)。[_Item 21_](Chapter%204.md#item-21-首选-stdmake_unique-和-stdmake_shared-而不是直接使用-new) 解释了：只要有可能，你都应该去使用 _std::make_shared_ 去创建 _std::shared_ptr_，但是也有不可以使用 _std::make_shared_ 的情景。这样的一个情景是当你想要去指明 _custom deleter_ 时。在这种场景中，你必须直接使用 _new_ 来获取将会被 _std::shared_ptr_ 所管理的原始指针。
+
+如果 _custom deleter_ 是下面这个函数的话：  
+```C++
+  void killWidget(Widget* pWidget);
+```  
+那么使用 _insertion_ 函数的代码可能看下来像是这样：  
+```C++
+  ptrs.push_back(std::shared_ptr<Widget>(new Widget, killWidget));
+```  
+也可能看起来像是这样，尽管含义是相同的：  
+```C++
+  ptrs.push_back({ new Widget, killWidget });
+```
+
+不管哪种方式，一个临时的 _std::shared_ptr_ 将会在调用 _push_back_ 之前被构造。_push_back_ 的形参是 _std::shared_ptr_ 的引用，所以形参必须指向 _std::shared_ptr_。
+
+临时 _std::shared_ptr_ 的创建是 _emplace_back_ 要避免的，但是在这个场景中，这个临时对象是值得的，远超过它的成本。考虑下面潜在的事件顺序：  
+* 在上面的两个调用中，一个临时的 _std::shared_ptr&lt;Widget&gt;_ 对象是被构造出来以去持有 _new Widget_ 所生成的原始指针的。称这个对象为 _temp_。
+* _push_back_ 按 _by-value_ 的形式持有 _temp_。在持有 _temp_ 的副本的 _list node_ 的分配期间，一个 _out-of-memory_ 异常抛出了。
+* 当这个异常传播到 _push_back_ 外面时，_temp_ 是被销毁的。
+做为唯一的 _std::shared_ptr_，它指向着它所管理的 _Widget_，它会自动释放所管理的 _Widget_，在这个场景中，是通过调用 _killWidget_。
+
+尽管一个异常发生了，但是没有东西泄露：在 _push_back_ 中通过 _new Widget_ 所创建的 _Widget_ 是在被创建以去管理 _temp_ 的 _std::shared_ptr_ 的析构函数中进行释放的。生活是美好的。
+
+现在考虑：如果调用的是 _emplace_back_ 而不是 _push_back_ 的话，那么会发生什么：  
+```C++
+  ptrs.emplace_back(new Widget, killWidget);
+```  
+* _new Widget_ 所生成的原始指针是被完美转发给 _emplace_back_ 的，并且在 _emplace_back_ 中将会分配一个 _list node_。这个分配失败，一个 _out-of-memory_ 异常被抛出。
+*  当这个异常传播到 _push_back_ 外面时，唯一可以获取堆上的 _Widget_ 的原始指针就丢失了。这个 _Widget_ 和它所拥有的所有资源被泄露了。
+  
+在这个情景中，生活不是美好的，错误不在于 _std::shared_ptr_。同类型的问题可以在使用 _std::unique_ptr_ 和 _custom deleter_ 时发生。从根本上说，像 _std::shared_ptr_ 和 _std::unique_ptr_ 这样的资源管理类想要发挥作用，前提是像根据 _new_ 所生成的原始指针这样的资源要被立即传递给资源管理的对象的构造函数。像 _std::make_shared_ 和 _std::make_unique_ 这样的函数会自动化这个过程，这个事实是它们如此重要的原因。
+
+在持有资源管理的对象的 _container_，比如：_std::list&lt;std::shared_ptr&lt;Widget&gt;&gt;_，的 _insertion_ 函数的中，这个函数的形参的类型通常确保了在资源获取，比如：使用 _new_，和管理着所对应的资源的那个对象的构造之间无任何东西。在 _emplacement_ 函数中，完美转发会推迟资源管理的对象的创建，直到这些对象可以在所对应的 _container_ 的内存中被构造，这会打开一个窗口，在此期间异常可以导致资源泄露。所有的标准 _container_ 都容易受到这个问题的影响。但是使用资源管理的对象的 _container_ 时，你必须注意确保：如果你选择了 _emplacement_ 函数来代替 _insertion_ 函数的话，那么你不会因为提升代码效率而牺牲异常安全。
+
+坦率地说，你不应该传递像 _new Widget_ 这样的表达式给到 _emplace_back_、_push_back_ 或大多说其他函数，因为 [_Item 21_](Chapter%204.md#item-21-首选-stdmake_unique-和-stdmake_shared-而不是直接使用-new) 所解释的，这会导致发生我们刚才讨论过的那种异常安全问题。关上这扇门需要将 _new Widget_ 所生成的原始指针移交给独立语句种的资源管理的对象，然后将这个资源管理的对象做为右值传递给你最初想要将 _new Widget_ 进行传递的那个函数，[_Item 21_](Chapter%204.md#item-21-首选-stdmake_unique-和-stdmake_shared-而不是直接使用-new) 覆盖了这个技术的更多细节。因此，使用了 _push_back_ 的代码应该被写成下面这样：  
+```C++
+  std::shared_ptr<Widget> spw(new Widget,         // create Widget and
+                              killWidget);        // have spw manage it
+  
+  ptrs.push_back(std::move(spw));                 // add spw as rvalue
+```   
+_emplace_back_ 的版本也是类似的：  
+```C++
+  std::shared_ptr<Widget> spw(new Widget, killWidget);
+  ptrs.emplace_back(std::move(spw));
+```  
+不管哪种方法，都产生了创建和销毁 _spw_ 的成本。鉴于选择 _emplacement_ 而不是 _insertion_ 的动机是它可以避免所对应的 _container_ 所持有的类型的临时对象的成本，概念上 _spw_ 就是这样的临时对象，当你增加资源管理的对象到一个 _container_ 中，并且你遵循了正确的做法，确保了在获取资源和将这个资源移交给资源管理的对象之间无任何东西可以介入时，_emplacement_ 函数是不可能胜过 _insertion_ 函数的。
+
+_emplacement_ 函数第二个值得注意的地方是它们和 _explicit_ 构造函数的交互。为了庆祝 _C++11_ 对 _regular expression_ 的支持，假定你创建了 _regular expression_ 对象的 _container_：  
+```C++
+  std::vector<std::regex> regexes;
+```   
+
+你的同事在为每天访问 _Facebook_ 账户的理想次数而争吵，这分散了你的注意力，你不小心地写下了下面看似无意义的代码：  
+```C++
+  regexes.emplace_back(nullptr);        // add nullptr to container
+                                        // of regexes?
+```  
+
+当你写的时候，你没有注意到，你的编译器接受了这个代码并且没有抱怨，所以你最终会浪费大量的调试时间。在某个时间点，你发现你将一个空指针插入到了你的 _regular expression_ 的 _container_ 中。但是如何可能这样呢？指针不是 _regular expression_，如果试着写像下面这样的代码的话，  
+```C++
+  std::regex r = nullptr;               // error! won't compile
+```  
+那么编译器会拒绝你的代码。有趣地是，如果你调用的是 _push_back_ 而不是 _emplace_back_ 的话，那么也会拒绝你的代码：  
+```C++
+  regexes.push_back(nullptr);           // error! won't compile
+```  
+你正在经历的奇怪行为是因为 _std::regex_ 对象可以根据字符串进行构造。这让下面代码变得合理：  
+```C++
+  std::regex upperCaseWord("[A-Z]+");
+```  
+根据字符串创建的 _std::regex_ 可以造成相对较大的运行成本，所以为了最小化这个成本无意产生的可能性，_std::regex_ 的持有 _const char*_  指针的构造函数是 _explicit_。这也是为什么这些代码无法通过编译：  
+```C++
+  std::regex r = nullptr;               // error! won't compile
+  
+  regexes.push_back(nullptr);           // error! won't compile
+```   
+在这些场景中，我们要求从指针到 _std::regex_ 的隐式转换，而 _std::regex_ 的构造函数的 _explicitness_ 会阻止这样的转换。
+
+然而，在 _emplace_back_ 的调用中，我们没有传递 _std::regex_ 对象。相反，我们传递的是 _std::regex_ 对象的构造函数的实参。这不会被认为是隐式转换需求。而是被看成就好像是下面这样的：  
+```C++
+  std::regex r(nullptr);                // compiles
+```   
+如果简短的注释 _complies_ 暗示了这是缺乏热情的，这是好的，因为这个代码即使它可以通过编译，也会有 _undefined behavior_。_std::regex_ 的持有 _const char*_  指针的构造函数要求所指向的字符串由一个有效的 _regular expression_ 组成，而空指针不符合这个要求。如果你写了这个代码并且进行了编译的话，那么你可以期待最好的结果是这个代码会在运行时崩溃。如果不够幸运的话，那么你和你的调试器会有一次特别亲密的体验了。
+
+暂时把 _push_back_、_emplace_back_ 和亲密放在一边，注意这些非常相似的初始化语法如何产生的不同的结果：  
+```C++
+  std::regex r1 = nullptr;              // error! won't compile
+  
+  std::regex r2(nullptr);               // compiles
+```   
+按照标准的官方术语，被用于初始化 _r1_ 的语法，使用 _=_ 的语法，被称为是 _copy initialization_。相反，被用于初始化 _r2_ 的语法，使用 _()_ 尽管 _{}_ 也可能被使用，被称为是 _direct initialization_。_copy initialization_ 不允许使用 _explicit_ 构造函数。_direct initialization_ 允许使用 _explicit_ 构造函数。这也是为什么 _r1_ 的那行不可以通过编译，但是 _r2_ 那行可以通过编译。
+
+回到 _push_back_ 和 _emplace_back_ 中，更一般地说，_insertion_ 函数和 _emplacement_ 函数。_emplacement_ 函数使用的是 _direct initialization_，这意味着可以使用 _explicit_ 构造函数。_insertion_ 函数使用的是 _copy initialization_，这意味不可以使用 _explicit_ 构造函数。因此：  
+```C++
+  regexes.emplace_back(nullptr);        // compiles. Direct init permits
+                                        // use of explicit std::regex
+                                        // ctor taking a pointer
+  
+  regexes.push_back(nullptr);           // error! copy init forbids
+                                        // use of that ctor
+```
+
+这里得到的教训是：当你使用 _emplacement_ 函数时，特别要注意确保要传递正确的实参，因为甚至 _explicit_ 构造函数也会被编译器考虑，因为它们会试着寻找可以按有效的方式理解你的代码的方法。
+
+### 需要记住的规则
+
+* 原则上，_emplacement_ 函数有时应该比 _insertion_ 函数要高效，而且永远不应该低效。
+* 原则上，当 （1）被增加的值是被拷贝而不是被赋值到所对应的 _container_ 中时；（2）被传递的实参的类型不同于所对应的 _container_ 所持有的类型时；（3）编译器不会拒绝导致成为重复的被增加的值时；_emplacement_ 函数很可能会更快。
+* _emplacement_ 函数可能会执行那些被 _insertion_ 函数所拒绝的类型转换。
