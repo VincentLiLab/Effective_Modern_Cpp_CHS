@@ -427,7 +427,7 @@ _emplace_back_ 对于所有支持 _push_back_ 的标准 _container_ 都是有效
 
 在持有资源管理的对象的 _container_，比如：_std::list&lt;std::shared_ptr&lt;Widget&gt;&gt;_，的 _insertion_ 函数的中，这个函数的形参的类型通常确保了在资源获取，比如：使用 _new_，和管理着所对应的资源的那个对象的构造之间无任何东西。在 _emplacement_ 函数中，完美转发会推迟资源管理的对象的创建，直到这些对象可以在所对应的 _container_ 的内存中被构造，这会打开一个窗口，在此期间异常可以导致资源泄露。所有的标准 _container_ 都容易受到这个问题的影响。但是使用资源管理的对象的 _container_ 时，你必须注意确保：如果你选择了 _emplacement_ 函数来代替 _insertion_ 函数的话，那么你不会因为提升代码效率而牺牲异常安全。
 
-坦率地说，你不应该传递像 _new Widget_ 这样的表达式给到 _emplace_back_、_push_back_ 或大多说其他函数，因为 [_Item 21_](Chapter%204.md#item-21-首选-stdmake_unique-和-stdmake_shared-而不是直接使用-new) 所解释的，这会导致发生我们刚才讨论过的那种异常安全问题。关上这扇门需要将 _new Widget_ 所生成的原始指针移交给独立语句种的资源管理的对象，然后将这个资源管理的对象做为右值传递给你最初想要将 _new Widget_ 进行传递的那个函数，[_Item 21_](Chapter%204.md#item-21-首选-stdmake_unique-和-stdmake_shared-而不是直接使用-new) 覆盖了这个技术的更多细节。因此，使用了 _push_back_ 的代码应该被写成下面这样：  
+坦率地说，你不应该传递像 _new Widget_ 这样的表达式给到 _emplace_back_、_push_back_ 或大多说其他函数，因为 [_Item 21_](Chapter%204.md#item-21-首选-stdmake_unique-和-stdmake_shared-而不是直接使用-new) 所解释的，这会导致发生我们刚才讨论过的那种异常安全问题。关上这扇门需要将 _new Widget_ 所生成的原始指针移交给独立语句中的资源管理的对象，然后将这个资源管理的对象做为右值传递给你最初想要将 _new Widget_ 进行传递的那个函数，[_Item 21_](Chapter%204.md#item-21-首选-stdmake_unique-和-stdmake_shared-而不是直接使用-new) 覆盖了这个技术的更多细节。因此，使用了 _push_back_ 的代码应该被写成下面这样：  
 ```C++
   std::shared_ptr<Widget> spw(new Widget,         // create Widget and
                               killWidget);        // have spw manage it

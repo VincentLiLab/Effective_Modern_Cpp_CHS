@@ -123,7 +123,7 @@ _std::unique_ptr_ 体现了 _exclusive ownership_ 的语义。一个非空的 _s
   };
 ```
 
-在 _C++14_ 中，函数返回值类型推导的存在，见 [_Item 3_](Chapter%201.md#item-3-理解-decltype)，意味着 _makeInvestment_ 可以以更简洁和更好封装的形式来实现：  
+在 _C++14_ 中，函数返回类型推导的存在，见 [_Item 3_](Chapter%201.md#item-3-理解-decltype)，意味着 _makeInvestment_ 可以以更简洁和更好封装的形式来实现：  
 ```C++
   template<typename... Ts>
   auto makeInvestment(Ts&&... params)             // C++14
